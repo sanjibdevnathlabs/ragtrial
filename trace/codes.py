@@ -19,6 +19,15 @@ SCRIPT_COMPLETED = "script_completed"
 SCRIPT_EXIT_SUCCESS = "script_exit_success"
 SCRIPT_EXIT_ERROR = "script_exit_error"
 
+# Operation trace codes
+OPERATION_CLEAR = "operation_clear"
+
+# Demo trace codes
+DEMO_STARTED = "demo_started"
+DEMO_COMPLETED = "demo_completed"
+DEMO_QUERY_STARTED = "demo_query_started"
+DEMO_INSTRUCTIONS = "demo_instructions"
+
 # General operations
 OPERATION_FAILED = "operation_failed"
 VALIDATION_ERROR = "validation_error"
@@ -79,6 +88,7 @@ MSG_CONFIG_FILE_ENSURE = "Please ensure 'environment/default.toml' exists."
 # ============================================================================
 # VECTORSTORE TRACE CODES & MESSAGES
 # ============================================================================
+VECTORSTORE_CREATING = "vectorstore_creating"
 VECTORSTORE_INITIALIZING = "vectorstore_initializing"
 VECTORSTORE_INITIALIZED = "vectorstore_initialized"
 VECTORSTORE_FACTORY_CREATING = "vectorstore_factory_creating"
@@ -104,8 +114,10 @@ MSG_VECTORSTORE_PROVIDER_UNKNOWN = "Unknown vectorstore provider"
 # ============================================================================
 # EMBEDDINGS TRACE CODES & MESSAGES
 # ============================================================================
+EMBEDDINGS_CREATING = "embeddings_creating"
 EMBEDDINGS_INITIALIZING = "embeddings_initializing"
 EMBEDDINGS_INITIALIZED = "embeddings_initialized"
+EMBEDDINGS_MODEL_LOADING = "embeddings_model_loading"
 EMBEDDINGS_FACTORY_CREATING = "embeddings_factory_creating"
 EMBEDDINGS_GENERATING = "embeddings_generating"
 EMBEDDINGS_GENERATED = "embeddings_generated"

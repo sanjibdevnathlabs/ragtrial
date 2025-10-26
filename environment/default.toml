@@ -34,7 +34,7 @@ region = "us-east-1"             # Cloud region (AWS: us-east-1, GCP: us-central
 index_name = "rag-documents"
 dimension = 768
 metric = "cosine"                # Similarity metric: cosine, euclidean, dotproduct
-verify_ssl = false                # SSL certificate verification (disable for dev if needed)
+verify_ssl = true                 # SSL certificate verification (disable for dev if needed)
 
 # Qdrant-specific settings
 [vectorstore.qdrant]

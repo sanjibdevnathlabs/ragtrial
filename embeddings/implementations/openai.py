@@ -6,6 +6,7 @@ Uses OpenAI's text-embedding models (text-embedding-3-small, text-embedding-3-la
 
 from typing import List, TYPE_CHECKING
 
+import constants
 from logger import get_logger
 from trace import codes
 
@@ -43,43 +44,17 @@ class OpenAIEmbeddings:
         try:
             from openai import OpenAI
         except ImportError:
-            error_msg = "openai package not installed. Run: pip install openai"
-            logger.error(codes.EMBEDDINGS_ERROR, message=error_msg)
-            raise ImportError(error_msg)
+            logger.error(codes.EMBEDDINGS_ERROR, message=constants.ERROR_OPENAI_NOT_INSTALLED)
+            raise ImportError(constants.ERROR_OPENAI_NOT_INSTALLED)
         
         self.config = config
         self.model = config.embeddings.openai.model
         self.batch_size = config.embeddings.openai.batch_size
         self.dimensions = config.embeddings.openai.dimensions
-        self.dimension = self.dimensions  # For get_dimension()
+        self.dimension = self.dimensions
         self.verify_ssl = config.embeddings.openai.verify_ssl
         
-        # Initialize OpenAI client with SSL configuration
-        import httpx
-        if self.verify_ssl:
-            # Use certifi's certificate bundle (fixes macOS SSL issues)
-            import certifi
-            http_client = httpx.Client(verify=certifi.where())
-            self.client = OpenAI(
-                api_key=config.embeddings.openai.api_key,
-                http_client=http_client
-            )
-            logger.info(
-                codes.EMBEDDINGS_INITIALIZING,
-                provider="openai",
-                message="Using certifi certificate bundle for SSL verification"
-            )
-        else:
-            # Disable SSL verification for development
-            http_client = httpx.Client(verify=False)
-            self.client = OpenAI(
-                api_key=config.embeddings.openai.api_key,
-                http_client=http_client
-            )
-            logger.warning(
-                codes.CONFIG_WARNING,
-                message="SSL verification disabled for OpenAI API (development only)"
-            )
+        self.client = self._initialize_client(OpenAI, config.embeddings.openai.api_key)
         
         logger.info(
             codes.EMBEDDINGS_INITIALIZED,
@@ -88,6 +63,29 @@ class OpenAIEmbeddings:
             dimension=self.dimension,
             message=codes.MSG_EMBEDDINGS_INITIALIZED
         )
+    
+    def _initialize_client(self, OpenAI, api_key: str):
+        """Initialize OpenAI client with SSL configuration."""
+        import httpx
+        
+        if not self.verify_ssl:
+            http_client = httpx.Client(verify=False)
+            client = OpenAI(api_key=api_key, http_client=http_client)
+            logger.warning(
+                codes.CONFIG_WARNING,
+                message=constants.MSG_SSL_DISABLED_DEV
+            )
+            return client
+        
+        import certifi
+        http_client = httpx.Client(verify=certifi.where())
+        client = OpenAI(api_key=api_key, http_client=http_client)
+        logger.info(
+            codes.EMBEDDINGS_INITIALIZING,
+            provider="openai",
+            message=constants.MSG_SSL_CERTIFI_BUNDLE
+        )
+        return client
     
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
@@ -107,34 +105,12 @@ class OpenAIEmbeddings:
         
         all_embeddings = []
         
-        # Process in batches
         for i in range(0, len(texts), self.batch_size):
             batch = texts[i:i + self.batch_size]
+            batch_num = i // self.batch_size + 1
             
-            logger.debug(
-                codes.EMBEDDINGS_BATCH_PROCESSING,
-                batch_num=i // self.batch_size + 1,
-                batch_size=len(batch)
-            )
-            
-            try:
-                response = self.client.embeddings.create(
-                    model=self.model,
-                    input=batch,
-                    dimensions=self.dimensions
-                )
-                
-                batch_embeddings = [item.embedding for item in response.data]
-                all_embeddings.extend(batch_embeddings)
-                
-            except Exception as e:
-                logger.error(
-                    codes.EMBEDDINGS_ERROR,
-                    batch_num=i // self.batch_size + 1,
-                    error=str(e),
-                    exc_info=True
-                )
-                raise
+            batch_embeddings = self._process_batch(batch, batch_num)
+            all_embeddings.extend(batch_embeddings)
         
         logger.info(
             codes.EMBEDDINGS_GENERATED,
@@ -143,6 +119,41 @@ class OpenAIEmbeddings:
         )
         
         return all_embeddings
+    
+    def _process_batch(self, batch: List[str], batch_num: int) -> List[List[float]]:
+        """
+        Process a single batch of texts to generate embeddings.
+        
+        Args:
+            batch: Batch of texts to process
+            batch_num: Batch number for logging
+            
+        Returns:
+            List of embedding vectors for the batch
+        """
+        logger.debug(
+            codes.EMBEDDINGS_BATCH_PROCESSING,
+            batch_num=batch_num,
+            batch_size=len(batch)
+        )
+        
+        try:
+            response = self.client.embeddings.create(
+                model=self.model,
+                input=batch,
+                dimensions=self.dimensions
+            )
+            
+            return [item.embedding for item in response.data]
+            
+        except Exception as e:
+            logger.error(
+                codes.EMBEDDINGS_ERROR,
+                batch_num=batch_num,
+                error=str(e),
+                exc_info=True
+            )
+            raise
     
     def embed_query(self, text: str) -> List[float]:
         """

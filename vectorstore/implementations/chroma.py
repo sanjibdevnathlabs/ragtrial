@@ -11,6 +11,7 @@ import uuid
 import chromadb
 from chromadb.config import Settings
 
+import constants
 from embeddings.base import EmbeddingsProtocol
 from logger import get_logger
 from trace import codes
@@ -108,7 +109,7 @@ class ChromaVectorStore:
             }
             
             metadata = {
-                "hnsw:space": distance_map.get(
+                constants.CHROMA_HNSW_SPACE: distance_map.get(
                     self.distance_function.lower(),
                     "cosine"
                 )
@@ -140,26 +141,35 @@ class ChromaVectorStore:
             ids: Optional list of document IDs (auto-generated if not provided)
         """
         if not self.collection:
-            raise RuntimeError("Collection not initialized. Call initialize() first.")
+            raise RuntimeError(constants.ERROR_COLLECTION_NOT_INITIALIZED)
         
         logger.info(
             codes.VECTORSTORE_DOCUMENTS_ADDING,
             count=len(texts)
         )
         
-        # Generate IDs if not provided
-        if ids is None:
-            ids = [str(uuid.uuid4()) for _ in range(len(texts))]
+        ids = ids or [str(uuid.uuid4()) for _ in range(len(texts))]
+        metadatas = metadatas or [{} for _ in range(len(texts))]
         
-        # Generate default metadata if not provided
-        if metadatas is None:
-            metadatas = [{} for _ in range(len(texts))]
+        self._add_to_collection(texts, metadatas, ids)
+    
+    def _add_to_collection(
+        self,
+        texts: List[str],
+        metadatas: List[Dict[str, Any]],
+        ids: List[str]
+    ) -> None:
+        """
+        Generate embeddings and add documents to ChromaDB collection.
         
+        Args:
+            texts: List of document text strings
+            metadatas: List of metadata dicts
+            ids: List of document IDs
+        """
         try:
-            # Generate embeddings for documents
             embeddings = self.embeddings.embed_documents(texts)
             
-            # Add to ChromaDB
             self.collection.add(
                 ids=ids,
                 embeddings=embeddings,
@@ -177,7 +187,7 @@ class ChromaVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="add_documents",
+                operation=constants.OPERATION_ADD_DOCUMENTS,
                 error=str(e),
                 exc_info=True
             )
@@ -201,35 +211,19 @@ class ChromaVectorStore:
             List of result dicts with id, text, metadata, distance
         """
         if not self.collection:
-            raise RuntimeError("Collection not initialized. Call initialize() first.")
+            raise RuntimeError(constants.ERROR_COLLECTION_NOT_INITIALIZED)
         
         logger.info(
             codes.VECTORSTORE_QUERYING,
-            query_text=query_text[:100],  # Log first 100 chars
+            query_text=query_text[:100],
             n_results=n_results,
             has_filter=where is not None
         )
         
         try:
-            # Generate embedding for query
             query_embedding = self.embeddings.embed_query(query_text)
-            
-            # Query ChromaDB
-            results = self.collection.query(
-                query_embeddings=[query_embedding],
-                n_results=n_results,
-                where=where
-            )
-            
-            # Format results
-            formatted_results = []
-            for i in range(len(results["ids"][0])):
-                formatted_results.append({
-                    "id": results["ids"][0][i],
-                    "text": results["documents"][0][i],
-                    "metadata": results["metadatas"][0][i],
-                    "distance": results["distances"][0][i]
-                })
+            results = self._query_collection(query_embedding, n_results, where)
+            formatted_results = self._format_query_results(results)
             
             logger.info(
                 codes.VECTORSTORE_QUERY_RESULTS,
@@ -241,11 +235,54 @@ class ChromaVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="query",
+                operation=constants.OPERATION_QUERY,
                 error=str(e),
                 exc_info=True
             )
             raise
+    
+    def _query_collection(
+        self,
+        query_embedding: List[float],
+        n_results: int,
+        where: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Query ChromaDB collection with embedding.
+        
+        Args:
+            query_embedding: Query embedding vector
+            n_results: Number of results to return
+            where: Optional metadata filter
+            
+        Returns:
+            Raw ChromaDB query results
+        """
+        return self.collection.query(
+            query_embeddings=[query_embedding],
+            n_results=n_results,
+            where=where
+        )
+    
+    def _format_query_results(self, results: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Format ChromaDB results into standard format.
+        
+        Args:
+            results: Raw ChromaDB query results
+            
+        Returns:
+            List of formatted result dicts
+        """
+        formatted_results = []
+        for i in range(len(results["ids"][0])):
+            formatted_results.append({
+                constants.RESULT_KEY_ID: results["ids"][0][i],
+                constants.RESULT_KEY_TEXT: results["documents"][0][i],
+                constants.RESULT_KEY_METADATA: results["metadatas"][0][i],
+                constants.RESULT_KEY_DISTANCE: results["distances"][0][i]
+            })
+        return formatted_results
     
     def delete(self, ids: List[str]) -> None:
         """
@@ -255,7 +292,7 @@ class ChromaVectorStore:
             ids: List of document IDs to delete
         """
         if not self.collection:
-            raise RuntimeError("Collection not initialized. Call initialize() first.")
+            raise RuntimeError(constants.ERROR_COLLECTION_NOT_INITIALIZED)
         
         logger.info(codes.VECTORSTORE_DELETING, count=len(ids))
         
@@ -271,7 +308,7 @@ class ChromaVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="delete",
+                operation=constants.OPERATION_DELETE,
                 error=str(e),
                 exc_info=True
             )
@@ -286,17 +323,17 @@ class ChromaVectorStore:
         """
         if not self.collection:
             return {
-                "collection_name": self.collection_name,
-                "count": 0,
-                "initialized": False
+                constants.STATS_KEY_COLLECTION_NAME: self.collection_name,
+                constants.STATS_KEY_COUNT: 0,
+                constants.STATS_KEY_INITIALIZED: False
             }
         
         stats = {
-            "collection_name": self.collection_name,
-            "count": self.collection.count(),
-            "persist_directory": self.persist_directory,
-            "distance_function": self.distance_function,
-            "initialized": True
+            constants.STATS_KEY_COLLECTION_NAME: self.collection_name,
+            constants.STATS_KEY_COUNT: self.collection.count(),
+            constants.STATS_KEY_PERSIST_DIR: self.persist_directory,
+            constants.STATS_KEY_DISTANCE_FUNCTION: self.distance_function,
+            constants.STATS_KEY_INITIALIZED: True
         }
         
         logger.debug(codes.VECTORSTORE_STATS, **stats)
@@ -310,7 +347,7 @@ class ChromaVectorStore:
         Warning: This is destructive and cannot be undone!
         """
         if not self.collection:
-            raise RuntimeError("Collection not initialized. Call initialize() first.")
+            raise RuntimeError(constants.ERROR_COLLECTION_NOT_INITIALIZED)
         
         logger.warning(
             codes.VECTORSTORE_DELETING,

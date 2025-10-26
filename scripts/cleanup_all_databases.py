@@ -7,141 +7,171 @@ import sys
 import time
 from pathlib import Path
 
-# Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+import constants
 from config import Config
 from embeddings import create_embeddings
-from vectorstore import create_vectorstore
 from logger import get_logger
 from trace import codes
-import constants
+from vectorstore import create_vectorstore
 
 logger = get_logger(__name__)
+
+
+def _cleanup_chroma(vectorstore) -> None:
+    """Clean up ChromaDB by deleting and recreating collection."""
+    vectorstore.client.delete_collection(name=vectorstore.collection_name)
+    vectorstore.collection = vectorstore.client.get_or_create_collection(
+        name=vectorstore.collection_name,
+        metadata={constants.CHROMA_HNSW_SPACE: vectorstore.distance}
+    )
+
+
+def _cleanup_qdrant(vectorstore) -> None:
+    """Clean up Qdrant by deleting and recreating collection."""
+    vectorstore.client.delete_collection(collection_name=vectorstore.collection_name)
+    from qdrant_client.models import Distance, VectorParams
+    distance_map = {
+        "cosine": Distance.COSINE,
+        "euclidean": Distance.EUCLID,
+        "dot": Distance.DOT,
+    }
+    vectorstore.client.create_collection(
+        collection_name=vectorstore.collection_name,
+        vectors_config=VectorParams(
+            size=vectorstore.embeddings.dimension,
+            distance=distance_map.get(vectorstore.distance, Distance.COSINE)
+        )
+    )
+
+
+def _cleanup_weaviate(vectorstore) -> None:
+    """Clean up Weaviate by deleting and recreating collection."""
+    vectorstore.client.collections.delete(vectorstore.class_name)
+    vectorstore.initialize()
+
+
+def _cleanup_pinecone(vectorstore, logger) -> None:
+    """Clean up Pinecone by deleting all vectors from all namespaces."""
+    logger.info(codes.OPERATION_CLEAR, message="Retrieving all namespaces from Pinecone...")
+    
+    index_stats = vectorstore.index.describe_index_stats()
+    namespaces = list(index_stats.get('namespaces', {}).keys())
+    
+    logger.info(codes.OPERATION_CLEAR, namespaces_count=len(namespaces), namespaces=namespaces)
+    
+    for namespace in namespaces:
+        if namespace == '':
+            continue
+        logger.info(codes.OPERATION_CLEAR, message=f"Deleting all vectors from namespace '{namespace}'...")
+        vectorstore.index.delete(delete_all=True, namespace=namespace)
+    
+    logger.info(codes.OPERATION_CLEAR, message="Deleting all vectors from default namespace...")
+    vectorstore.index.delete(delete_all=True)
+    
+    logger.info(codes.OPERATION_CLEAR, message="Waiting 3 seconds for Pinecone deletion to propagate...")
+    time.sleep(3)
+
+
+CLEANUP_HANDLERS = {
+    'chroma': _cleanup_chroma,
+    'qdrant': _cleanup_qdrant,
+    'weaviate': _cleanup_weaviate,
+    'pinecone': _cleanup_pinecone,
+}
+
+
+def _cleanup_provider(provider: str, config: Config, logger) -> bool:
+    """Clean up a single provider's database."""
+    vectorstore = None
+    try:
+        logger.info(codes.OPERATION_CLEAR, provider=provider.upper())
+        
+        config.vectorstore.provider = provider
+        
+        if provider == 'pinecone':
+            config.vectorstore.pinecone.verify_ssl = False
+        
+        embeddings = create_embeddings(config)
+        vectorstore = create_vectorstore(config, embeddings)
+        
+        vectorstore.initialize()
+        
+        stats_before = vectorstore.get_stats()
+        count_before = stats_before.get(constants.STATS_KEY_COUNT, 0)
+        logger.info(codes.VECTORSTORE_STATS, provider=provider, count_before=count_before)
+        
+        if count_before == 0:
+            logger.info(codes.OPERATION_CLEAR, provider=provider, message="No documents to clean - already clean")
+            return True
+        
+        logger.info(
+            codes.VECTORSTORE_DELETING,
+            provider=provider,
+            count=count_before
+        )
+        
+        cleanup_handler = CLEANUP_HANDLERS.get(provider)
+        if not cleanup_handler:
+            logger.error(codes.VECTORSTORE_ERROR, provider=provider, message="No cleanup handler found")
+            return False
+        
+        if provider == 'pinecone':
+            cleanup_handler(vectorstore, logger)
+        else:
+            cleanup_handler(vectorstore)
+        
+        stats_after = vectorstore.get_stats()
+        count_after = stats_after.get(constants.STATS_KEY_COUNT, 0)
+        logger.info(
+            codes.VECTORSTORE_DELETED,
+            provider=provider,
+            count_before=count_before,
+            count_after=count_after
+        )
+        logger.info(codes.OPERATION_CLEAR, provider=provider.upper(), message="Cleaned successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(
+            codes.VECTORSTORE_ERROR,
+            provider=provider,
+            error=str(e),
+            exc_info=True
+        )
+        return False
+    finally:
+        # Explicitly close Weaviate connections to prevent hanging
+        if vectorstore and hasattr(vectorstore, 'close'):
+            vectorstore.close()
 
 
 def main():
     """Clean up all vector databases by deleting collections."""
     providers = ['chroma', 'qdrant', 'weaviate', 'pinecone']
     
-    print("=" * 70)
-    print("🧹 CLEANING ALL VECTOR DATABASES")
-    print("=" * 70)
+    logger.info(codes.SCRIPT_STARTED, separator="=" * 70)
+    logger.info(codes.SCRIPT_STARTED, message="CLEANING ALL VECTOR DATABASES")
+    logger.info(codes.SCRIPT_STARTED, separator="=" * 70)
     
+    results = {}
     for provider in providers:
-        try:
-            print(f"\n📦 Cleaning {provider.upper()}...")
-            
-            # Load config and set provider
-            config = Config()
-            config.vectorstore.provider = provider
-            
-            # Force SSL off for Pinecone (dev environment)
-            if provider == 'pinecone':
-                config.vectorstore.pinecone.verify_ssl = False
-            
-            # Create embeddings and vectorstore
-            embeddings = create_embeddings(config)
-            vectorstore = create_vectorstore(config, embeddings)
-            
-            # Initialize the vectorstore to ensure collection exists
-            vectorstore.initialize()
-            
-            # Get stats before deletion
-            stats_before = vectorstore.get_stats()
-            count_before = stats_before.get('count', 0)
-            print(f"  Before: {count_before} documents")
-            
-            if count_before == 0:
-                print(f"  ℹ️  No documents to clean")
-                print(f"  ✅ {provider.upper()} is already clean!")
-                continue
-            
-            # Delete the entire collection (implementation-specific)
-            logger.info(
-                codes.VECTORSTORE_DELETING,
-                provider=provider,
-                count=count_before
-            )
-            
-            # Call the provider-specific cleanup method
-            # Note: Pinecone uses 'index' attribute, not 'client'
-            if hasattr(vectorstore, 'client') or hasattr(vectorstore, 'index'):
-                if provider == 'chroma':
-                    # Delete and recreate collection in ChromaDB
-                    vectorstore.client.delete_collection(name=vectorstore.collection_name)
-                    vectorstore.collection = vectorstore.client.get_or_create_collection(
-                        name=vectorstore.collection_name,
-                        metadata={"hnsw:space": vectorstore.distance}
-                    )
-                elif provider == 'qdrant':
-                    # Delete and recreate collection in Qdrant
-                    vectorstore.client.delete_collection(collection_name=vectorstore.collection_name)
-                    from qdrant_client.models import Distance, VectorParams
-                    distance_map = {
-                        "cosine": Distance.COSINE,
-                        "euclidean": Distance.EUCLID,
-                        "dot": Distance.DOT,
-                    }
-                    vectorstore.client.create_collection(
-                        collection_name=vectorstore.collection_name,
-                        vectors_config=VectorParams(
-                            size=vectorstore.embeddings.dimension,
-                            distance=distance_map.get(vectorstore.distance, Distance.COSINE)
-                        )
-                    )
-                elif provider == 'weaviate':
-                    # Delete and recreate collection in Weaviate
-                    vectorstore.client.collections.delete(vectorstore.class_name)
-                    # Reinitialize will recreate it
-                    vectorstore.initialize()
-                elif provider == 'pinecone':
-                    # Delete all vectors from all namespaces in Pinecone index
-                    print(f"  📋 Retrieving all namespaces from Pinecone...")
-                    
-                    # Get index statistics to find all namespaces
-                    index_stats = vectorstore.index.describe_index_stats()
-                    namespaces = list(index_stats.get('namespaces', {}).keys())
-                    
-                    print(f"  📁 Found {len(namespaces)} namespace(s): {namespaces if namespaces else 'None'}")
-                    
-                    # Delete vectors from each named namespace (skip empty string = default)
-                    for namespace in namespaces:
-                        if namespace == '':
-                            # Empty string means default namespace, skip it here
-                            continue
-                        print(f"  🗑️  Deleting all vectors from namespace '{namespace}'...")
-                        vectorstore.index.delete(delete_all=True, namespace=namespace)
-                    
-                    # Delete from the default namespace (no namespace parameter)
-                    print(f"  🗑️  Deleting all vectors from default namespace...")
-                    vectorstore.index.delete(delete_all=True)
-                    
-                    # Wait for eventual consistency
-                    print(f"  ⏳ Waiting 3 seconds for Pinecone deletion to propagate...")
-                    time.sleep(3)
-            
-            # Get stats after deletion
-            stats_after = vectorstore.get_stats()
-            count_after = stats_after.get('count', 0)
-            print(f"  After: {count_after} documents")
-            print(f"  ✅ {provider.upper()} cleaned successfully!")
-            
-        except Exception as e:
-            print(f"  ❌ Failed to clean {provider}: {str(e)}")
-            logger.error(
-                codes.VECTORSTORE_ERROR,
-                provider=provider,
-                error=str(e)
-            )
+        config = Config()
+        results[provider] = _cleanup_provider(provider, config, logger)
     
-    print("\n" + "=" * 70)
-    print("✅ CLEANUP COMPLETE FOR ALL DATABASES!")
-    print("=" * 70)
-    return 0
+    logger.info(codes.SCRIPT_COMPLETED, separator="=" * 70)
+    logger.info(codes.SCRIPT_COMPLETED, message="CLEANUP COMPLETE FOR ALL DATABASES")
+    logger.info(codes.SCRIPT_COMPLETED, separator="=" * 70)
+    
+    if all(results.values()):
+        logger.info(codes.SCRIPT_EXIT_SUCCESS)
+        return 0
+    
+    logger.error(codes.SCRIPT_EXIT_ERROR, message="Some cleanups failed")
+    return 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

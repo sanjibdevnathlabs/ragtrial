@@ -29,137 +29,193 @@ To switch providers:
 import sys
 from pathlib import Path
 
-# Add parent directory to path to import from root
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import constants
 from config import Config
 from embeddings import create_embeddings
-from vectorstore import create_vectorstore
-from logger import setup_logging, get_logger
+from logger import get_logger, setup_logging
 from trace import codes
+from vectorstore import create_vectorstore
 
-# Initialize logger early
 logger = get_logger(__name__)
 
-# Initialize configuration
 try:
     app_config = Config()
 except FileNotFoundError as e:
-    logger.error(codes.CONFIG_LOAD_FAILED, error=str(e), message="Configuration file not found")
+    logger.error(codes.CONFIG_LOAD_FAILED, error=str(e), message=constants.CONFIG_FILE_NOT_FOUND)
     sys.exit(1)
 
-# Setup logging
 setup_logging(app_config.logging, app_config.app)
 
 
-def main():
-    """Demonstrate provider-agnostic usage."""
+def _display_configuration():
+    """Display current provider configuration."""
+    logger.info(codes.CONFIG_LOADED, separator="=" * 60)
+    logger.info(codes.DEMO_STARTED, message="PROVIDER SWITCHING DEMONSTRATION")
+    logger.info(codes.CONFIG_LOADED, separator="=" * 60)
     
-    logger.info("=" * 60)
-    logger.info("PROVIDER SWITCHING DEMONSTRATION")
-    logger.info("=" * 60)
+    logger.info(codes.CONFIG_LOADED, section="Current Configuration:")
+    logger.info(
+        codes.CONFIG_LOADED,
+        embeddings_provider=app_config.embeddings.provider,
+        vectorstore_provider=app_config.vectorstore.provider,
+        embedding_dimension=app_config.embeddings.dimension
+    )
+
+
+def _create_embeddings_provider():
+    """Create and initialize embeddings provider."""
+    logger.info(codes.EMBEDDINGS_CREATING, message="Creating embeddings provider...")
     
-    # Show current configuration
-    logger.info(f"\n📊 Current Configuration:")
-    logger.info(f"   Embeddings Provider: {app_config.embeddings.provider}")
-    logger.info(f"   Vectorstore Provider: {app_config.vectorstore.provider}")
-    logger.info(f"   Embedding Dimension: {app_config.embeddings.dimension}")
-    
-    # Step 1: Create embeddings provider
-    logger.info(f"\n🔧 Creating embeddings provider...")
     try:
         embeddings = create_embeddings(app_config)
-        logger.info(f"   ✅ {app_config.embeddings.provider.upper()} embeddings initialized")
+        logger.info(
+            codes.EMBEDDINGS_INITIALIZED,
+            provider=app_config.embeddings.provider.upper(),
+            message="Embeddings initialized"
+        )
+        return embeddings
     except Exception as e:
-        logger.error(f"   ❌ Failed to initialize embeddings: {e}")
-        logger.info("\n💡 Make sure you have:")
-        logger.info(f"   1. Installed the required package for {app_config.embeddings.provider}")
-        logger.info("   2. Set the appropriate API key (if required)")
+        logger.error(
+            codes.EMBEDDINGS_ERROR,
+            provider=app_config.embeddings.provider,
+            error=str(e),
+            exc_info=True
+        )
+        logger.info(codes.DEMO_INSTRUCTIONS, message="Make sure you have:")
+        logger.info(codes.DEMO_INSTRUCTIONS, step=f"1. Installed package for {app_config.embeddings.provider}")
+        logger.info(codes.DEMO_INSTRUCTIONS, step="2. Set the appropriate API key (if required)")
         sys.exit(1)
+
+
+def _create_vectorstore_provider(embeddings):
+    """Create and initialize vectorstore provider."""
+    logger.info(codes.VECTORSTORE_CREATING, message="Creating vectorstore...")
     
-    # Step 2: Create vectorstore
-    logger.info(f"\n🔧 Creating vectorstore...")
     try:
         vectorstore = create_vectorstore(app_config, embeddings)
-        logger.info(f"   ✅ {app_config.vectorstore.provider.upper()} vectorstore initialized")
+        logger.info(
+            codes.VECTORSTORE_INITIALIZED,
+            provider=app_config.vectorstore.provider.upper(),
+            message="Vectorstore initialized"
+        )
+        return vectorstore
     except Exception as e:
-        logger.error(f"   ❌ Failed to initialize vectorstore: {e}")
-        logger.info("\n💡 Make sure you have:")
-        logger.info(f"   1. Installed the required package for {app_config.vectorstore.provider}")
-        logger.info("   2. Service is running (if self-hosted)")
-        logger.info("   3. API key is configured (if cloud service)")
+        logger.error(
+            codes.VECTORSTORE_ERROR,
+            provider=app_config.vectorstore.provider,
+            error=str(e),
+            exc_info=True
+        )
+        logger.info(codes.DEMO_INSTRUCTIONS, message="Make sure you have:")
+        logger.info(codes.DEMO_INSTRUCTIONS, step=f"1. Installed package for {app_config.vectorstore.provider}")
+        logger.info(codes.DEMO_INSTRUCTIONS, step="2. Service is running (if self-hosted)")
+        logger.info(codes.DEMO_INSTRUCTIONS, step="3. API key is configured (if cloud service)")
         sys.exit(1)
-    
-    # Step 3: Initialize collection
-    logger.info(f"\n🔧 Initializing collection...")
-    vectorstore.initialize()
-    
-    # Step 4: Test with sample data
-    logger.info(f"\n📝 Adding sample documents...")
-    sample_docs = [
+
+
+def _get_sample_documents():
+    """Get sample documents for demonstration."""
+    return [
         "Retrieval-Augmented Generation (RAG) combines retrieval with generation for better LLM responses.",
         "Vector databases enable efficient similarity search for AI applications.",
         f"{app_config.vectorstore.provider.title()} is a powerful vector database solution.",
         f"{app_config.embeddings.provider.title()} provides high-quality embeddings for text.",
         "The ORM-like abstraction allows switching providers with just config changes."
     ]
-    
-    sample_metadata = [
+
+
+def _get_sample_metadata():
+    """Get sample metadata for demonstration."""
+    return [
         {"topic": "RAG", "category": "concepts"},
         {"topic": "databases", "category": "infrastructure"},
         {"topic": "databases", "category": "providers"},
         {"topic": "embeddings", "category": "providers"},
         {"topic": "architecture", "category": "design"}
     ]
+
+
+def _add_sample_data(vectorstore):
+    """Add sample documents to vectorstore."""
+    logger.info(codes.VECTORSTORE_DOCUMENTS_ADDING, message="Adding sample documents...")
+    
+    sample_docs = _get_sample_documents()
+    sample_metadata = _get_sample_metadata()
     
     try:
-        vectorstore.add_documents(
-            texts=sample_docs,
-            metadatas=sample_metadata
-        )
-        logger.info(f"   ✅ Added {len(sample_docs)} documents")
+        vectorstore.add_documents(texts=sample_docs, metadatas=sample_metadata)
+        logger.info(codes.VECTORSTORE_DOCUMENTS_ADDED, count=len(sample_docs))
     except Exception as e:
-        logger.error(f"   ❌ Failed to add documents: {e}")
+        logger.error(codes.VECTORSTORE_ERROR, error=str(e), exc_info=True)
         sys.exit(1)
+
+
+def _test_query(vectorstore):
+    """Test vectorstore with sample query."""
+    logger.info(codes.VECTORSTORE_QUERYING, message="Querying vectorstore...")
     
-    # Step 5: Query
-    logger.info(f"\n🔍 Querying vectorstore...")
     query = "How does the architecture support provider switching?"
     
     try:
         results = vectorstore.query(query, n_results=3)
-        logger.info(f"   ✅ Found {len(results)} results")
+        logger.info(codes.VECTORSTORE_QUERY_RESULTS, results_count=len(results))
+        logger.info(codes.VECTORSTORE_QUERY_RESULTS, query=query)
         
-        logger.info(f"\n📊 Query Results for: '{query}'")
         for i, result in enumerate(results, 1):
-            logger.info(f"\n   Result {i}:")
-            logger.info(f"   Text: {result['text'][:100]}...")
-            logger.info(f"   Category: {result['metadata'].get('category', 'N/A')}")
-            logger.info(f"   Distance: {result['distance']:.4f}")
+            logger.info(
+                codes.VECTORSTORE_QUERY_RESULTS,
+                result_num=i,
+                text=result[constants.RESULT_KEY_TEXT][:100] + "...",
+                category=result[constants.RESULT_KEY_METADATA].get('category', 'N/A'),
+                distance=f"{result[constants.RESULT_KEY_DISTANCE]:.4f}"
+            )
     except Exception as e:
-        logger.error(f"   ❌ Query failed: {e}")
+        logger.error(codes.VECTORSTORE_ERROR, error=str(e), exc_info=True)
         sys.exit(1)
-    
-    # Step 6: Statistics
-    logger.info(f"\n📈 Vectorstore Statistics:")
+
+
+def _display_statistics(vectorstore):
+    """Display vectorstore statistics."""
+    logger.info(codes.VECTORSTORE_STATS, message="Vectorstore Statistics:")
     stats = vectorstore.get_stats()
     for key, value in stats.items():
-        logger.info(f"   {key}: {value}")
+        logger.info(codes.VECTORSTORE_STATS, stat_key=key, stat_value=value)
+
+
+def _display_summary():
+    """Display demonstration summary."""
+    logger.info(codes.DEMO_COMPLETED, separator="=" * 60)
+    logger.info(codes.DEMO_COMPLETED, message="✅ DEMONSTRATION COMPLETE")
+    logger.info(codes.DEMO_COMPLETED, separator="=" * 60)
     
-    # Summary
-    logger.info("\n" + "=" * 60)
-    logger.info("✅ DEMONSTRATION COMPLETE")
-    logger.info("=" * 60)
-    logger.info("\n💡 To switch providers:")
-    logger.info("   1. Edit environment/default.toml")
-    logger.info("   2. Change [embeddings] provider = 'openai' (or other)")
-    logger.info("   3. Change [vectorstore] provider = 'pinecone' (or other)")
-    logger.info("   4. Rerun this script - NO CODE CHANGES NEEDED!")
-    logger.info("\n🎯 The same application code works with:")
-    logger.info("   Embeddings: google, openai, huggingface, cohere, anthropic")
-    logger.info("   Vectorstores: chroma, pinecone, qdrant, weaviate")
+    logger.info(codes.DEMO_INSTRUCTIONS, message="To switch providers:")
+    logger.info(codes.DEMO_INSTRUCTIONS, step="1. Edit environment/default.toml")
+    logger.info(codes.DEMO_INSTRUCTIONS, step="2. Change [embeddings] provider = 'openai' (or other)")
+    logger.info(codes.DEMO_INSTRUCTIONS, step="3. Change [vectorstore] provider = 'pinecone' (or other)")
+    logger.info(codes.DEMO_INSTRUCTIONS, step="4. Rerun this script - NO CODE CHANGES NEEDED!")
+    
+    logger.info(codes.DEMO_INSTRUCTIONS, message="The same application code works with:")
+    logger.info(codes.DEMO_INSTRUCTIONS, providers="Embeddings: google, openai, huggingface, cohere, anthropic")
+    logger.info(codes.DEMO_INSTRUCTIONS, providers="Vectorstores: chroma, pinecone, qdrant, weaviate")
+
+
+def main():
+    """Demonstrate provider-agnostic usage."""
+    _display_configuration()
+    
+    embeddings = _create_embeddings_provider()
+    vectorstore = _create_vectorstore_provider(embeddings)
+    
+    logger.info(codes.VECTORSTORE_INITIALIZING, message="Initializing collection...")
+    vectorstore.initialize()
+    
+    _add_sample_data(vectorstore)
+    _test_query(vectorstore)
+    _display_statistics(vectorstore)
+    _display_summary()
 
 
 if __name__ == "__main__":
     main()
-

@@ -5,6 +5,7 @@ The factory automatically instantiates the correct vectorstore implementation
 based on configuration, enabling zero-code-change provider switching.
 """
 
+import importlib
 from typing import TYPE_CHECKING
 
 from vectorstore.base import VectorStoreProtocol
@@ -18,6 +19,14 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+PROVIDER_MAP = {
+    "chroma": ("vectorstore.implementations.chroma", "ChromaVectorStore"),
+    "pinecone": ("vectorstore.implementations.pinecone", "PineconeVectorStore"),
+    "qdrant": ("vectorstore.implementations.qdrant", "QdrantVectorStore"),
+    "weaviate": ("vectorstore.implementations.weaviate", "WeaviateVectorStore"),
+}
+
+
 def create_vectorstore(
     config: "Config",
     embeddings: EmbeddingsProtocol
@@ -25,9 +34,9 @@ def create_vectorstore(
     """
     Create a vector store provider based on configuration.
     
-    This factory function reads config.vectorstore.provider and instantiates
-    the appropriate implementation. To switch providers, just change the
-    config - no code changes needed!
+    Uses a provider mapping dictionary for clean, maintainable code that follows
+    the Open/Closed Principle. To add a new provider, simply add an entry to
+    PROVIDER_MAP.
     
     Args:
         config: Application configuration object
@@ -40,43 +49,21 @@ def create_vectorstore(
         ValueError: If provider is unknown or not supported
         
     Example:
-        # In config: provider = "chroma"
         vectorstore = create_vectorstore(config, embeddings)
-        # Returns ChromaVectorStore instance
-        
-        # Change config: provider = "pinecone"
-        vectorstore = create_vectorstore(config, embeddings)
-        # Returns PineconeVectorStore instance - same code!
+        # Automatically instantiates correct provider from config
     """
     provider = config.vectorstore.provider.lower()
     
-    logger.info(
-        codes.VECTORSTORE_FACTORY_CREATING,
-        provider=provider
-    )
+    logger.info(codes.VECTORSTORE_FACTORY_CREATING, provider=provider)
     
-    if provider == "chroma":
-        from vectorstore.implementations.chroma import ChromaVectorStore
-        return ChromaVectorStore(config, embeddings)
-    
-    elif provider == "pinecone":
-        from vectorstore.implementations.pinecone import PineconeVectorStore
-        return PineconeVectorStore(config, embeddings)
-    
-    elif provider == "qdrant":
-        from vectorstore.implementations.qdrant import QdrantVectorStore
-        return QdrantVectorStore(config, embeddings)
-    
-    elif provider == "weaviate":
-        from vectorstore.implementations.weaviate import WeaviateVectorStore
-        return WeaviateVectorStore(config, embeddings)
-    
-    else:
+    if provider not in PROVIDER_MAP:
         error_msg = f"{codes.MSG_VECTORSTORE_PROVIDER_UNKNOWN}: {provider}"
-        logger.error(
-            codes.VECTORSTORE_PROVIDER_UNKNOWN,
-            provider=provider,
-            message=error_msg
-        )
+        logger.error(codes.VECTORSTORE_PROVIDER_UNKNOWN, provider=provider, message=error_msg)
         raise ValueError(error_msg)
+    
+    module_path, class_name = PROVIDER_MAP[provider]
+    module = importlib.import_module(module_path)
+    provider_class = getattr(module, class_name)
+    
+    return provider_class(config, embeddings)
 

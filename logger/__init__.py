@@ -1,24 +1,22 @@
 """
 Logging package for structured JSON logging using structlog.
 
-This package provides a production-ready logging setup with:
-- JSON output format for easy parsing by log aggregation tools
-- ISO 8601 timestamps
-- Automatic exception formatting
-- Context preservation
+Provides production-ready logging with JSON output, ISO 8601 timestamps,
+and security sanitization for sensitive data.
 
 Usage:
-    from logger import setup_logging, get_logger
+    from logger import setup_logging, get_logger, sanitize_log_data
     
-    # Initialize logging (call once at application startup)
-    setup_logging()
-    
-    # Get logger instance
+    setup_logging(logging_config, app_config)
     logger = get_logger(__name__)
-    logger.info("message", key="value")
+    
+    # Sanitize sensitive data before logging
+    safe_data = sanitize_log_data({"api_key": "secret", "user": "john"})
+    logger.info("user_created", **safe_data)
 """
 
 from logger.setup import get_logger, setup_logging
+from logger.security import sanitize_log_data, mask_api_key
 
-__all__ = ["setup_logging", "get_logger"]
+__all__ = ["setup_logging", "get_logger", "sanitize_log_data", "mask_api_key"]
 

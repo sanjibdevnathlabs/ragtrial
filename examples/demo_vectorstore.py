@@ -13,112 +13,124 @@ the config file - no code changes needed!
 import sys
 from pathlib import Path
 
-# Add parent directory to path to import from root
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import constants
 from config import Config
 from embeddings import create_embeddings
-from vectorstore import create_vectorstore
-from logger import setup_logging, get_logger
+from logger import get_logger, setup_logging
 from trace import codes
+from vectorstore import create_vectorstore
 
-# Initialize logger early
 logger = get_logger(__name__)
 
-# Initialize configuration
 try:
     app_config = Config()
 except FileNotFoundError as e:
-    logger.error(codes.CONFIG_LOAD_FAILED, error=str(e), message="Configuration file not found")
+    logger.error(codes.CONFIG_LOAD_FAILED, error=str(e), message=constants.CONFIG_FILE_NOT_FOUND)
     sys.exit(1)
 
-# Setup logging
 setup_logging(app_config.logging, app_config.app)
 
-def main():
-    """Demonstrate vectorstore usage."""
-    
-    logger.info("=== Vectorstore Demo ===")
-    
-    # Step 1: Create embeddings provider (automatically picks from config)
-    logger.info(f"Creating embeddings provider: {app_config.embeddings.provider}")
-    embeddings = create_embeddings(app_config)
-    
-    # Step 2: Create vectorstore (automatically picks from config)
-    logger.info(f"Creating vectorstore: {app_config.vectorstore.provider}")
-    vectorstore = create_vectorstore(app_config, embeddings)
-    
-    # Step 3: Initialize (create/get collection)
-    logger.info("Initializing vectorstore...")
-    vectorstore.initialize()
-    
-    # Step 4: Add sample documents
-    logger.info("Adding sample documents...")
-    sample_docs = [
+
+def _get_sample_documents():
+    """Return sample documents for demo."""
+    return [
         "RAG stands for Retrieval-Augmented Generation, a technique for improving LLM responses.",
         "Vector databases store embeddings for efficient similarity search.",
         "ChromaDB is a popular open-source vector database for AI applications.",
         "LangChain provides abstractions for building LLM applications.",
         "Python is a great language for data science and machine learning."
     ]
-    
-    sample_metadata = [
+
+
+def _get_sample_metadata():
+    """Return sample metadata for demo."""
+    return [
         {"source": "rag_intro.txt", "topic": "RAG"},
         {"source": "vector_db.txt", "topic": "databases"},
         {"source": "chroma.txt", "topic": "databases"},
         {"source": "langchain.txt", "topic": "frameworks"},
         {"source": "python.txt", "topic": "programming"}
     ]
-    
-    vectorstore.add_documents(
-        texts=sample_docs,
-        metadatas=sample_metadata
-    )
-    
-    # Step 5: Get stats
-    stats = vectorstore.get_stats()
-    logger.info(f"Vectorstore stats: {stats}")
-    
-    # Step 6: Query for similar documents
-    logger.info("\n=== Querying ===")
+
+
+def _demonstrate_basic_query(vectorstore):
+    """Demonstrate basic similarity search."""
+    logger.info(codes.DEMO_QUERY_STARTED, separator="=== Querying ===")
     
     query = "What is RAG and how does it work?"
-    logger.info(f"Query: {query}")
+    logger.info(codes.VECTORSTORE_QUERYING, query=query)
     
     results = vectorstore.query(query, n_results=3)
     
-    logger.info(f"\nFound {len(results)} results:")
+    logger.info(codes.VECTORSTORE_QUERY_RESULTS, results_count=len(results))
     for i, result in enumerate(results, 1):
-        logger.info(f"\n--- Result {i} ---")
-        logger.info(f"Text: {result['text']}")
-        logger.info(f"Metadata: {result['metadata']}")
-        logger.info(f"Distance: {result['distance']:.4f}")
+        logger.info(
+            codes.VECTORSTORE_QUERY_RESULTS,
+            result_num=i,
+            text=result[constants.RESULT_KEY_TEXT],
+            metadata=result[constants.RESULT_KEY_METADATA],
+            distance=f"{result[constants.RESULT_KEY_DISTANCE]:.4f}"
+        )
+
+
+def _demonstrate_filtered_query(vectorstore):
+    """Demonstrate metadata filtered search."""
+    logger.info(codes.DEMO_QUERY_STARTED, separator="=== Querying with filter ===")
     
-    # Step 7: Query with metadata filter
-    logger.info("\n=== Querying with filter ===")
-    query2 = "Tell me about databases"
-    logger.info(f"Query: {query2}")
-    logger.info(f"Filter: topic = 'databases'")
+    query = "Tell me about databases"
+    filter_topic = "databases"
     
-    results2 = vectorstore.query(
-        query2,
+    logger.info(codes.VECTORSTORE_QUERYING, query=query, filter=f"topic = '{filter_topic}'")
+    
+    results = vectorstore.query(
+        query,
         n_results=2,
-        where={"topic": "databases"}
+        where={"topic": filter_topic}
     )
     
-    logger.info(f"\nFound {len(results2)} results:")
-    for i, result in enumerate(results2, 1):
-        logger.info(f"\n--- Result {i} ---")
-        logger.info(f"Text: {result['text']}")
-        logger.info(f"Metadata: {result['metadata']}")
+    logger.info(codes.VECTORSTORE_QUERY_RESULTS, results_count=len(results))
+    for i, result in enumerate(results, 1):
+        logger.info(
+            codes.VECTORSTORE_QUERY_RESULTS,
+            result_num=i,
+            text=result[constants.RESULT_KEY_TEXT],
+            metadata=result[constants.RESULT_KEY_METADATA]
+        )
+
+
+def main():
+    """Demonstrate vectorstore usage."""
+    logger.info(codes.DEMO_STARTED, separator="=== Vectorstore Demo ===")
     
-    logger.info("\n=== Demo Complete ===")
-    logger.info("\nTo switch providers:")
-    logger.info("1. Edit environment/default.toml")
-    logger.info("2. Change [vectorstore] provider = 'pinecone'")
-    logger.info("3. Run this script again - NO CODE CHANGES!")
+    logger.info(codes.EMBEDDINGS_CREATING, provider=app_config.embeddings.provider)
+    embeddings = create_embeddings(app_config)
+    
+    logger.info(codes.VECTORSTORE_CREATING, provider=app_config.vectorstore.provider)
+    vectorstore = create_vectorstore(app_config, embeddings)
+    
+    logger.info(codes.VECTORSTORE_INITIALIZING)
+    vectorstore.initialize()
+    
+    logger.info(codes.VECTORSTORE_DOCUMENTS_ADDING)
+    vectorstore.add_documents(
+        texts=_get_sample_documents(),
+        metadatas=_get_sample_metadata()
+    )
+    
+    stats = vectorstore.get_stats()
+    logger.info(codes.VECTORSTORE_STATS, stats=stats)
+    
+    _demonstrate_basic_query(vectorstore)
+    _demonstrate_filtered_query(vectorstore)
+    
+    logger.info(codes.DEMO_COMPLETED, separator="=== Demo Complete ===")
+    logger.info(codes.DEMO_INSTRUCTIONS, message="To switch providers:")
+    logger.info(codes.DEMO_INSTRUCTIONS, step="1. Edit environment/default.toml")
+    logger.info(codes.DEMO_INSTRUCTIONS, step="2. Change [vectorstore] provider = 'pinecone'")
+    logger.info(codes.DEMO_INSTRUCTIONS, step="3. Run this script again - NO CODE CHANGES!")
 
 
 if __name__ == "__main__":
     main()
-

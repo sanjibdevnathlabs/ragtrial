@@ -7,6 +7,7 @@ Uses Qdrant's open-source vector search engine.
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import uuid
 
+import constants
 from embeddings.base import EmbeddingsProtocol
 from logger import get_logger
 from trace import codes
@@ -49,9 +50,8 @@ class QdrantVectorStore:
             self.VectorParams = VectorParams
             self.PointStruct = PointStruct
         except ImportError:
-            error_msg = "qdrant-client package not installed. Run: pip install qdrant-client"
-            logger.error(codes.VECTORSTORE_ERROR, message=error_msg)
-            raise ImportError(error_msg)
+            logger.error(codes.VECTORSTORE_ERROR, message=constants.ERROR_QDRANT_NOT_INSTALLED)
+            raise ImportError(constants.ERROR_QDRANT_NOT_INSTALLED)
         
         self.config = config
         self.embeddings = embeddings
@@ -60,24 +60,30 @@ class QdrantVectorStore:
         # Get Qdrant-specific settings
         qdrant_config = config.vectorstore.qdrant
         
-        # Initialize Qdrant client
-        # Check if API key is set and not empty
         has_api_key = qdrant_config.api_key and qdrant_config.api_key.strip()
         
-        if has_api_key:
-            # Cloud or authenticated instance
-            self.client = self.QdrantClient(
-                url=f"http://{qdrant_config.host}:{qdrant_config.port}",
-                api_key=qdrant_config.api_key,
-                prefer_grpc=qdrant_config.prefer_grpc
-            )
-        else:
-            # Local instance without authentication
+        if not has_api_key:
             self.client = self.QdrantClient(
                 host=qdrant_config.host,
                 port=qdrant_config.port,
                 prefer_grpc=qdrant_config.prefer_grpc
             )
+            self.distance = qdrant_config.distance
+            self.vector_size = qdrant_config.vector_size
+            
+            logger.info(
+                codes.VECTORSTORE_INITIALIZED,
+                provider="qdrant",
+                collection_name=self.collection_name,
+                message=codes.MSG_VECTORSTORE_INITIALIZED
+            )
+            return
+        
+        self.client = self.QdrantClient(
+            url=f"http://{qdrant_config.host}:{qdrant_config.port}",
+            api_key=qdrant_config.api_key,
+            prefer_grpc=qdrant_config.prefer_grpc
+        )
         
         # Map distance function
         distance_map = {
@@ -104,24 +110,15 @@ class QdrantVectorStore:
         Initialize collection - create if doesn't exist, get if exists.
         """
         try:
-            # Check if collection exists
             collections = self.client.get_collections().collections
             collection_names = [col.name for col in collections]
             
-            if self.collection_name in collection_names:
-                logger.info(
-                    codes.VECTORSTORE_COLLECTION_EXISTS,
-                    collection_name=self.collection_name,
-                    message=codes.MSG_VECTORSTORE_COLLECTION_EXISTS
-                )
-            else:
-                # Create collection
+            if self.collection_name not in collection_names:
                 logger.info(
                     codes.VECTORSTORE_COLLECTION_CREATING,
                     collection_name=self.collection_name
                 )
                 
-                # Get dimension from embeddings
                 dimension = self.embeddings.get_dimension()
                 
                 self.client.create_collection(
@@ -138,10 +135,17 @@ class QdrantVectorStore:
                     message=codes.MSG_VECTORSTORE_COLLECTION_CREATED
                 )
             
+            if self.collection_name in collection_names:
+                logger.info(
+                    codes.VECTORSTORE_COLLECTION_EXISTS,
+                    collection_name=self.collection_name,
+                    message=codes.MSG_VECTORSTORE_COLLECTION_EXISTS
+                )
+            
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="initialize",
+                operation=constants.OPERATION_INITIALIZE,
                 error=str(e),
                 exc_info=True
             )
@@ -166,29 +170,16 @@ class QdrantVectorStore:
             count=len(texts)
         )
         
-        # Generate IDs if not provided
-        if ids is None:
-            ids = [str(uuid.uuid4()) for _ in range(len(texts))]
-        
-        # Generate default metadata if not provided
-        if metadatas is None:
-            metadatas = [{} for _ in range(len(texts))]
+        ids = ids or [str(uuid.uuid4()) for _ in range(len(texts))]
+        metadatas = metadatas or [{} for _ in range(len(texts))]
         
         try:
-            # Generate embeddings for documents
             embeddings = self.embeddings.embed_documents(texts)
             
-            # Prepare points for Qdrant
             points = []
             for id, embedding, text, metadata in zip(ids, embeddings, texts, metadatas):
-                # Add text to payload for retrieval
-                payload = {**metadata, "text": text}
-                # Qdrant requires UUID or integer IDs, convert string IDs to UUID
-                if isinstance(id, str):
-                    # Generate UUID from string ID for consistency
-                    id_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, id))
-                else:
-                    id_uuid = id
+                payload = {**metadata, constants.QDRANT_PAYLOAD_TEXT: text}
+                id_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, id)) if isinstance(id, str) else id
                 points.append(
                     self.PointStruct(
                         id=id_uuid,
@@ -197,7 +188,6 @@ class QdrantVectorStore:
                     )
                 )
             
-            # Upload to Qdrant
             self.client.upsert(
                 collection_name=self.collection_name,
                 points=points
@@ -212,7 +202,7 @@ class QdrantVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="add_documents",
+                operation=constants.OPERATION_ADD_DOCUMENTS,
                 error=str(e),
                 exc_info=True
             )
@@ -243,10 +233,8 @@ class QdrantVectorStore:
         )
         
         try:
-            # Generate embedding for query
             query_embedding = self.embeddings.embed_query(query_text)
             
-            # Query Qdrant
             results = self.client.search(
                 collection_name=self.collection_name,
                 query_vector=query_embedding,
@@ -254,16 +242,15 @@ class QdrantVectorStore:
                 query_filter=where
             )
             
-            # Format results
             formatted_results = []
             for hit in results:
                 payload = hit.payload or {}
-                text = payload.pop("text", "")
+                text = payload.pop(constants.QDRANT_PAYLOAD_TEXT, "")
                 formatted_results.append({
-                    "id": str(hit.id),
-                    "text": text,
-                    "metadata": payload,
-                    "distance": hit.score
+                    constants.RESULT_KEY_ID: str(hit.id),
+                    constants.RESULT_KEY_TEXT: text,
+                    constants.RESULT_KEY_METADATA: payload,
+                    constants.RESULT_KEY_DISTANCE: hit.score
                 })
             
             logger.info(
@@ -276,7 +263,7 @@ class QdrantVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="query",
+                operation=constants.OPERATION_QUERY,
                 error=str(e),
                 exc_info=True
             )
@@ -292,13 +279,10 @@ class QdrantVectorStore:
         logger.info(codes.VECTORSTORE_DELETING, count=len(ids))
         
         try:
-            # Convert string IDs to UUIDs (same as in add_documents)
-            uuid_ids = []
-            for id in ids:
-                if isinstance(id, str):
-                    uuid_ids.append(str(uuid.uuid5(uuid.NAMESPACE_DNS, id)))
-                else:
-                    uuid_ids.append(id)
+            uuid_ids = [
+                str(uuid.uuid5(uuid.NAMESPACE_DNS, id)) if isinstance(id, str) else id
+                for id in ids
+            ]
             
             self.client.delete(
                 collection_name=self.collection_name,
@@ -313,7 +297,7 @@ class QdrantVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="delete",
+                operation=constants.OPERATION_DELETE,
                 error=str(e),
                 exc_info=True
             )
@@ -330,11 +314,11 @@ class QdrantVectorStore:
             info = self.client.get_collection(self.collection_name)
             
             stats = {
-                "collection_name": self.collection_name,
-                "count": info.points_count,
-                "vectors_count": info.vectors_count,
-                "indexed_vectors_count": info.indexed_vectors_count,
-                "initialized": True
+                constants.STATS_KEY_COLLECTION_NAME: self.collection_name,
+                constants.STATS_KEY_COUNT: info.points_count,
+                constants.STATS_KEY_VECTORS_COUNT: info.vectors_count,
+                constants.STATS_KEY_INDEXED_VECTORS_COUNT: info.indexed_vectors_count,
+                constants.STATS_KEY_INITIALIZED: True
             }
             
             logger.debug(codes.VECTORSTORE_STATS, **stats)
@@ -344,14 +328,14 @@ class QdrantVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="get_stats",
+                operation=constants.OPERATION_GET_STATS,
                 error=str(e),
                 exc_info=True
             )
             return {
-                "collection_name": self.collection_name,
-                "count": 0,
-                "initialized": False
+                constants.STATS_KEY_COLLECTION_NAME: self.collection_name,
+                constants.STATS_KEY_COUNT: 0,
+                constants.STATS_KEY_INITIALIZED: False
             }
     
     def clear(self) -> None:
@@ -363,14 +347,12 @@ class QdrantVectorStore:
         logger.warning(
             codes.VECTORSTORE_DELETING,
             collection_name=self.collection_name,
-            operation="CLEAR ALL"
+            operation=constants.OPERATION_CLEAR_ALL
         )
         
         try:
-            # Delete collection and recreate it
             self.client.delete_collection(self.collection_name)
             
-            # Recreate collection
             dimension = self.embeddings.get_dimension()
             self.client.create_collection(
                 collection_name=self.collection_name,
@@ -383,13 +365,13 @@ class QdrantVectorStore:
             logger.info(
                 codes.VECTORSTORE_DELETED,
                 collection_name=self.collection_name,
-                operation="CLEAR ALL"
+                operation=constants.OPERATION_CLEAR_ALL
             )
             
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="clear",
+                operation=constants.OPERATION_CLEAR,
                 error=str(e),
                 exc_info=True
             )

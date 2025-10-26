@@ -6,6 +6,7 @@ Uses sentence-transformers models for local embedding generation.
 
 from typing import List, TYPE_CHECKING
 
+import constants
 from logger import get_logger
 from trace import codes
 
@@ -41,18 +42,16 @@ class HuggingFaceEmbeddings:
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError:
-            error_msg = "sentence-transformers package not installed. Run: pip install sentence-transformers"
-            logger.error(codes.EMBEDDINGS_ERROR, message=error_msg)
-            raise ImportError(error_msg)
+            logger.error(codes.EMBEDDINGS_ERROR, message=constants.ERROR_SENTENCE_TRANSFORMERS_NOT_INSTALLED)
+            raise ImportError(constants.ERROR_SENTENCE_TRANSFORMERS_NOT_INSTALLED)
         
         self.config = config
         self.model_name = config.embeddings.huggingface.model_name
         self.cache_folder = config.embeddings.huggingface.cache_folder
         self.device = config.embeddings.huggingface.device
         
-        # Load model
         logger.info(
-            "loading_model",
+            codes.EMBEDDINGS_MODEL_LOADING,
             model_name=self.model_name,
             device=self.device
         )
@@ -63,7 +62,6 @@ class HuggingFaceEmbeddings:
             device=self.device
         )
         
-        # Get dimension from model
         self.dimension = self.model.get_sentence_embedding_dimension()
         
         logger.info(
@@ -91,14 +89,12 @@ class HuggingFaceEmbeddings:
         )
         
         try:
-            # Generate embeddings
             embeddings = self.model.encode(
                 texts,
                 convert_to_numpy=False,
                 show_progress_bar=False
             )
             
-            # Convert to list of lists
             embeddings_list = [emb.tolist() for emb in embeddings]
             
             logger.info(

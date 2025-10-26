@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING
 import json
 import uuid
 
+import constants
 from embeddings.base import EmbeddingsProtocol
 from logger import get_logger
 from trace import codes
@@ -45,15 +46,17 @@ class WeaviateVectorStore:
         try:
             import weaviate
             from weaviate.classes.config import Configure, VectorDistances, Property, DataType
+            from weaviate.config import AdditionalConfig, Timeout
             self.weaviate = weaviate
             self.Configure = Configure
             self.VectorDistances = VectorDistances
             self.Property = Property
             self.DataType = DataType
+            self.Timeout = Timeout
+            self.AdditionalConfig = AdditionalConfig
         except ImportError:
-            error_msg = "weaviate-client package not installed. Run: pip install weaviate-client"
-            logger.error(codes.VECTORSTORE_ERROR, message=error_msg)
-            raise ImportError(error_msg)
+            logger.error(codes.VECTORSTORE_ERROR, message=constants.ERROR_WEAVIATE_NOT_INSTALLED)
+            raise ImportError(constants.ERROR_WEAVIATE_NOT_INSTALLED)
         
         self.config = config
         self.embeddings = embeddings
@@ -62,52 +65,6 @@ class WeaviateVectorStore:
         weaviate_config = config.vectorstore.weaviate
         self.class_name = weaviate_config.class_name
         
-        # Initialize Weaviate client
-        # Check if API key is set and not empty
-        has_api_key = weaviate_config.api_key and weaviate_config.api_key.strip()
-        
-        if has_api_key:
-            # Cloud or authenticated instance
-            # Extract host and port from URL
-            url_parts = weaviate_config.url.replace("http://", "").replace("https://", "")
-            if ":" in url_parts:
-                host, port = url_parts.split(":", 1)
-                http_port = int(port)
-            else:
-                host = url_parts
-                # Use configured default ports based on protocol
-                is_secure = "https" in weaviate_config.url
-                http_port = weaviate_config.default_https_port if is_secure else weaviate_config.default_http_port
-            
-            # Use different ports for HTTP and gRPC (cannot be the same on same host)
-            is_secure = "https" in weaviate_config.url
-            self.client = self.weaviate.connect_to_custom(
-                http_host=host,
-                http_port=http_port,
-                http_secure=is_secure,
-                grpc_host=host,
-                grpc_port=weaviate_config.grpc_port,
-                grpc_secure=is_secure,
-                auth_credentials=self.weaviate.auth.AuthApiKey(weaviate_config.api_key)
-            )
-        else:
-            # Local instance without authentication
-            # Extract host and port from URL
-            url_clean = weaviate_config.url.replace("http://", "").replace("https://", "")
-            if ":" in url_clean:
-                host, port_str = url_clean.split(":", 1)
-                port = int(port_str)
-            else:
-                host = url_clean
-                # Use configured default HTTP port
-                port = weaviate_config.default_http_port
-            
-            self.client = self.weaviate.connect_to_local(
-                host=host,
-                port=port
-            )
-        
-        # Map distance function
         distance_map = {
             "cosine": self.VectorDistances.COSINE,
             "l2-squared": self.VectorDistances.L2_SQUARED,
@@ -115,10 +72,118 @@ class WeaviateVectorStore:
             "hamming": self.VectorDistances.HAMMING,
             "manhattan": self.VectorDistances.MANHATTAN
         }
+        
+        has_api_key = weaviate_config.api_key and weaviate_config.api_key.strip()
+        
+        if not has_api_key:
+            url_clean = weaviate_config.url.replace(constants.URL_HTTP_PREFIX, "").replace(constants.URL_HTTPS_PREFIX, "")
+            
+            if constants.URL_COLON not in url_clean:
+                host = url_clean
+                port = weaviate_config.default_http_port
+                
+                self.client = self.weaviate.connect_to_local(
+                    host=host,
+                    port=port,
+                    additional_config=self.AdditionalConfig(
+                        timeout=self.Timeout(query=30, insert=60, init=10)
+                    )
+                )
+                
+                self.distance = distance_map.get(
+                    weaviate_config.distance.lower(),
+                    self.VectorDistances.COSINE
+                )
+                self.collection = None
+                
+                logger.info(
+                    codes.VECTORSTORE_INITIALIZED,
+                    provider="weaviate",
+                    class_name=self.class_name,
+                    message=codes.MSG_VECTORSTORE_INITIALIZED
+                )
+                return
+            
+            host, port_str = url_clean.split(constants.URL_COLON, 1)
+            port = int(port_str)
+            
+            self.client = self.weaviate.connect_to_local(
+                host=host,
+                port=port,
+                additional_config=self.AdditionalConfig(
+                    timeout=self.Timeout(query=30, insert=60, init=10)
+                )
+            )
+            
+            self.distance = distance_map.get(
+                weaviate_config.distance.lower(),
+                self.VectorDistances.COSINE
+            )
+            self.collection = None
+            
+            logger.info(
+                codes.VECTORSTORE_INITIALIZED,
+                provider="weaviate",
+                class_name=self.class_name,
+                message=codes.MSG_VECTORSTORE_INITIALIZED
+            )
+            return
+        
+        url_parts = weaviate_config.url.replace(constants.URL_HTTP_PREFIX, "").replace(constants.URL_HTTPS_PREFIX, "")
+        is_secure = constants.URL_HTTPS in weaviate_config.url
+        
+        if constants.URL_COLON not in url_parts:
+            host = url_parts
+            http_port = weaviate_config.default_https_port if is_secure else weaviate_config.default_http_port
+        
+            self.client = self.weaviate.connect_to_custom(
+                http_host=host,
+                http_port=http_port,
+                http_secure=is_secure,
+                grpc_host=host,
+                grpc_port=weaviate_config.grpc_port,
+                grpc_secure=is_secure,
+                auth_credentials=self.weaviate.auth.AuthApiKey(weaviate_config.api_key),
+                additional_config=self.AdditionalConfig(
+                    timeout=self.Timeout(query=30, insert=60, init=10)
+                )
+            )
+            
+            self.distance = distance_map.get(
+                weaviate_config.distance.lower(),
+                self.VectorDistances.COSINE
+            )
+            self.collection = None
+            
+            logger.info(
+                codes.VECTORSTORE_INITIALIZED,
+                provider="weaviate",
+                class_name=self.class_name,
+                message=codes.MSG_VECTORSTORE_INITIALIZED
+            )
+            return
+        
+        host, port = url_parts.split(constants.URL_COLON, 1)
+        http_port = int(port)
+        
+        self.client = self.weaviate.connect_to_custom(
+            http_host=host,
+            http_port=http_port,
+            http_secure=is_secure,
+            grpc_host=host,
+            grpc_port=weaviate_config.grpc_port,
+            grpc_secure=is_secure,
+            auth_credentials=self.weaviate.auth.AuthApiKey(weaviate_config.api_key),
+            additional_config=self.AdditionalConfig(
+                timeout=self.Timeout(query=30, insert=60, init=10)
+            )
+        )
+        
         self.distance = distance_map.get(
             weaviate_config.distance.lower(),
             self.VectorDistances.COSINE
         )
+        self.collection = None
         
         logger.info(
             codes.VECTORSTORE_INITIALIZED,
@@ -133,42 +198,29 @@ class WeaviateVectorStore:
         Initialize class - create if doesn't exist, get if exists.
         """
         try:
-            # Check if class exists
-            if self.client.collections.exists(self.class_name):
-                logger.info(
-                    codes.VECTORSTORE_COLLECTION_EXISTS,
-                    class_name=self.class_name,
-                    message=codes.MSG_VECTORSTORE_COLLECTION_EXISTS
-                )
-                # Get existing collection
-                self.collection = self.client.collections.get(self.class_name)
-            else:
-                # Create class
+            if not self.client.collections.exists(self.class_name):
                 logger.info(
                     codes.VECTORSTORE_COLLECTION_CREATING,
                     class_name=self.class_name
                 )
                 
-                # Get dimension from embeddings
                 dimension = self.embeddings.get_dimension()
                 
-                # Use Weaviate v4 API with proper Property classes
-                # Note: Store metadata as TEXT (JSON string) instead of OBJECT
-                # because OBJECT requires nested property definitions
                 self.collection = self.client.collections.create(
                     name=self.class_name,
-                    vectorizer_config=self.Configure.Vectorizer.none(),
-                    vector_index_config=self.Configure.VectorIndex.hnsw(
-                        distance_metric=self.distance
+                    vector_config=self.Configure.Vectors.self_provided(
+                        vector_index_config=self.Configure.VectorIndex.hnsw(
+                            distance_metric=self.distance
+                        )
                     ),
                     properties=[
                         self.Property(
-                            name="text",
+                            name=constants.WEAVIATE_PROPERTY_TEXT,
                             data_type=self.DataType.TEXT
                         ),
                         self.Property(
-                            name="metadata",
-                            data_type=self.DataType.TEXT  # Store as JSON string
+                            name=constants.WEAVIATE_PROPERTY_METADATA,
+                            data_type=self.DataType.TEXT
                         )
                     ]
                 )
@@ -178,11 +230,19 @@ class WeaviateVectorStore:
                     class_name=self.class_name,
                     message=codes.MSG_VECTORSTORE_COLLECTION_CREATED
                 )
+                return
+            
+            logger.info(
+                codes.VECTORSTORE_COLLECTION_EXISTS,
+                class_name=self.class_name,
+                message=codes.MSG_VECTORSTORE_COLLECTION_EXISTS
+            )
+            self.collection = self.client.collections.get(self.class_name)
             
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="initialize",
+                operation=constants.OPERATION_INITIALIZE,
                 error=str(e),
                 exc_info=True
             )
@@ -219,24 +279,27 @@ class WeaviateVectorStore:
             # Generate embeddings for documents
             embeddings = self.embeddings.embed_documents(texts)
             
-            # Prepare objects for Weaviate
-            with self.collection.batch.dynamic() as batch:
-                for id, embedding, text, metadata in zip(ids, embeddings, texts, metadatas):
-                    # Weaviate requires UUID format, convert string IDs to UUID
-                    if isinstance(id, str):
-                        # Generate deterministic UUID from string ID
-                        uuid_obj = uuid.uuid5(uuid.NAMESPACE_DNS, id)
-                    else:
-                        uuid_obj = id
-                    
-                    batch.add_object(
+            # Use fixed batch instead of dynamic to prevent hanging
+            from weaviate.classes.data import DataObject
+            objects_to_insert = []
+            for id, embedding, text, metadata in zip(ids, embeddings, texts, metadatas):
+                uuid_obj = uuid.uuid5(uuid.NAMESPACE_DNS, id) if isinstance(id, str) else id
+                objects_to_insert.append(
+                    DataObject(
                         properties={
-                            "text": text,
-                            "metadata": json.dumps(metadata)  # Serialize metadata as JSON string
+                            constants.WEAVIATE_PROPERTY_TEXT: text,
+                            constants.WEAVIATE_PROPERTY_METADATA: json.dumps(metadata)
                         },
                         vector=embedding,
                         uuid=uuid_obj
                     )
+                )
+            
+            # Insert in smaller batches of 10
+            batch_size = 10
+            for i in range(0, len(objects_to_insert), batch_size):
+                batch = objects_to_insert[i:i+batch_size]
+                self.collection.data.insert_many(batch)
             
             logger.info(
                 codes.VECTORSTORE_DOCUMENTS_ADDED,
@@ -247,7 +310,7 @@ class WeaviateVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="add_documents",
+                operation=constants.OPERATION_ADD_DOCUMENTS,
                 error=str(e),
                 exc_info=True
             )
@@ -291,18 +354,17 @@ class WeaviateVectorStore:
             # Format results
             formatted_results = []
             for obj in response.objects:
-                # Deserialize metadata from JSON string back to dict
-                metadata_str = obj.properties.get("metadata", "{}")
+                metadata_str = obj.properties.get(constants.WEAVIATE_PROPERTY_METADATA, "{}")
                 try:
                     metadata = json.loads(metadata_str) if isinstance(metadata_str, str) else metadata_str
                 except json.JSONDecodeError:
                     metadata = {}
                 
                 formatted_results.append({
-                    "id": str(obj.uuid),
-                    "text": obj.properties.get("text", ""),
-                    "metadata": metadata,
-                    "distance": obj.metadata.distance if hasattr(obj.metadata, 'distance') else 0.0
+                    constants.RESULT_KEY_ID: str(obj.uuid),
+                    constants.RESULT_KEY_TEXT: obj.properties.get(constants.WEAVIATE_PROPERTY_TEXT, ""),
+                    constants.RESULT_KEY_METADATA: metadata,
+                    constants.RESULT_KEY_DISTANCE: obj.metadata.distance if hasattr(obj.metadata, 'distance') else 0.0
                 })
             
             logger.info(
@@ -315,7 +377,7 @@ class WeaviateVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="query",
+                operation=constants.OPERATION_QUERY,
                 error=str(e),
                 exc_info=True
             )
@@ -332,12 +394,7 @@ class WeaviateVectorStore:
         
         try:
             for id in ids:
-                # Convert string ID to UUID (same as in add_documents)
-                if isinstance(id, str):
-                    uuid_obj = uuid.uuid5(uuid.NAMESPACE_DNS, id)
-                else:
-                    uuid_obj = id
-                
+                uuid_obj = uuid.uuid5(uuid.NAMESPACE_DNS, id) if isinstance(id, str) else id
                 self.collection.data.delete_by_id(uuid_obj)
             
             logger.info(
@@ -348,7 +405,7 @@ class WeaviateVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="delete",
+                operation=constants.OPERATION_DELETE,
                 error=str(e),
                 exc_info=True
             )
@@ -378,7 +435,7 @@ class WeaviateVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="get_stats",
+                operation=constants.OPERATION_GET_STATS,
                 error=str(e),
                 exc_info=True
             )
@@ -416,14 +473,31 @@ class WeaviateVectorStore:
         except Exception as e:
             logger.error(
                 codes.VECTORSTORE_ERROR,
-                operation="clear",
+                operation=constants.OPERATION_CLEAR,
                 error=str(e),
                 exc_info=True
             )
             raise
     
+    def close(self):
+        """Explicitly close the Weaviate client connection."""
+        if hasattr(self, 'client') and self.client:
+            try:
+                self.client.close()
+                logger.debug("Weaviate client connection closed")
+            except Exception as e:
+                logger.warning(f"Error closing Weaviate client: {e}")
+    
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensure connection is closed."""
+        self.close()
+        return False
+    
     def __del__(self):
         """Close Weaviate client on cleanup."""
-        if hasattr(self, 'client'):
-            self.client.close()
+        self.close()
 

@@ -6,6 +6,7 @@ Uses Voyage AI's embedding models (recommended by Anthropic).
 
 from typing import List, TYPE_CHECKING
 
+import constants
 from logger import get_logger
 from trace import codes
 
@@ -43,9 +44,8 @@ class AnthropicEmbeddings:
         try:
             import voyageai
         except ImportError:
-            error_msg = "voyageai package not installed. Run: pip install voyageai"
-            logger.error(codes.EMBEDDINGS_ERROR, message=error_msg)
-            raise ImportError(error_msg)
+            logger.error(codes.EMBEDDINGS_ERROR, message=constants.ERROR_VOYAGEAI_NOT_INSTALLED)
+            raise ImportError(constants.ERROR_VOYAGEAI_NOT_INSTALLED)
         
         self.config = config
         self.model = config.embeddings.anthropic.model
@@ -56,15 +56,12 @@ class AnthropicEmbeddings:
         
         # Handle SSL verification for Voyage AI client
         if not self.verify_ssl:
-            # Disable SSL verification for development
             import ssl
             import urllib3
+            import requests
             
-            # Disable SSL warnings
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             
-            # Monkey-patch SSL context to disable verification
-            import requests
             original_request = requests.Session.request
             
             def patched_request(self, method, url, **kwargs):
@@ -75,20 +72,32 @@ class AnthropicEmbeddings:
             
             logger.warning(
                 codes.CONFIG_WARNING,
-                message="SSL verification disabled for Voyage AI API (development only)"
+                message=constants.MSG_SSL_DISABLED_VOYAGEAI_DEV
             )
-        else:
-            # Use certifi's certificate bundle (fixes macOS SSL issues)
-            import certifi
-            import os
-            os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+            
+            self.client = voyageai.Client(
+                api_key=config.embeddings.anthropic.api_key
+            )
+            
             logger.info(
-                codes.EMBEDDINGS_INITIALIZING,
+                codes.EMBEDDINGS_INITIALIZED,
                 provider="anthropic",
-                message="Using certifi certificate bundle for SSL verification"
+                model=self.model,
+                dimension=self.dimension,
+                message=codes.MSG_EMBEDDINGS_INITIALIZED
             )
+            return
         
-        # Initialize Voyage AI client
+        # Use certifi's certificate bundle (fixes macOS SSL issues)
+        import certifi
+        import os
+        os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+        logger.info(
+            codes.EMBEDDINGS_INITIALIZING,
+            provider="anthropic",
+            message=constants.MSG_SSL_CERTIFI_BUNDLE
+        )
+        
         self.client = voyageai.Client(
             api_key=config.embeddings.anthropic.api_key
         )
@@ -119,34 +128,12 @@ class AnthropicEmbeddings:
         
         all_embeddings = []
         
-        # Process in batches
         for i in range(0, len(texts), self.batch_size):
             batch = texts[i:i + self.batch_size]
+            batch_num = i // self.batch_size + 1
             
-            logger.debug(
-                codes.EMBEDDINGS_BATCH_PROCESSING,
-                batch_num=i // self.batch_size + 1,
-                batch_size=len(batch)
-            )
-            
-            try:
-                response = self.client.embed(
-                    texts=batch,
-                    model=self.model,
-                    input_type=self.input_type
-                )
-                
-                batch_embeddings = response.embeddings
-                all_embeddings.extend(batch_embeddings)
-                
-            except Exception as e:
-                logger.error(
-                    codes.EMBEDDINGS_ERROR,
-                    batch_num=i // self.batch_size + 1,
-                    error=str(e),
-                    exc_info=True
-                )
-                raise
+            batch_embeddings = self._process_batch(batch, batch_num)
+            all_embeddings.extend(batch_embeddings)
         
         logger.info(
             codes.EMBEDDINGS_GENERATED,
@@ -155,6 +142,41 @@ class AnthropicEmbeddings:
         )
         
         return all_embeddings
+    
+    def _process_batch(self, batch: List[str], batch_num: int) -> List[List[float]]:
+        """
+        Process a single batch of texts to generate embeddings.
+        
+        Args:
+            batch: Batch of texts to process
+            batch_num: Batch number for logging
+            
+        Returns:
+            List of embedding vectors for the batch
+        """
+        logger.debug(
+            codes.EMBEDDINGS_BATCH_PROCESSING,
+            batch_num=batch_num,
+            batch_size=len(batch)
+        )
+        
+        try:
+            response = self.client.embed(
+                texts=batch,
+                model=self.model,
+                input_type=self.input_type
+            )
+            
+            return response.embeddings
+            
+        except Exception as e:
+            logger.error(
+                codes.EMBEDDINGS_ERROR,
+                batch_num=batch_num,
+                error=str(e),
+                exc_info=True
+            )
+            raise
     
     def embed_query(self, text: str) -> List[float]:
         """

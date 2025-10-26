@@ -7,6 +7,7 @@ Uses Google's text-embedding-004 model for generating embeddings.
 from typing import List, TYPE_CHECKING
 import google.generativeai as genai
 
+import constants
 from logger import get_logger
 from trace import codes
 
@@ -79,37 +80,12 @@ class GoogleEmbeddings:
         
         all_embeddings = []
         
-        # Process in batches
         for i in range(0, len(texts), self.batch_size):
             batch = texts[i:i + self.batch_size]
+            batch_num = i // self.batch_size + 1
             
-            logger.debug(
-                codes.EMBEDDINGS_BATCH_PROCESSING,
-                batch_num=i // self.batch_size + 1,
-                batch_size=len(batch)
-            )
-            
-            try:
-                # Generate embeddings for batch
-                result = genai.embed_content(
-                    model=self.model,
-                    content=batch,
-                    task_type=self.task_type,
-                    title=self.title if self.title else None
-                )
-                
-                # Extract embedding vectors
-                batch_embeddings = result.get("embedding", [])
-                all_embeddings.extend(batch_embeddings)
-                
-            except Exception as e:
-                logger.error(
-                    codes.EMBEDDINGS_ERROR,
-                    batch_num=i // self.batch_size + 1,
-                    error=str(e),
-                    exc_info=True
-                )
-                raise
+            batch_embeddings = self._process_batch(batch, batch_num)
+            all_embeddings.extend(batch_embeddings)
         
         logger.info(
             codes.EMBEDDINGS_GENERATED,
@@ -119,11 +95,47 @@ class GoogleEmbeddings:
         
         return all_embeddings
     
+    def _process_batch(self, batch: List[str], batch_num: int) -> List[List[float]]:
+        """
+        Process a single batch of texts to generate embeddings.
+        
+        Args:
+            batch: Batch of texts to process
+            batch_num: Batch number for logging
+            
+        Returns:
+            List of embedding vectors for the batch
+        """
+        logger.debug(
+            codes.EMBEDDINGS_BATCH_PROCESSING,
+            batch_num=batch_num,
+            batch_size=len(batch)
+        )
+        
+        try:
+            result = genai.embed_content(
+                model=self.model,
+                content=batch,
+                task_type=self.task_type,
+                title=self.title if self.title else None
+            )
+            
+            return result.get(constants.EMBEDDING_KEY, [])
+            
+        except Exception as e:
+            logger.error(
+                codes.EMBEDDINGS_ERROR,
+                batch_num=batch_num,
+                error=str(e),
+                exc_info=True
+            )
+            raise
+    
     def embed_query(self, text: str) -> List[float]:
         """
         Generate embedding for a single query.
         
-        Uses "retrieval_query" task type which may optimize differently
+        Uses query-specific task type which may optimize differently
         than document embeddings.
         
         Args:
@@ -138,11 +150,11 @@ class GoogleEmbeddings:
             result = genai.embed_content(
                 model=self.model,
                 content=text,
-                task_type="retrieval_query",  # Use query-specific task type
+                task_type=constants.TASK_TYPE_QUERY,
                 title=self.title if self.title else None
             )
             
-            embedding = result.get("embedding")
+            embedding = result.get(constants.EMBEDDING_KEY)
             
             logger.debug(
                 codes.EMBEDDINGS_GENERATED,

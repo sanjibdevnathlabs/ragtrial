@@ -159,65 +159,72 @@ class Config:
     AppEnv: str = None
 
     def __init__(self):
-        # --- 2. Initialize our nested config objects ---
+        self._initialize_config_objects()
+        settings = self._load_config_files()
+        self._apply_config_values(settings)
+        self._validate_config()
+
+    def _initialize_config_objects(self) -> None:
+        """Initialize all configuration objects with default values."""
         self.app = AppConfig()
         self.logging = LoggingConfig()
         self.google = GoogleConfig()
         
-        # Initialize vectorstore configs
         self.vectorstore = VectorStoreConfig()
         self.vectorstore.chroma = ChromaConfig()
         self.vectorstore.pinecone = PineconeConfig()
         self.vectorstore.qdrant = QdrantConfig()
         self.vectorstore.weaviate = WeaviateConfig()
         
-        # Initialize embeddings configs
         self.embeddings = EmbeddingsConfig()
         self.embeddings.google = GoogleEmbeddingsConfig()
         self.embeddings.openai = OpenAIEmbeddingsConfig()
         self.embeddings.huggingface = HuggingFaceEmbeddingsConfig()
         self.embeddings.anthropic = AnthropicEmbeddingsConfig()
 
-        # --- 3. Load and Merge Config Files ---
+    def _load_config_files(self) -> dict:
+        """Load and merge TOML configuration files."""
         config_dir = Path(__file__).parent.parent / "environment"
         default_config_path = config_dir / "default.toml"
-
-        # Load default.toml as the base
-        settings = self._load_toml(default_config_path)
-
-        # Load override (prod.toml, etc.)
-        self.AppEnv = os.environ.get("APP_ENV")  # Store the env name
-        if self.AppEnv:
-            env_config_path = config_dir / f"{self.AppEnv}.toml"
-            if env_config_path.exists():
-                logger.info(codes.CONFIG_LOADING, message=codes.MSG_LOADING_OVERRIDE_CONFIG, file=env_config_path.name)
-                env_config = self._load_toml(env_config_path)
-                self._merge_dicts(settings, env_config)
-            else:
-                logger.warning(codes.CONFIG_LOADING, message=f"APP_ENV set to '{self.AppEnv}' but {env_config_path.name} not found")
-
-        # --- 4. Interpolate OS environment variables ($VAR) ---
-        self._interpolate(settings)
-
-        # --- 5. Map loaded settings to our class attributes ---
-        # Using dynamic helper method - automatically populates all fields!
-        # Zero maintenance: Just add field to config class and it works
         
-        # Populate top-level configurations
+        settings = self._load_toml(default_config_path)
+        
+        self.AppEnv = os.environ.get("APP_ENV")
+        if not self.AppEnv:
+            return self._interpolate(settings)
+        
+        env_config_path = config_dir / f"{self.AppEnv}.toml"
+        if not env_config_path.exists():
+            logger.warning(
+                codes.CONFIG_LOADING,
+                message=f"APP_ENV set to '{self.AppEnv}' but {env_config_path.name} not found"
+            )
+            return self._interpolate(settings)
+        
+        logger.info(
+            codes.CONFIG_LOADING,
+            message=codes.MSG_LOADING_OVERRIDE_CONFIG,
+            file=env_config_path.name
+        )
+        env_config = self._load_toml(env_config_path)
+        self._merge_dicts(settings, env_config)
+        
+        return self._interpolate(settings)
+
+    def _apply_config_values(self, settings: dict) -> None:
+        """Apply loaded settings to configuration objects."""
         self._populate_config_section(settings, "app", self.app)
         self._populate_config_section(settings, "logging", self.logging)
         self._populate_config_section(settings, "google", self.google)
         self._populate_config_section(settings, "vectorstore", self.vectorstore)
         self._populate_config_section(settings, "embeddings", self.embeddings)
         
-        # Populate vectorstore provider-specific settings
         vectorstore_settings = settings.get("vectorstore", {})
         self._populate_config_section(vectorstore_settings, "chroma", self.vectorstore.chroma)
         self._populate_config_section(vectorstore_settings, "pinecone", self.vectorstore.pinecone)
         self._populate_config_section(vectorstore_settings, "qdrant", self.vectorstore.qdrant)
         self._populate_config_section(vectorstore_settings, "weaviate", self.vectorstore.weaviate)
         
-        # Populate embeddings provider-specific settings
         embeddings_settings = settings.get("embeddings", {})
         self._populate_config_section(embeddings_settings, "google", self.embeddings.google)
         self._populate_config_section(embeddings_settings, "openai", self.embeddings.openai)
@@ -225,13 +232,14 @@ class Config:
         self._populate_config_section(embeddings_settings, "anthropic", self.embeddings.anthropic)
         
         logger.info(codes.CONFIG_LOADED, message=codes.MSG_CONFIG_LOADED)
-        
-        # Simple validation checks
+
+    def _validate_config(self) -> None:
+        """Validate configuration values and log warnings for missing required fields."""
         if not self.google.api_key:
             logger.warning(codes.VALIDATION_ERROR, message=codes.MSG_GOOGLE_API_KEY_MISSING)
+        
         if not self.app.name:
             logger.warning(codes.VALIDATION_ERROR, message=codes.MSG_APP_NAME_MISSING)
-
 
     def _load_toml(self, file_path: Path) -> dict:
         """Loads a single TOML file."""
@@ -246,18 +254,23 @@ class Config:
         for key, value in override.items():
             if isinstance(value, dict) and key in base and isinstance(base[key], dict):
                 self._merge_dicts(base[key], value)
-            else:
-                base[key] = value
+                continue
+            
+            base[key] = value
 
     def _interpolate(self, item):
         """Recursively replaces $VAR or ${VAR} in any string value."""
         if isinstance(item, dict):
             for key, value in item.items():
                 item[key] = self._interpolate(value)
-        elif isinstance(item, list):
+            return item
+        
+        if isinstance(item, list):
             for i, value in enumerate(item):
                 item[i] = self._interpolate(value)
-        elif isinstance(item, str):
+            return item
+        
+        if isinstance(item, str):
             return os.path.expandvars(item)
         
         return item
