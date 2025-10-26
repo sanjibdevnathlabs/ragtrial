@@ -1,0 +1,90 @@
+# Application metadata
+[app]
+    name = "ragtrial-app"
+    environment = "$APP_ENV"
+    version = "1.0.0"
+
+# Logging configuration
+[logging]
+    level = "INFO"                    # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format = "console"                # "json" for production, "console" for development
+    include_caller = false            # Set to true for debugging (shows file/line/function)
+    include_process_info = false      # Set to true for concurrency debugging (shows PID/thread)
+
+# Google API configuration
+[google]
+    api_key = "$GEMINI_API_KEY"
+
+# Vector Store Configuration
+[vectorstore]
+    provider = "chroma"              # Which vector DB: chroma, pinecone, qdrant, weaviate
+    collection_name = "rag_documents"
+
+# ChromaDB-specific settings
+[vectorstore.chroma]
+persist_directory = "storage/chroma"
+distance_function = "cosine"     # cosine, l2, ip
+anonymized_telemetry = false
+
+# Pinecone-specific settings
+[vectorstore.pinecone]
+api_key = "$PINECONE_API_KEY"
+cloud = "aws"                    # Cloud provider: aws, gcp, azure
+region = "us-east-1"             # Cloud region (AWS: us-east-1, GCP: us-central1, Azure: eastus)
+index_name = "rag-documents"
+dimension = 768
+metric = "cosine"                # Similarity metric: cosine, euclidean, dotproduct
+verify_ssl = false                # SSL certificate verification (disable for dev if needed)
+
+# Qdrant-specific settings
+[vectorstore.qdrant]
+host = "localhost"
+port = 6333
+grpc_port = 6334
+prefer_grpc = false
+api_key = "$QDRANT_API_KEY"                     # Optional for Qdrant Cloud
+distance = "Cosine"              # Cosine, Euclid, Dot
+
+# Weaviate-specific settings
+[vectorstore.weaviate]
+url = "http://localhost:8080"
+api_key = "$WEAVIATE_API_KEY"                     # Optional for Weaviate Cloud
+class_name = "RagDocument"
+distance = "cosine"              # cosine, l2-squared, dot, hamming, manhattan
+grpc_port = 50051                # gRPC port (must differ from HTTP port)
+default_http_port = 8080         # Default HTTP port if not specified in URL
+default_https_port = 443         # Default HTTPS port for secure connections
+
+# Embeddings Configuration
+[embeddings]
+provider = "google"              # Which embeddings: google, openai, huggingface, cohere, anthropic
+dimension = 768
+
+# Google Embeddings settings
+[embeddings.google]
+model = "models/text-embedding-004"
+task_type = "retrieval_document"
+batch_size = 100
+title = ""
+
+# OpenAI Embeddings settings
+[embeddings.openai]
+api_key = "$OPENAI_API_KEY"
+model = "text-embedding-3-small"  # text-embedding-3-small, text-embedding-3-large
+batch_size = 100
+dimensions = 1536                 # Can be reduced for efficiency
+verify_ssl = true                 # SSL certificate verification (disable for dev if needed)
+
+# HuggingFace Embeddings settings
+[embeddings.huggingface]
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+cache_folder = "models/huggingface"
+device = "cpu"                    # cpu or cuda
+
+# Anthropic (Voyage AI) Embeddings settings
+[embeddings.anthropic]
+api_key = "$VOYAGE_API_KEY"
+model = "voyage-2"                # voyage-2, voyage-large-2
+input_type = "document"           # document or query
+batch_size = 128
+verify_ssl = true                 # SSL certificate verification (disable for dev if needed)
