@@ -20,7 +20,7 @@ from vectorstore import create_vectorstore
 logger = get_logger(__name__)
 
 
-def _cleanup_chroma(vectorstore) -> None:
+def _cleanup_chroma(vectorstore, logger=None) -> None:
     """Clean up ChromaDB by deleting and recreating collection."""
     vectorstore.client.delete_collection(name=vectorstore.collection_name)
     vectorstore.collection = vectorstore.client.get_or_create_collection(
@@ -29,7 +29,7 @@ def _cleanup_chroma(vectorstore) -> None:
     )
 
 
-def _cleanup_qdrant(vectorstore) -> None:
+def _cleanup_qdrant(vectorstore, logger=None) -> None:
     """Clean up Qdrant by deleting and recreating collection."""
     vectorstore.client.delete_collection(collection_name=vectorstore.collection_name)
     from qdrant_client.models import Distance, VectorParams
@@ -47,7 +47,7 @@ def _cleanup_qdrant(vectorstore) -> None:
     )
 
 
-def _cleanup_weaviate(vectorstore) -> None:
+def _cleanup_weaviate(vectorstore, logger=None) -> None:
     """Clean up Weaviate by deleting and recreating collection."""
     vectorstore.client.collections.delete(vectorstore.class_name)
     vectorstore.initialize()
@@ -118,10 +118,8 @@ def _cleanup_provider(provider: str, config: Config, logger) -> bool:
             logger.error(codes.VECTORSTORE_ERROR, provider=provider, message="No cleanup handler found")
             return False
         
-        if provider == 'pinecone':
-            cleanup_handler(vectorstore, logger)
-        else:
-            cleanup_handler(vectorstore)
+        # All cleanup handlers now accept logger parameter (uniform interface)
+        cleanup_handler(vectorstore, logger)
         
         stats_after = vectorstore.get_stats()
         count_after = stats_after.get(constants.STATS_KEY_COUNT, 0)

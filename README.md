@@ -17,15 +17,14 @@ Both connect to the same indexed data for easy comparison of approaches.
 ### 🔄 Provider-Agnostic Architecture
 - **ORM-like abstraction** similar to SQLAlchemy for databases
 - **Zero code changes** to switch providers
-- **20 provider combinations** supported out of the box
+- **16 provider combinations** supported out of the box
 
 ### 🎨 Flexible Provider Support
 
-**Embeddings (5 providers):**
+**Embeddings (4 providers):**
 - ✅ Google (text-embedding-004)
 - ✅ OpenAI (text-embedding-3-small/large)
 - ✅ HuggingFace (sentence-transformers) - **Local, no API key!**
-- ✅ Cohere (embed-english-v3.0)
 - ✅ Anthropic (Voyage AI - voyage-2)
 
 **Vectorstores (4 providers):**
@@ -63,7 +62,6 @@ ragtrial/
 │       ├── google.py
 │       ├── openai.py
 │       ├── huggingface.py
-│       ├── cohere.py
 │       └── anthropic.py
 ├── vectorstore/                   # Vectorstore abstraction
 │   ├── base.py                   # VectorStoreProtocol interface
@@ -255,7 +253,7 @@ results = vectorstore.query("What is RAG?", n_results=5)
 - **Testing:** pytest
 - **AI Framework:** LangChain / LangGraph (coming soon)
 - **Vector DB:** ChromaDB / Pinecone / Qdrant / Weaviate
-- **Embeddings:** Google / OpenAI / HuggingFace / Cohere / Anthropic
+- **Embeddings:** Google / OpenAI / HuggingFace / Anthropic
 
 ---
 
@@ -291,9 +289,8 @@ results = vectorstore.query("What is RAG?", n_results=5)
 |----------|-----------|---------|-------------|------|
 | Google | 768 | Yes | Cloud | Paid |
 | OpenAI | 1536/3072 | Yes | Cloud | Paid |
-| HuggingFace | 384-768 | No | **Local** | **Free** |
-| Cohere | 1024 | Yes | Cloud | Paid |
-| Anthropic | 1024/1536 | Yes | Cloud | Paid |
+| HuggingFace | 384 | No | **Local** | **Free** |
+| Anthropic | 1024 | Yes | Cloud | Paid |
 
 ### Vectorstores
 
@@ -317,7 +314,7 @@ results = vectorstore.query("What is RAG?", n_results=5)
 - **Vectorstore:** Qdrant self-hosted (open-source)
 
 ### For Production (Large Scale)
-- **Embeddings:** OpenAI or Cohere (reliable)
+- **Embeddings:** OpenAI or Google (reliable)
 - **Vectorstore:** Pinecone or Weaviate Cloud (managed)
 
 ---

@@ -27,3 +27,5 @@ storage/*
 environment/dev.toml
 *.log
 models/
+coverage*
+*.coverage

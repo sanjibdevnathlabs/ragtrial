@@ -1,0 +1,14 @@
+{
+  "title": "Sample JSON Document",
+  "content": "This is a sample JSON file for testing document loaders.",
+  "items": [
+    "First item",
+    "Second item",
+    "Third item"
+  ],
+  "metadata": {
+    "author": "Test Author",
+    "version": "1.0"
+  }
+}
+

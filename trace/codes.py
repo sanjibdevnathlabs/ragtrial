@@ -130,3 +130,51 @@ MSG_EMBEDDINGS_INITIALIZED = "Embeddings initialized successfully"
 MSG_EMBEDDINGS_GENERATED = "Embeddings generated successfully"
 MSG_EMBEDDINGS_PROVIDER_UNKNOWN = "Unknown embeddings provider"
 
+# ============================================================================
+# DOCUMENT LOADING TRACE CODES & MESSAGES
+# ============================================================================
+
+# Document loader trace codes
+LOADER_INITIALIZING = "loader_initializing"
+LOADER_INITIALIZED = "loader_initialized"
+LOADER_LOADING_FILE = "loader_loading_file"
+LOADER_FILE_LOADED = "loader_file_loaded"
+LOADER_FILE_NOT_FOUND = "loader_file_not_found"
+LOADER_UNSUPPORTED_FORMAT = "loader_unsupported_format"
+LOADER_LOADING_ERROR = "loader_loading_error"
+LOADER_EMPTY_DOCUMENT = "loader_empty_document"
+LOADER_DETECTING_TYPE = "loader_detecting_type"
+LOADER_TYPE_DETECTED = "loader_type_detected"
+
+# Document loader messages
+MSG_LOADER_INITIALIZED = "Document loader initialized"
+MSG_LOADER_LOADING_FILE = "Loading document from file"
+MSG_LOADER_FILE_LOADED = "Document loaded successfully"
+MSG_LOADER_FILE_NOT_FOUND = "File not found"
+MSG_LOADER_UNSUPPORTED_FORMAT = "Unsupported file format"
+MSG_LOADER_LOADING_ERROR = "Error loading document"
+MSG_LOADER_EMPTY_DOCUMENT = "Document has no content"
+MSG_LOADER_DETECTING_TYPE = "Detecting file type"
+MSG_LOADER_TYPE_DETECTED = "File type detected"
+
+# ============================================================================
+# TEXT SPLITTING TRACE CODES & MESSAGES
+# ============================================================================
+
+# Text splitter trace codes
+SPLITTER_INITIALIZING = "splitter_initializing"
+SPLITTER_INITIALIZED = "splitter_initialized"
+SPLITTER_SPLITTING = "splitter_splitting"
+SPLITTER_SPLIT_COMPLETE = "splitter_split_complete"
+SPLITTER_INVALID_PARAMS = "splitter_invalid_params"
+SPLITTER_EMPTY_TEXT = "splitter_empty_text"
+SPLITTER_ERROR = "splitter_error"
+
+# Text splitter messages
+MSG_SPLITTER_INITIALIZED = "Text splitter initialized"
+MSG_SPLITTER_SPLITTING = "Splitting documents into chunks"
+MSG_SPLITTER_SPLIT_COMPLETE = "Documents split successfully"
+MSG_SPLITTER_INVALID_PARAMS = "Invalid splitting parameters"
+MSG_SPLITTER_EMPTY_TEXT = "No text to split"
+MSG_SPLITTER_ERROR = "Error splitting documents"
+

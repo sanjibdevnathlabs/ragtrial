@@ -1,0 +1,7 @@
+This is a sample text document for testing document loaders.
+
+It contains multiple lines of text to verify that the text loader
+can properly read and parse plain text files.
+
+This is the third paragraph with some additional content.
+

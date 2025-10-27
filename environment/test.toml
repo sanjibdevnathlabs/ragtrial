@@ -1,0 +1,72 @@
+# Test Environment Configuration
+# This configuration is used during unit testing
+# 
+# IMPORTANT: All API keys and secrets are DUMMY values for testing only
+# Tests should NEVER make actual API calls - everything is mocked
+# 
+# Optimized for:
+# - Fast execution
+# - Complete isolation
+# - No external dependencies
+# - No network access
+# - CI/CD friendly
+
+[app]
+name = "ragtrial-app-test"
+version = "1.0.0"
+environment = "test"
+
+[embeddings]
+provider = "google"  # Default for tests (will be mocked)
+dimension = 768
+
+[embeddings.google]
+model = "text-embedding-004"
+api_key = "test-google-api-key-dummy"  # Dummy key - tests are mocked
+verify_ssl = false  # Disabled for tests
+
+[embeddings.openai]
+model = "text-embedding-3-small"
+api_key = "test-openai-api-key-dummy"  # Dummy key - tests are mocked
+batch_size = 100
+dimensions = 1536
+verify_ssl = false  # Disabled for tests
+
+[embeddings.huggingface]
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+cache_folder = "./models/huggingface_test"  # Separate test cache
+device = "cpu"
+
+[embeddings.anthropic]
+model = "voyage-2"
+api_key = "test-voyage-api-key-dummy"  # Dummy key - tests are mocked
+verify_ssl = false  # Disabled for tests
+
+[vectorstore]
+provider = "chroma"  # Default for tests
+collection_name = "test_collection"  # Test-specific collection name
+
+[vectorstore.chroma]
+persist_directory = "./storage/chroma_test"  # Separate test storage
+collection_name = "test_collection"
+
+[vectorstore.pinecone]
+api_key = "test-pinecone-api-key-dummy"  # Dummy key - tests are mocked
+environment = "test-env"
+index_name = "test-index"
+verify_ssl = false  # Disabled for tests
+
+[vectorstore.qdrant]
+url = "http://localhost:6333"
+collection_name = "test_collection"
+api_key = "test-qdrant-api-key-dummy"  # Dummy key - tests are mocked
+
+[vectorstore.weaviate]
+url = "http://localhost:8080"
+class_name = "TestDocument"
+api_key = "test-weaviate-api-key-dummy"  # Dummy key - tests are mocked
+
+[logging]
+level = "WARNING"  # Reduce noise during tests
+format = "json"
+

@@ -467,3 +467,56 @@ URL_HTTPS_PREFIX = "https://"
 URL_HTTPS = "https"
 URL_COLON = ":"
 
+# ============================================================================
+# DOCUMENT LOADING CONSTANTS
+# ============================================================================
+
+# Supported file extensions
+EXT_PDF = ".pdf"
+EXT_TXT = ".txt"
+EXT_MD = ".md"
+EXT_DOCX = ".docx"
+EXT_CSV = ".csv"
+EXT_JSON = ".json"
+
+# File type identifiers
+FILE_TYPE_PDF = "pdf"
+FILE_TYPE_TXT = "text"
+FILE_TYPE_MD = "markdown"
+FILE_TYPE_DOCX = "docx"
+FILE_TYPE_CSV = "csv"
+FILE_TYPE_JSON = "json"
+FILE_TYPE_UNKNOWN = "unknown"
+
+# Document metadata keys
+META_SOURCE = "source"
+META_FILE_TYPE = "file_type"
+META_FILE_SIZE = "file_size_bytes"
+
+# Error messages for document loading
+ERROR_FILE_NOT_FOUND = "File not found"
+ERROR_FILE_NOT_EXISTS = "File does not exist"
+ERROR_UNSUPPORTED_FORMAT = "Unsupported file format"
+ERROR_FILE_CORRUPTED = "File appears to be corrupted or unreadable"
+ERROR_LOADING_FAILED = "Failed to load document"
+ERROR_EMPTY_DOCUMENT = "Document is empty or has no content"
+
+# ============================================================================
+# TEXT SPLITTING CONSTANTS
+# ============================================================================
+
+# Splitter types
+SPLITTER_TYPE_TOKEN = "token"
+SPLITTER_TYPE_RECURSIVE = "recursive"
+SPLITTER_TYPE_CHARACTER = "character"
+
+# Default splitting parameters
+DEFAULT_CHUNK_SIZE = 512
+DEFAULT_CHUNK_OVERLAP = 100
+
+# Error messages for text splitting
+ERROR_INVALID_CHUNK_SIZE = "Chunk size must be positive"
+ERROR_INVALID_OVERLAP = "Overlap must be non-negative and less than chunk size"
+ERROR_EMPTY_TEXT = "Text is empty, nothing to split"
+ERROR_SPLITTING_FAILED = "Failed to split text"
+
