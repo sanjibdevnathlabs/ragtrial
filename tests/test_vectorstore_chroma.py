@@ -73,7 +73,7 @@ def mock_chroma_client():
 @pytest.fixture
 def chroma_vectorstore(mock_config, mock_embeddings, mock_chroma_client):
     """Create ChromaVectorStore with mocked dependencies."""
-    with patch("chromadb.Client", return_value=mock_chroma_client):
+    with patch("chromadb.PersistentClient", return_value=mock_chroma_client):
         with patch("pathlib.Path.mkdir"):
             vectorstore = ChromaVectorStore(mock_config, mock_embeddings)
             return vectorstore

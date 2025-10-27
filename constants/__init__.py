@@ -84,6 +84,37 @@ SWITCH_PROVIDERS_EDIT_CONFIG = "   • Edit environment/default.toml"
 SWITCH_PROVIDERS_CHANGE_SETTING = "   • Change [vectorstore] provider = '...'"
 SWITCH_PROVIDERS_SEE_DOCS = "   • See docs/PROVIDERS.md for all options"
 
+# ============================================================================
+# INGESTION CONSTANTS
+# ============================================================================
+
+# Directories
+SOURCE_DOCS_DIR = "source_docs"
+DEFAULT_SOURCE_DIR = "source_docs"
+
+# Progress messages
+INGESTION_HEADER = "Document Ingestion Pipeline"
+SCANNING_FOR_FILES = "Scanning for documents..."
+FOUND_FILES_TEMPLATE = "Found {count} files"
+PROCESSING_FILE_TEMPLATE = "Processing {current}/{total}: {filename}"
+FILE_SUCCESS_TEMPLATE = "✓ {filename}"
+FILE_ERROR_TEMPLATE = "✗ {filename}: {error}"
+FILE_SKIPPED_TEMPLATE = "⊘ {filename}: {reason}"
+
+# Summary labels
+INGESTION_SUMMARY_HEADER = "Ingestion Summary"
+SUMMARY_TOTAL_FILES = "Total files"
+SUMMARY_SUCCESSFUL = "Successful"
+SUMMARY_FAILED = "Failed"
+SUMMARY_SKIPPED = "Skipped"
+SUMMARY_TOTAL_CHUNKS = "Total chunks created"
+SUMMARY_DURATION = "Duration"
+
+# Error messages
+ERROR_NO_FILES_FOUND = "No supported files found in directory"
+ERROR_DIRECTORY_NOT_FOUND = "Source directory not found"
+ERROR_FILE_PROCESSING_FAILED = "Failed to process file"
+
 # Next step instructions (quick test)
 NEXT_STEP_API_TEST = "Next Step: Test with API"
 API_TEST_COMMAND = "   Run: python scripts/setup_database.py"

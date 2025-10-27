@@ -74,6 +74,20 @@ MSG_WARNING_PREFIX = "Warning"
 
 # Ingestion trace codes
 INGESTION_SCRIPT_STARTED = "ingestion_script_started"
+INGESTION_SCANNING_DIRECTORY = "ingestion_scanning_directory"
+INGESTION_FILES_FOUND = "ingestion_files_found"
+INGESTION_PROCESSING_FILE = "ingestion_processing_file"
+INGESTION_FILE_LOADED = "ingestion_file_loaded"
+INGESTION_FILE_SPLIT = "ingestion_file_split"
+INGESTION_FILE_EMBEDDED = "ingestion_file_embedded"
+INGESTION_FILE_STORED = "ingestion_file_stored"
+INGESTION_FILE_SUCCESS = "ingestion_file_success"
+INGESTION_FILE_SKIPPED = "ingestion_file_skipped"
+INGESTION_FILE_ERROR = "ingestion_file_error"
+INGESTION_COMPLETE = "ingestion_complete"
+INGESTION_CLEARING_VECTORSTORE = "ingestion_clearing_vectorstore"
+INGESTION_VECTORSTORE_CLEARED = "ingestion_vectorstore_cleared"
+
 CONFIGURATION_LOADED = "configuration_loaded"
 GEMINI_API_KEY_MISSING = "gemini_api_key_missing"
 GOOGLE_API_CONFIGURED = "google_generative_ai_configured"
@@ -84,6 +98,8 @@ SETUP_COMPLETE = "setup_complete"
 MSG_GEMINI_API_KEY_MISSING = "GEMINI_API_KEY not found in environment or config"
 MSG_SETUP_COMPLETE = "Ready to load documents"
 MSG_CONFIG_FILE_ENSURE = "Please ensure 'environment/default.toml' exists."
+MSG_NO_FILES_FOUND = "No supported files found in directory"
+MSG_INGESTION_SUMMARY = "Ingestion complete"
 
 # ============================================================================
 # VECTORSTORE TRACE CODES & MESSAGES

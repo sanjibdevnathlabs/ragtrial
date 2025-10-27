@@ -58,10 +58,10 @@ class ChromaVectorStore:
         # Create persist directory if it doesn't exist
         Path(self.persist_directory).mkdir(parents=True, exist_ok=True)
         
-        # Initialize ChromaDB client
-        self.client = chromadb.Client(
-            Settings(
-                persist_directory=self.persist_directory,
+        # Initialize ChromaDB persistent client
+        self.client = chromadb.PersistentClient(
+            path=self.persist_directory,
+            settings=Settings(
                 anonymized_telemetry=chroma_config.anonymized_telemetry
             )
         )
