@@ -172,7 +172,10 @@ class Config(metaclass=SingletonMeta):
         settings = self._load_toml(default_config_path)
         
         # Default to 'dev' environment if APP_ENV is not set
-        self.AppEnv = os.environ.get("APP_ENV", "dev")
+        if "APP_ENV" not in os.environ:
+            os.environ["APP_ENV"] = "dev"
+        
+        self.AppEnv = os.environ["APP_ENV"]
         
         env_config_path = config_dir / f"{self.AppEnv}.toml"
         if not env_config_path.exists():
