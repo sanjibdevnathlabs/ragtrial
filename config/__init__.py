@@ -178,6 +178,49 @@ class EmbeddingsConfig:
     anthropic: AnthropicEmbeddingsConfig = None
 
 
+# ============================================================================
+# LLM (LARGE LANGUAGE MODEL) PROVIDER CONFIGS
+# ============================================================================
+
+class GoogleLLMConfig:
+    """Google (Gemini) LLM-specific configuration"""
+    api_key: str = None
+    model: str = "gemini-2.0-flash"
+    temperature: float = 0.1
+    max_tokens: int = 1000
+
+
+class OpenAILLMConfig:
+    """OpenAI (GPT) LLM-specific configuration"""
+    api_key: str = None
+    model: str = "gpt-4o-mini"
+    temperature: float = 0.1
+    max_tokens: int = 1000
+    verify_ssl: bool = True
+
+
+class AnthropicLLMConfig:
+    """Anthropic (Claude) LLM-specific configuration"""
+    api_key: str = None
+    model: str = "claude-3-5-sonnet-20241022"
+    temperature: float = 0.1
+    max_tokens: int = 1000
+    verify_ssl: bool = True
+
+
+# ============================================================================
+# RAG (RETRIEVAL-AUGMENTED GENERATION) CONFIG
+# ============================================================================
+
+class RAGConfig:
+    """RAG (Retrieval-Augmented Generation) configuration"""
+    provider: str = "google"
+    retrieval_k: int = 5
+    google: GoogleLLMConfig = None
+    openai: OpenAILLMConfig = None
+    anthropic: AnthropicLLMConfig = None
+
+
 class Config:
     """
     The main config object, populated from TOML files.
@@ -204,6 +247,9 @@ class Config:
     
     # Embeddings configuration
     embeddings: EmbeddingsConfig
+    
+    # RAG configuration
+    rag: RAGConfig
     
     # This will hold the name of the loaded environment, e.g., "prod"
     AppEnv: str = None
@@ -237,6 +283,11 @@ class Config:
         self.embeddings.openai = OpenAIEmbeddingsConfig()
         self.embeddings.huggingface = HuggingFaceEmbeddingsConfig()
         self.embeddings.anthropic = AnthropicEmbeddingsConfig()
+        
+        self.rag = RAGConfig()
+        self.rag.google = GoogleLLMConfig()
+        self.rag.openai = OpenAILLMConfig()
+        self.rag.anthropic = AnthropicLLMConfig()
 
     def _load_config_files(self) -> dict:
         """Load and merge TOML configuration files."""

@@ -268,3 +268,71 @@ STORAGE_DEPENDENCY_INJECTING = "storage_dependency_injecting"
 STORAGE_DEPENDENCY_RELEASED = "storage_dependency_released"
 STORAGE_FACTORY_CREATING = "storage_factory_creating"
 
+# ============================================================================
+# RAG (RETRIEVAL-AUGMENTED GENERATION) TRACE CODES & MESSAGES
+# ============================================================================
+RAG_CHAIN_INITIALIZING = "rag_chain_initializing"
+RAG_CHAIN_INITIALIZED = "rag_chain_initialized"
+RAG_QUERY_RECEIVED = "rag_query_received"
+RAG_QUERY_PROCESSING = "rag_query_processing"
+RAG_RETRIEVAL_STARTED = "rag_retrieval_started"
+RAG_RETRIEVAL_COMPLETED = "rag_retrieval_completed"
+RAG_RETRIEVAL_FAILED = "rag_retrieval_failed"
+RAG_NO_DOCUMENTS_FOUND = "rag_no_documents_found"
+RAG_LLM_GENERATING = "rag_llm_generating"
+RAG_LLM_GENERATED = "rag_llm_generated"
+RAG_LLM_FAILED = "rag_llm_failed"
+RAG_RESPONSE_FORMATTED = "rag_response_formatted"
+RAG_QUERY_COMPLETED = "rag_query_completed"
+RAG_QUERY_FAILED = "rag_query_failed"
+
+# RAG messages (imported from constants)
+from constants import (
+    MSG_RAG_CHAIN_INITIALIZED,
+    MSG_RAG_QUERY_PROCESSING,
+    MSG_RAG_QUERY_COMPLETED,
+    MSG_RAG_NO_RELEVANT_DOCS,
+    MSG_RAG_INSUFFICIENT_CONTEXT,
+    ERROR_RAG_CHAIN_INIT_FAILED,
+    ERROR_RAG_QUERY_FAILED,
+    ERROR_RAG_RETRIEVAL_FAILED,
+    ERROR_RAG_LLM_FAILED,
+    ERROR_RAG_INVALID_QUERY,
+)
+
+
+# ============================================================================
+# SECURITY GUARDRAILS TRACE CODES & MESSAGES
+# ============================================================================
+GUARDRAILS_INITIALIZING = "guardrails_initializing"
+GUARDRAILS_INITIALIZED = "guardrails_initialized"
+INPUT_VALIDATION_STARTED = "input_validation_started"
+INPUT_VALIDATION_PASSED = "input_validation_passed"
+INPUT_VALIDATION_FAILED = "input_validation_failed"
+INJECTION_DETECTION_STARTED = "injection_detection_started"
+INJECTION_DETECTION_PASSED = "injection_detection_passed"
+INJECTION_DETECTED = "injection_detected"
+OUTPUT_VALIDATION_STARTED = "output_validation_started"
+OUTPUT_VALIDATION_PASSED = "output_validation_passed"
+OUTPUT_VALIDATION_FAILED = "output_validation_failed"
+SECURITY_VIOLATION_DETECTED = "security_violation_detected"
+QUERY_BLOCKED_BY_GUARDRAILS = "query_blocked_by_guardrails"
+OUTPUT_BLOCKED_BY_GUARDRAILS = "output_blocked_by_guardrails"
+
+# Security messages (imported from constants)
+from constants import (
+    MSG_GUARDRAILS_INITIALIZED,
+    MSG_INPUT_VALIDATION_PASSED,
+    MSG_NO_INJECTION_DETECTED,
+    MSG_OUTPUT_VALIDATION_PASSED,
+    MSG_SECURITY_VIOLATIONS_DETECTED,
+    MSG_OUTPUT_VIOLATIONS_DETECTED,
+    MSG_QUERY_BLOCKED,
+    MSG_LLM_OUTPUT_BLOCKED,
+    ERROR_INVALID_INPUT,
+    ERROR_PROMPT_INJECTION,
+    ERROR_UNSAFE_OUTPUT,
+    ERROR_BLOCKED_BY_GUARDRAILS,
+    ERROR_OUTPUT_BLOCKED,
+)
+

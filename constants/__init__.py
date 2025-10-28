@@ -615,3 +615,101 @@ ERROR_INVALID_OVERLAP = "Overlap must be non-negative and less than chunk size"
 ERROR_EMPTY_TEXT = "Text is empty, nothing to split"
 ERROR_SPLITTING_FAILED = "Failed to split text"
 
+# ============================================================================
+# RAG (RETRIEVAL-AUGMENTED GENERATION) CONSTANTS
+# ============================================================================
+
+# RAG Chain Messages
+MSG_RAG_CHAIN_INITIALIZED = "RAG chain initialized successfully"
+MSG_RAG_QUERY_PROCESSING = "Processing RAG query"
+MSG_RAG_QUERY_COMPLETED = "RAG query completed successfully"
+MSG_RAG_NO_RELEVANT_DOCS = "No relevant documents found for query"
+MSG_RAG_INSUFFICIENT_CONTEXT = "Insufficient context to answer question"
+
+# RAG Error Messages
+ERROR_RAG_CHAIN_INIT_FAILED = "Failed to initialize RAG chain"
+ERROR_RAG_QUERY_FAILED = "RAG query processing failed"
+ERROR_RAG_RETRIEVAL_FAILED = "Document retrieval failed"
+ERROR_RAG_LLM_FAILED = "LLM generation failed"
+ERROR_RAG_INVALID_QUERY = "Invalid query: query cannot be empty"
+
+# RAG Configuration Defaults
+DEFAULT_RETRIEVAL_K = 5
+DEFAULT_LLM_TEMPERATURE = 0.1
+DEFAULT_MAX_TOKENS = 1000
+MIN_RETRIEVAL_K = 1
+MAX_RETRIEVAL_K = 20
+
+# RAG Response Keys
+RESPONSE_KEY_ANSWER = "answer"
+RESPONSE_KEY_SOURCES = "sources"
+RESPONSE_KEY_QUERY = "query"
+RESPONSE_KEY_RETRIEVAL_COUNT = "retrieval_count"
+RESPONSE_KEY_HAS_ANSWER = "has_answer"
+
+# LLM Providers
+LLM_PROVIDER_GOOGLE = "google"
+LLM_PROVIDER_OPENAI = "openai"
+LLM_PROVIDER_ANTHROPIC = "anthropic"
+
+
+# ============================================================================
+# SECURITY GUARDRAILS CONSTANTS
+# ============================================================================
+
+# Validation reasons
+VALIDATION_REASON_EMPTY_INPUT = "Empty input"
+VALIDATION_REASON_INPUT_TOO_LONG = "Input exceeds maximum length"
+VALIDATION_REASON_FORBIDDEN_CHARS = "Input contains forbidden characters"
+VALIDATION_REASON_FORBIDDEN_PATTERNS = "Input contains forbidden patterns"
+VALIDATION_REASON_TOO_MANY_SPECIAL_CHARS = "Too many special characters"
+VALIDATION_REASON_PROMPT_INJECTION = "Potential prompt injection detected"
+VALIDATION_REASON_SYSTEM_PROMPT_LEAK = "Output contains system information"
+VALIDATION_REASON_HARMFUL_CONTENT = "Output contains potentially harmful content"
+VALIDATION_REASON_EXCESSIVE_NEWLINES = "Suspicious formatting detected"
+VALIDATION_REASON_SUSPICIOUS_CODE_BLOCK = "Suspicious code block detected"
+
+# Validation configuration
+MAX_QUERY_LENGTH = 2000
+MAX_SPECIAL_CHAR_RATIO = 0.3
+MAX_NEWLINES_ALLOWED = 10
+
+# Security error messages
+ERROR_INVALID_INPUT = "Invalid input: input validation failed"
+ERROR_PROMPT_INJECTION = "Security violation: prompt injection detected"
+ERROR_UNSAFE_OUTPUT = "Security violation: unsafe output detected"
+ERROR_BLOCKED_BY_GUARDRAILS = "Request blocked by security guardrails"
+ERROR_OUTPUT_BLOCKED = "Output blocked by security guardrails"
+
+# Security messages
+MSG_GUARDRAILS_INITIALIZED = "Guardrails initialized"
+MSG_INPUT_VALIDATION_PASSED = "Input validation passed"
+MSG_NO_INJECTION_DETECTED = "No prompt injection detected"
+MSG_OUTPUT_VALIDATION_PASSED = "Output validation passed"
+MSG_SECURITY_VIOLATIONS_DETECTED = "Security violations detected"
+MSG_OUTPUT_VIOLATIONS_DETECTED = "Output security violations detected"
+MSG_QUERY_BLOCKED = "Query blocked by guardrails"
+MSG_LLM_OUTPUT_BLOCKED = "LLM output blocked by guardrails"
+
+# Threat levels
+THREAT_LEVEL_NONE = "none"
+THREAT_LEVEL_LOW = "low"
+THREAT_LEVEL_MEDIUM = "medium"
+THREAT_LEVEL_HIGH = "high"
+THREAT_LEVEL_CRITICAL = "critical"
+
+# Validation result keys
+VALIDATION_KEY_IS_SAFE = "is_safe"
+VALIDATION_KEY_SANITIZED_QUERY = "sanitized_query"
+VALIDATION_KEY_VIOLATIONS = "violations"
+VALIDATION_KEY_THREAT_LEVEL = "threat_level"
+VALIDATION_KEY_ERROR_MESSAGE = "error_message"
+VALIDATION_KEY_VALIDATED_OUTPUT = "validated_output"
+
+# Guardrails configuration keys
+GUARDRAILS_KEY_ENABLED = "guardrails_enabled"
+GUARDRAILS_KEY_CONFIGURATION = "configuration"
+GUARDRAILS_KEY_VALIDATORS = "validators"
+GUARDRAILS_STATUS_ACTIVE = "active"
+GUARDRAILS_STATUS_DISABLED = "disabled"
+

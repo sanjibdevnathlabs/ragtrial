@@ -130,3 +130,31 @@ host = "0.0.0.0"                  # API server host
 port = 8000                       # API server port
 cors_origins = ["*"]              # CORS allowed origins
 upload_chunk_size = 1048576       # Upload chunk size (1MB)
+
+# RAG (Retrieval-Augmented Generation) Configuration
+[rag]
+provider = "google"               # LLM provider: google, openai, anthropic
+retrieval_k = 5                   # Number of documents to retrieve
+
+# Google (Gemini) LLM settings
+[rag.google]
+api_key = "$GEMINI_API_KEY"       # Uses same key as embeddings
+model = "gemini-2.5-flash"        # Model: gemini-2.0-flash, gemini-2.5-flash, gemini-2.5-pro
+temperature = 0.1                 # Lower temperature for factual answers (0.0-2.0)
+max_tokens = 1000                 # Maximum response length
+
+# OpenAI (GPT) LLM settings
+[rag.openai]
+api_key = "$OPENAI_API_KEY"      # Uses same key as embeddings
+model = "gpt-4o-mini"            # Model: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
+temperature = 0.1                 # Lower temperature for factual answers (0.0-2.0)
+max_tokens = 1000                 # Maximum response length
+verify_ssl = true                 # SSL certificate verification
+
+# Anthropic (Claude) LLM settings
+[rag.anthropic]
+api_key = "$ANTHROPIC_API_KEY"   # Separate API key
+model = "claude-3-5-sonnet-20241022"  # Model: claude-3-5-sonnet, claude-3-opus, claude-3-haiku
+temperature = 0.1                 # Lower temperature for factual answers (0.0-1.0)
+max_tokens = 1000                 # Maximum response length
+verify_ssl = true                 # SSL certificate verification
