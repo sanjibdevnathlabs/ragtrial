@@ -35,6 +35,50 @@ class GoogleConfig:
 
 
 # ============================================================================
+# STORAGE BACKEND CONFIGS
+# ============================================================================
+
+class LocalStorageConfig:
+    """Local storage-specific configuration"""
+    path: str = "source_docs"
+    create_if_missing: bool = True
+
+
+class S3StorageConfig:
+    """S3 storage-specific configuration"""
+    bucket_name: str = "rag-documents"
+    region: str = "us-east-1"
+    use_explicit_credentials: bool = False
+    access_key_id: str = ""
+    secret_access_key: str = ""
+    endpoint_url: str = ""
+    use_localstack: bool = False
+    role_arn: str = ""
+    role_session_name: str = "rag-app"
+
+
+class StorageConfig:
+    """Storage backend configuration"""
+    backend: str = "local"
+    max_file_size_mb: int = 100
+    allowed_extensions: list = None
+    local: LocalStorageConfig = None
+    s3: S3StorageConfig = None
+
+
+# ============================================================================
+# API CONFIGS
+# ============================================================================
+
+class APIConfig:
+    """API server configuration"""
+    host: str = "0.0.0.0"
+    port: int = 8000
+    cors_origins: list = None
+    upload_chunk_size: int = 1048576  # 1MB
+
+
+# ============================================================================
 # VECTORSTORE PROVIDER CONFIGS
 # ============================================================================
 
@@ -149,6 +193,12 @@ class Config:
     # This attribute will hold all settings from the [google] section
     google: GoogleConfig
     
+    # Storage backend configuration
+    storage: StorageConfig
+    
+    # API configuration
+    api: APIConfig
+    
     # Vector store configuration
     vectorstore: VectorStoreConfig
     
@@ -169,6 +219,12 @@ class Config:
         self.app = AppConfig()
         self.logging = LoggingConfig()
         self.google = GoogleConfig()
+        
+        self.storage = StorageConfig()
+        self.storage.local = LocalStorageConfig()
+        self.storage.s3 = S3StorageConfig()
+        
+        self.api = APIConfig()
         
         self.vectorstore = VectorStoreConfig()
         self.vectorstore.chroma = ChromaConfig()
@@ -216,8 +272,14 @@ class Config:
         self._populate_config_section(settings, "app", self.app)
         self._populate_config_section(settings, "logging", self.logging)
         self._populate_config_section(settings, "google", self.google)
+        self._populate_config_section(settings, "storage", self.storage)
+        self._populate_config_section(settings, "api", self.api)
         self._populate_config_section(settings, "vectorstore", self.vectorstore)
         self._populate_config_section(settings, "embeddings", self.embeddings)
+        
+        storage_settings = settings.get("storage", {})
+        self._populate_config_section(storage_settings, "local", self.storage.local)
+        self._populate_config_section(storage_settings, "s3", self.storage.s3)
         
         vectorstore_settings = settings.get("vectorstore", {})
         self._populate_config_section(vectorstore_settings, "chroma", self.vectorstore.chroma)

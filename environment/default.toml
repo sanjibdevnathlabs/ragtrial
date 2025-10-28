@@ -88,3 +88,45 @@ model = "voyage-2"                # voyage-2, voyage-large-2
 input_type = "document"           # document or query
 batch_size = 128
 verify_ssl = true                 # SSL certificate verification (disable for dev if needed)
+
+# Storage Backend Configuration
+[storage]
+backend = "local"                 # Storage backend: local, s3
+max_file_size_mb = 100            # Maximum file size for uploads
+allowed_extensions = [".pdf", ".txt", ".md", ".csv", ".docx", ".json"]
+
+# Local Storage settings
+[storage.local]
+path = "source_docs"              # Local directory for document storage
+create_if_missing = true          # Create directory if it doesn't exist
+
+# S3 Storage settings
+[storage.s3]
+bucket_name = "rag-documents"     # S3 bucket name
+region = "us-east-1"              # AWS region
+
+# Credential handling (in priority order):
+# 1. IAM Role (EC2/ECS/Lambda) - Automatic, most secure
+# 2. IRSA (Kubernetes Service Account) - Automatic
+# 3. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+# 4. AWS CLI config (~/.aws/credentials)
+# 5. Explicit credentials below (NOT RECOMMENDED for production)
+
+use_explicit_credentials = false  # Set to true only for LocalStack
+access_key_id = ""                # Leave empty to use credential chain
+secret_access_key = ""            # Leave empty to use credential chain
+
+# Optional: For LocalStack (local S3 testing)
+endpoint_url = ""                 # Set to "http://localhost:4566" for LocalStack
+use_localstack = false            # Set to true for LocalStack development
+
+# Optional: Role assumption (cross-account access)
+role_arn = ""                     # e.g., "arn:aws:iam::123456789012:role/rag-role"
+role_session_name = "rag-app"     # Session name for role assumption
+
+# API Configuration
+[api]
+host = "0.0.0.0"                  # API server host
+port = 8000                       # API server port
+cors_origins = ["*"]              # CORS allowed origins
+upload_chunk_size = 1048576       # Upload chunk size (1MB)

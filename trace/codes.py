@@ -194,3 +194,77 @@ MSG_SPLITTER_INVALID_PARAMS = "Invalid splitting parameters"
 MSG_SPLITTER_EMPTY_TEXT = "No text to split"
 MSG_SPLITTER_ERROR = "Error splitting documents"
 
+# ============================================================================
+# STORAGE BACKEND TRACE CODES & MESSAGES
+# ============================================================================
+
+# Storage trace codes
+STORAGE_INITIALIZING = "storage_initializing"
+STORAGE_INITIALIZED = "storage_initialized"
+STORAGE_UPLOADING = "storage_uploading"
+STORAGE_UPLOADED = "storage_uploaded"
+STORAGE_DOWNLOADING = "storage_downloading"
+STORAGE_DOWNLOADED = "storage_downloaded"
+STORAGE_DELETING = "storage_deleting"
+STORAGE_DELETED = "storage_deleted"
+STORAGE_LISTING = "storage_listing"
+STORAGE_LISTED = "storage_listed"
+STORAGE_FILE_EXISTS = "storage_file_exists"
+STORAGE_FILE_NOT_FOUND = "storage_file_not_found"
+STORAGE_ERROR = "storage_error"
+STORAGE_CREDENTIALS_FOUND = "storage_credentials_found"
+STORAGE_USING_IAM_ROLE = "storage_using_iam_role"
+STORAGE_USING_IRSA = "storage_using_irsa"
+STORAGE_BUCKET_ACCESS_VERIFIED = "storage_bucket_access_verified"
+
+# Storage messages
+MSG_STORAGE_INITIALIZED = "Storage backend initialized successfully"
+MSG_STORAGE_UPLOADED = "File uploaded successfully"
+MSG_STORAGE_DOWNLOADED = "File downloaded successfully"
+MSG_STORAGE_DELETED = "File deleted successfully"
+MSG_STORAGE_FILE_EXISTS = "File exists in storage"
+MSG_STORAGE_FILE_NOT_FOUND = "File not found in storage"
+MSG_STORAGE_ERROR = "Storage operation failed"
+MSG_STORAGE_NO_CREDENTIALS = "No AWS credentials found"
+MSG_STORAGE_BUCKET_ACCESS_DENIED = "Access denied to S3 bucket"
+
+# ============================================================================
+# API TRACE CODES & MESSAGES
+# ============================================================================
+
+# API trace codes
+API_SERVER_STARTING = "api_server_starting"
+API_SERVER_STARTED = "api_server_started"
+API_SERVER_SHUTDOWN = "api_server_shutdown"
+API_REQUEST_RECEIVED = "api_request_received"
+API_REQUEST_COMPLETED = "api_request_completed"
+API_HEALTH_CHECK_REQUESTED = "api_health_check_requested"
+API_UPLOAD_STARTED = "api_upload_started"
+API_UPLOAD_COMPLETED = "api_upload_completed"
+API_UPLOAD_FAILED = "api_upload_failed"
+API_FILE_TOO_LARGE = "api_file_too_large"
+API_INVALID_FILE_TYPE = "api_invalid_file_type"
+API_FILE_DELETED = "api_file_deleted"
+API_FILE_NOT_FOUND = "api_file_not_found"
+API_FILES_LISTED = "api_files_listed"
+API_FILE_METADATA_RETRIEVED = "api_file_metadata_retrieved"
+API_VALIDATION_ERROR = "api_validation_error"
+API_ERROR = "api_error"
+
+# API messages
+MSG_API_SERVER_STARTED = "API server started successfully"
+MSG_API_SERVER_SHUTDOWN = "API server shutdown initiated"
+MSG_API_UPLOAD_COMPLETED = "File upload completed"
+MSG_API_UPLOAD_FAILED = "File upload failed"
+MSG_API_FILE_TOO_LARGE = "File size exceeds maximum allowed"
+MSG_API_INVALID_FILE_TYPE = "File type not supported"
+MSG_API_FILE_DELETED = "File deleted successfully"
+MSG_API_FILE_NOT_FOUND = "File not found"
+MSG_API_FILES_LISTED = "Files listed successfully"
+MSG_API_ERROR = "An error occurred processing the request"
+
+# Storage dependency trace codes
+STORAGE_DEPENDENCY_INJECTING = "storage_dependency_injecting"
+STORAGE_DEPENDENCY_RELEASED = "storage_dependency_released"
+STORAGE_FACTORY_CREATING = "storage_factory_creating"
+

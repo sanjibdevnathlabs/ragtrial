@@ -115,6 +115,70 @@ ERROR_NO_FILES_FOUND = "No supported files found in directory"
 ERROR_DIRECTORY_NOT_FOUND = "Source directory not found"
 ERROR_FILE_PROCESSING_FAILED = "Failed to process file"
 
+# ============================================================================
+# STORAGE BACKEND CONSTANTS
+# ============================================================================
+
+# Storage backends
+STORAGE_BACKEND_LOCAL = "local"
+STORAGE_BACKEND_S3 = "s3"
+
+# Storage operations
+OPERATION_UPLOAD = "upload"
+OPERATION_DOWNLOAD = "download"
+OPERATION_DELETE = "delete"
+OPERATION_LIST = "list"
+OPERATION_EXISTS = "exists"
+
+# Local storage
+DEFAULT_LOCAL_STORAGE_PATH = "source_docs"
+
+# S3 storage
+DEFAULT_S3_REGION = "us-east-1"
+S3_CREDENTIAL_METHOD_IAM_ROLE = "IAM Role"
+S3_CREDENTIAL_METHOD_IRSA = "IRSA"
+S3_CREDENTIAL_METHOD_ENV_VARS = "Environment Variables"
+S3_CREDENTIAL_METHOD_EXPLICIT = "Explicit Credentials"
+
+# Storage errors
+ERROR_STORAGE_NOT_INITIALIZED = "Storage backend not initialized"
+ERROR_FILE_NOT_FOUND_STORAGE = "File not found in storage"
+ERROR_UPLOAD_FAILED = "File upload failed"
+ERROR_DOWNLOAD_FAILED = "File download failed"
+ERROR_DELETE_FAILED = "File deletion failed"
+ERROR_INVALID_STORAGE_BACKEND = "Invalid storage backend"
+ERROR_NO_AWS_CREDENTIALS = "No AWS credentials found"
+ERROR_BUCKET_NOT_FOUND = "S3 bucket not found"
+ERROR_BUCKET_ACCESS_DENIED = "Access denied to S3 bucket"
+
+# ============================================================================
+# API CONSTANTS
+# ============================================================================
+
+# API settings
+DEFAULT_API_HOST = "0.0.0.0"
+DEFAULT_API_PORT = 8000
+DEFAULT_UPLOAD_CHUNK_SIZE = 1048576  # 1MB
+DEFAULT_MAX_FILE_SIZE_MB = 100
+
+# HTTP status messages
+HTTP_STATUS_OK = "OK"
+HTTP_STATUS_CREATED = "Created"
+HTTP_STATUS_BAD_REQUEST = "Bad Request"
+HTTP_STATUS_NOT_FOUND = "Not Found"
+HTTP_STATUS_INTERNAL_ERROR = "Internal Server Error"
+
+# API errors
+ERROR_FILE_TOO_LARGE = "File size exceeds maximum allowed"
+ERROR_INVALID_FILE_TYPE = "File type not allowed"
+ERROR_NO_FILE_PROVIDED = "No file provided"
+ERROR_UPLOAD_FAILED_API = "File upload failed"
+
+# API success messages
+SUCCESS_FILE_UPLOADED = "File uploaded successfully"
+SUCCESS_FILE_DELETED = "File deleted successfully"
+SUCCESS_FILES_LISTED = "Files listed successfully"
+
 # Next step instructions (quick test)
 NEXT_STEP_API_TEST = "Next Step: Test with API"
 API_TEST_COMMAND = "   Run: python scripts/setup_database.py"

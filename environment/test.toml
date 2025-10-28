@@ -70,3 +70,33 @@ api_key = "test-weaviate-api-key-dummy"  # Dummy key - tests are mocked
 level = "WARNING"  # Reduce noise during tests
 format = "json"
 
+# Storage Backend Configuration (Test)
+[storage]
+backend = "local"
+max_file_size_mb = 100
+allowed_extensions = [".pdf", ".txt", ".md", ".csv", ".docx", ".json"]
+
+# Local Storage settings
+[storage.local]
+path = "storage/test_documents"
+create_if_missing = true
+
+# S3 Storage settings (for testing)
+[storage.s3]
+bucket_name = "test-rag-documents"
+region = "us-east-1"
+use_explicit_credentials = true
+access_key_id = "test"
+secret_access_key = "test"
+endpoint_url = ""
+use_localstack = false
+role_arn = ""
+role_session_name = "test-session"
+
+# API Configuration (Test)
+[api]
+host = "127.0.0.1"
+port = 8001
+cors_origins = ["*"]
+upload_chunk_size = 1048576
+
