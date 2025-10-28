@@ -913,3 +913,21 @@ DB_POOL_PRE_PING_DEFAULT = True
 DB_POOL_RECYCLE_DEFAULT = 3600
 DB_CONNECT_TIMEOUT_DEFAULT = 10
 
+# ============================================================================
+# API UPLOAD CONSTANTS
+# ============================================================================
+
+# Upload error messages
+ERROR_UPLOAD_BOTH_FIELDS = "Cannot use both 'file' and 'files' fields. Use one or the other."
+ERROR_UPLOAD_NO_FILES = "No files provided"
+ERROR_UPLOAD_NO_FILE_OR_FILES = "No file or files provided. Use 'file' for single upload or 'files' for batch upload."
+ERROR_UPLOAD_FAILED = "Upload failed"
+ERROR_UPLOAD_READ_FAILED = "Failed to read uploaded file"
+
+# Upload error codes
+ERROR_CODE_INVALID_REQUEST = "INVALID_REQUEST"
+ERROR_CODE_NO_FILES = "NO_FILES"
+ERROR_CODE_VALIDATION_ERROR = "VALIDATION_ERROR"
+ERROR_CODE_UPLOAD_ERROR = "UPLOAD_ERROR"
+ERROR_CODE_READ_ERROR = "READ_ERROR"
+
