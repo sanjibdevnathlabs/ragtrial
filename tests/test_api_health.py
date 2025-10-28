@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import Mock
 
 from app.modules.health import HealthService
-from app.api.models import HealthResponse
+from app.modules.health.response import HealthResponse
 from config import Config
 
 

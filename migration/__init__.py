@@ -6,9 +6,7 @@ Laravel/Goose-style migration management with:
 - Up/down migration support
 - Migration status tracking
 - Rollback and reset capabilities
+
+Import directly from migration.manager:
+    from migration.manager import MigrationManager
 """
-
-from migration.manager import MigrationManager
-
-__all__ = ["MigrationManager"]
-

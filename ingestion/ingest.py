@@ -1,16 +1,17 @@
 """
 Document Ingestion Pipeline.
 
-Loads documents from source_docs/, processes them through the pipeline:
-  1. Load documents (auto-detect format)
-  2. Split into chunks
-  3. Generate embeddings
-  4. Store in vectorstore
+Processes unindexed documents from database through the pipeline:
+  1. Query database for files where indexed=false
+  2. Load documents from file_path
+  3. Split into chunks
+  4. Generate embeddings
+  5. Store in vectorstore
+  6. Mark as indexed=true in database
 
 Usage:
-    python -m ingestion.ingest                    # Process all files
+    python -m ingestion.ingest                    # Process all unindexed files
     python -m ingestion.ingest --clear            # Clear vectorstore first
-    python -m ingestion.ingest --dir custom/      # Custom source directory
 """
 
 import argparse
@@ -44,13 +45,6 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=constants.INGESTION_HEADER,
         formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    
-    parser.add_argument(
-        "--dir",
-        type=str,
-        default=constants.DEFAULT_SOURCE_DIR,
-        help=f"Source directory (default: {constants.DEFAULT_SOURCE_DIR})"
     )
     
     parser.add_argument(
@@ -153,7 +147,6 @@ def process_file(
 
 
 def ingest_documents(
-    source_dir: Path,
     config: Config,
     clear_first: bool = False
 ) -> Tuple[int, int, int, int]:
@@ -164,7 +157,6 @@ def ingest_documents(
     the file_path column, stores in vectorstore, and marks as indexed=true.
     
     Args:
-        source_dir: Source directory (used for backward compatibility, but ignored)
         config: Application configuration
         clear_first: Whether to clear vectorstore first
         
@@ -385,15 +377,11 @@ def main():
         logger.info(codes.INGESTION_SCRIPT_STARTED)
         logger.info(codes.CONFIGURATION_LOADED)
         
-        # Get source directory
-        source_dir = Path(args.dir)
-        
         # Start timer
         start_time = time.time()
         
         # Run ingestion
         successful, failed, skipped, total_chunks = ingest_documents(
-            source_dir=source_dir,
             config=config,
             clear_first=args.clear
         )

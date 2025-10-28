@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import Mock, AsyncMock
 
 from app.modules.upload import UploadService
-from app.api.models import UploadResponse
+from app.modules.upload.response import UploadResponse
 from config import Config
 from storage_backend.base import StorageProtocol
 

@@ -11,7 +11,7 @@ import time
 from app.modules.files import FileManagementService
 from app.modules.file.core import FileService as DBFileService
 from app.modules.file.entity import File
-from app.api.models import FileListResponse, FileMetadataResponse
+from app.modules.files.response import FileListResponse, FileMetadataResponse
 from config import Config
 from storage_backend.base import StorageProtocol
 

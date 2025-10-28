@@ -1,3 +1,20 @@
+"""
+Configuration module for RAG application.
+
+This module provides a singleton Config class that loads settings from TOML files
+and makes them available throughout the application.
+
+Configuration classes are organized by domain in separate modules:
+- app: Application metadata configuration
+- logging: Logging configuration
+- api: API server configuration
+- storage: Storage backend configuration
+- database: Database configuration (SQLite, MySQL, PostgreSQL)
+- vectorstore: Vector store configuration (Chroma, Pinecone, Qdrant, Weaviate)
+- embeddings: Embeddings provider configuration
+- llm: LLM provider configuration
+- rag: RAG chain configuration
+"""
 
 import os
 import tomllib  # Built-in TOML parser for Python 3.11+
@@ -12,318 +29,42 @@ from logger import get_logger
 # Import singleton metaclass for thread-safe singleton pattern
 from utils.singleton import SingletonMeta
 
+# Import configuration classes needed internally by Config class
+from config.app import AppConfig
+from config.logging import LoggingConfig
+from config.api import APIConfig
+from config.storage import LocalStorageConfig, S3StorageConfig, StorageConfig
+from config.database import (
+    SQLiteWriteConfig,
+    SQLiteReadConfig,
+    SQLiteConfig,
+    MySQLWriteConfig,
+    MySQLReadConfig,
+    MySQLConfig,
+    PostgreSQLWriteConfig,
+    PostgreSQLReadConfig,
+    PostgreSQLConfig,
+    DatabaseConfig,
+)
+from config.vectorstore import (
+    ChromaConfig,
+    PineconeConfig,
+    QdrantConfig,
+    WeaviateConfig,
+    VectorStoreConfig,
+)
+from config.embeddings import (
+    GoogleEmbeddingsConfig,
+    OpenAIEmbeddingsConfig,
+    HuggingFaceEmbeddingsConfig,
+    AnthropicEmbeddingsConfig,
+    EmbeddingsConfig,
+)
+from config.llm import GoogleLLMConfig, OpenAILLMConfig, AnthropicLLMConfig
+from config.rag import GoogleConfig, RAGConfig
+
 # Initialize logger for config module
 logger = get_logger(__name__)
-
-
-
-class AppConfig:
-    """Holds application metadata from the [app] TOML section"""
-    name: str = None
-    environment: str = None
-    version: str = None
-
-
-class LoggingConfig:
-    """Holds logging configuration from the [logging] TOML section"""
-    level: str = "INFO"
-    format: str = "console"
-    include_caller: bool = False
-    include_process_info: bool = False
-
-
-class GoogleConfig:
-    """Holds settings from the [google] TOML section"""
-    api_key: str = None
-
-
-# ============================================================================
-# STORAGE BACKEND CONFIGS
-# ============================================================================
-
-class LocalStorageConfig:
-    """Local storage-specific configuration"""
-    path: str = "source_docs"
-    create_if_missing: bool = True
-
-
-class S3StorageConfig:
-    """S3 storage-specific configuration"""
-    bucket_name: str = "rag-documents"
-    region: str = "us-east-1"
-    use_explicit_credentials: bool = False
-    access_key_id: str = ""
-    secret_access_key: str = ""
-    endpoint_url: str = ""
-    use_localstack: bool = False
-    role_arn: str = ""
-    role_session_name: str = "rag-app"
-
-
-class StorageConfig:
-    """Storage backend configuration"""
-    backend: str = "local"
-    max_file_size_mb: int = 100
-    allowed_extensions: list = None
-    local: LocalStorageConfig = None
-    s3: S3StorageConfig = None
-
-
-# ============================================================================
-# API CONFIGS
-# ============================================================================
-
-class APIConfig:
-    """API server configuration"""
-    host: str = "0.0.0.0"
-    port: int = 8000
-    cors_origins: list = None
-    upload_chunk_size: int = 1048576  # 1MB
-
-
-# ============================================================================
-# VECTORSTORE PROVIDER CONFIGS
-# ============================================================================
-
-class ChromaConfig:
-    """ChromaDB-specific configuration"""
-    persist_directory: str = "storage/chroma"
-    distance_function: str = "cosine"
-    anonymized_telemetry: bool = False
-
-
-class PineconeConfig:
-    """Pinecone-specific configuration"""
-    api_key: str = None
-    cloud: str = "aws"           # Cloud provider: aws, gcp, azure
-    region: str = "us-east-1"    # Cloud region (AWS: us-east-1, GCP: us-central1, Azure: eastus)
-    index_name: str = "rag-documents"
-    dimension: int = 768
-    metric: str = "cosine"       # Similarity metric: cosine, euclidean, dotproduct
-    verify_ssl: bool = True      # SSL certificate verification (disable for dev if needed)
-
-
-class QdrantConfig:
-    """Qdrant-specific configuration"""
-    host: str = "localhost"
-    port: int = 6333
-    grpc_port: int = 6334
-    prefer_grpc: bool = False
-    api_key: str = ""
-    distance: str = "Cosine"
-
-
-class WeaviateConfig:
-    """Weaviate-specific configuration"""
-    url: str = "http://localhost:8080"
-    api_key: str = ""
-    class_name: str = "RagDocument"
-    distance: str = "cosine"
-    grpc_port: int = 50051  # Default gRPC port (must differ from HTTP port)
-    default_http_port: int = 8080  # Default HTTP port if not in URL
-    default_https_port: int = 443  # Default HTTPS port if not in URL
-
-
-class VectorStoreConfig:
-    """Vector store configuration"""
-    provider: str = "chroma"
-    collection_name: str = "rag_documents"
-    chroma: ChromaConfig = None
-    pinecone: PineconeConfig = None
-    qdrant: QdrantConfig = None
-    weaviate: WeaviateConfig = None
-
-
-# ============================================================================
-# EMBEDDINGS PROVIDER CONFIGS
-# ============================================================================
-
-class GoogleEmbeddingsConfig:
-    """Google embeddings-specific configuration"""
-    model: str = "models/text-embedding-004"
-    task_type: str = "retrieval_document"
-    batch_size: int = 100
-    title: str = ""
-
-
-class OpenAIEmbeddingsConfig:
-    """OpenAI embeddings-specific configuration"""
-    api_key: str = None
-    model: str = "text-embedding-3-small"
-    batch_size: int = 100
-    dimensions: int = 1536
-    verify_ssl: bool = True
-
-
-class HuggingFaceEmbeddingsConfig:
-    """HuggingFace embeddings-specific configuration"""
-    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
-    cache_folder: str = "models/huggingface"
-    device: str = "cpu"
-
-
-class AnthropicEmbeddingsConfig:
-    """Anthropic (Voyage AI) embeddings-specific configuration"""
-    api_key: str = None
-    model: str = "voyage-2"
-    input_type: str = "document"
-    batch_size: int = 128
-    verify_ssl: bool = True
-
-
-class EmbeddingsConfig:
-    """Embeddings configuration"""
-    provider: str = "google"
-    dimension: int = 768
-    google: GoogleEmbeddingsConfig = None
-    openai: OpenAIEmbeddingsConfig = None
-    huggingface: HuggingFaceEmbeddingsConfig = None
-    anthropic: AnthropicEmbeddingsConfig = None
-
-
-# ============================================================================
-# LLM (LARGE LANGUAGE MODEL) PROVIDER CONFIGS
-# ============================================================================
-
-class GoogleLLMConfig:
-    """Google (Gemini) LLM-specific configuration"""
-    api_key: str = None
-    model: str = "gemini-2.0-flash"
-    temperature: float = 0.1
-    max_tokens: int = 1000
-
-
-class OpenAILLMConfig:
-    """OpenAI (GPT) LLM-specific configuration"""
-    api_key: str = None
-    model: str = "gpt-4o-mini"
-    temperature: float = 0.1
-    max_tokens: int = 1000
-    verify_ssl: bool = True
-
-
-class AnthropicLLMConfig:
-    """Anthropic (Claude) LLM-specific configuration"""
-    api_key: str = None
-    model: str = "claude-3-5-sonnet-20241022"
-    temperature: float = 0.1
-    max_tokens: int = 1000
-    verify_ssl: bool = True
-
-
-# ============================================================================
-# RAG (RETRIEVAL-AUGMENTED GENERATION) CONFIG
-# ============================================================================
-
-class RAGConfig:
-    """RAG (Retrieval-Augmented Generation) configuration"""
-    provider: str = "google"
-    retrieval_k: int = 5
-    google: GoogleLLMConfig = None
-    openai: OpenAILLMConfig = None
-    anthropic: AnthropicLLMConfig = None
-
-
-# ============================================================================
-# DATABASE CONFIGS (MASTER-SLAVE ARCHITECTURE)
-# ============================================================================
-
-class SQLiteWriteConfig:
-    """SQLite write (master) database configuration"""
-    path: str = "storage/metadata.db"
-    debug: bool = False
-
-
-class SQLiteReadConfig:
-    """SQLite read (slave) database configuration"""
-    path: str = "storage/metadata.db"
-    debug: bool = False
-
-
-class SQLiteConfig:
-    """SQLite database configuration with read-write split"""
-    write: SQLiteWriteConfig = None
-    read: SQLiteReadConfig = None
-
-
-class MySQLWriteConfig:
-    """MySQL write (master) database configuration"""
-    host: str = "localhost"
-    port: int = 3306
-    database: str = "ragtrial"
-    username: str = "ragtrial_user"
-    password: str = ""
-    charset: str = "utf8mb4"
-    pool_size: int = 5
-    max_overflow: int = 10
-    debug: bool = False
-
-
-class MySQLReadConfig:
-    """MySQL read (slave) database configuration"""
-    host: str = "localhost"
-    port: int = 3306
-    database: str = "ragtrial"
-    username: str = "ragtrial_readonly"
-    password: str = ""
-    charset: str = "utf8mb4"
-    pool_size: int = 10
-    max_overflow: int = 20
-    debug: bool = False
-
-
-class MySQLConfig:
-    """MySQL database configuration with read-write split"""
-    write: MySQLWriteConfig = None
-    read: MySQLReadConfig = None
-
-
-class PostgreSQLWriteConfig:
-    """PostgreSQL write (master) database configuration"""
-    host: str = "localhost"
-    port: int = 5432
-    database: str = "ragtrial"
-    username: str = "ragtrial_user"
-    password: str = ""
-    schema: str = "public"
-    pool_size: int = 5
-    max_overflow: int = 10
-    debug: bool = False
-
-
-class PostgreSQLReadConfig:
-    """PostgreSQL read (slave) database configuration"""
-    host: str = "localhost"
-    port: int = 5432
-    database: str = "ragtrial"
-    username: str = "ragtrial_readonly"
-    password: str = ""
-    schema: str = "public"
-    pool_size: int = 10
-    max_overflow: int = 20
-    debug: bool = False
-
-
-class PostgreSQLConfig:
-    """PostgreSQL database configuration with read-write split"""
-    write: PostgreSQLWriteConfig = None
-    read: PostgreSQLReadConfig = None
-
-
-class DatabaseConfig:
-    """
-    Database configuration with master-slave architecture support.
-    
-    Supports three database drivers: sqlite, mysql, postgresql.
-    Each driver has separate read (slave) and write (master) configurations.
-    """
-    driver: str = "sqlite"
-    pool_pre_ping: bool = True
-    pool_recycle: int = 3600
-    connect_timeout: int = 10
-    sqlite: SQLiteConfig = None
-    mysql: MySQLConfig = None
-    postgresql: PostgreSQLConfig = None
 
 
 class Config(metaclass=SingletonMeta):
@@ -430,9 +171,8 @@ class Config(metaclass=SingletonMeta):
         
         settings = self._load_toml(default_config_path)
         
-        self.AppEnv = os.environ.get("APP_ENV")
-        if not self.AppEnv:
-            return self._interpolate(settings)
+        # Default to 'dev' environment if APP_ENV is not set
+        self.AppEnv = os.environ.get("APP_ENV", "dev")
         
         env_config_path = config_dir / f"{self.AppEnv}.toml"
         if not env_config_path.exists():

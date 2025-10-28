@@ -7,7 +7,9 @@ Provides HTTP endpoints for querying the RAG system.
 from fastapi import APIRouter, HTTPException, status
 
 from logger import get_logger
-from app.api.models import QueryRequest, QueryResponse, SourceDocument, ErrorResponse
+from app.modules.query.request import QueryRequest
+from app.modules.query.response import QueryResponse, SourceDocument
+from app.api.models.common import ErrorResponse
 from app.modules.query import QueryService
 import constants
 import trace.codes as codes

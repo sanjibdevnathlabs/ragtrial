@@ -68,19 +68,19 @@ class TestHealthEndpoint:
     
     def test_health_returns_200(self, client):
         """Test health endpoint returns 200 OK."""
-        response = client.get("/health")
+        response = client.get("/api/v1/health")
         
         assert response.status_code == 200
     
     def test_health_returns_json(self, client):
         """Test health endpoint returns JSON."""
-        response = client.get("/health")
+        response = client.get("/api/v1/health")
         
         assert response.headers["content-type"] == "application/json"
     
     def test_health_includes_status(self, client):
         """Test health response includes status."""
-        response = client.get("/health")
+        response = client.get("/api/v1/health")
         data = response.json()
         
         assert "status" in data
@@ -88,14 +88,14 @@ class TestHealthEndpoint:
     
     def test_health_includes_storage_backend(self, client):
         """Test health response includes storage backend."""
-        response = client.get("/health")
+        response = client.get("/api/v1/health")
         data = response.json()
         
         assert "storage_backend" in data
     
     def test_health_includes_version(self, client):
         """Test health response includes version."""
-        response = client.get("/health")
+        response = client.get("/api/v1/health")
         data = response.json()
         
         assert "version" in data

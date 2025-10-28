@@ -4,7 +4,7 @@ File management service.
 Handles file listing, metadata, and deletion operations using database.
 """
 
-from app.api.models import FileListResponse, FileMetadataResponse
+from app.modules.files.response import FileListResponse, FileMetadataResponse
 from app.modules.file.core import FileService as DBFileService
 from utils.singleton import SingletonMeta
 from config import Config

@@ -14,21 +14,6 @@ Architecture:
 - SQL injection prevention
 - Parameterized queries
 - Multi-database support (SQLite, MySQL, PostgreSQL)
+
+Import exceptions directly from database.exceptions if needed.
 """
-
-from database.exceptions import (
-    DatabaseError,
-    DatabaseConnectionError,
-    DatabaseSessionError,
-    DatabaseQueryError,
-    DatabaseMigrationError,
-)
-
-__all__ = [
-    "DatabaseError",
-    "DatabaseConnectionError",
-    "DatabaseSessionError",
-    "DatabaseQueryError",
-    "DatabaseMigrationError",
-]
-

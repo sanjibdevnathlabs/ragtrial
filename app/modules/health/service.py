@@ -4,7 +4,7 @@ Health check service.
 Provides system health status information.
 """
 
-from app.api.models import HealthResponse
+from app.modules.health.response import HealthResponse
 from utils.singleton import SingletonMeta
 from config import Config
 from logger import get_logger

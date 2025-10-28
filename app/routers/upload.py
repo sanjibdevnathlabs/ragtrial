@@ -9,7 +9,8 @@ from typing import Union, List, Optional
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 
 import constants
-from app.api.models import UploadResponse, ErrorResponse, BatchUploadResponse, FileUploadResult
+from app.modules.upload.response import UploadResponse, BatchUploadResponse, FileUploadResult
+from app.api.models.common import ErrorResponse
 from app.modules.upload import UploadService
 from app.api.dependencies import get_upload_service
 from logger import get_logger

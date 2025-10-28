@@ -5,7 +5,7 @@ Handles file upload operations with database integration.
 """
 
 import hashlib
-from app.api.models import UploadResponse
+from app.modules.upload.response import UploadResponse
 from app.modules.upload.validators import UploadValidator
 from app.modules.file.core import FileService as DBFileService
 from app.modules.file.entity import File
