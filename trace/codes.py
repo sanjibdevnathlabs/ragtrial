@@ -273,6 +273,8 @@ STORAGE_FACTORY_CREATING = "storage_factory_creating"
 # ============================================================================
 RAG_CHAIN_INITIALIZING = "rag_chain_initializing"
 RAG_CHAIN_INITIALIZED = "rag_chain_initialized"
+RAG_CHAIN_INIT_FAILED = "rag_chain_init_failed"
+RAG_CHAIN_NOT_INITIALIZED = "rag_chain_not_initialized"
 RAG_QUERY_RECEIVED = "rag_query_received"
 RAG_QUERY_PROCESSING = "rag_query_processing"
 RAG_RETRIEVAL_STARTED = "rag_retrieval_started"
@@ -298,6 +300,31 @@ from constants import (
     ERROR_RAG_RETRIEVAL_FAILED,
     ERROR_RAG_LLM_FAILED,
     ERROR_RAG_INVALID_QUERY,
+)
+
+
+# ============================================================================
+# API QUERY TRACE CODES & MESSAGES
+# ============================================================================
+QUERY_SERVICE_INITIALIZING = "query_service_initializing"
+QUERY_SERVICE_INITIALIZED = "query_service_initialized"
+QUERY_API_REQUEST_RECEIVED = "query_api_request_received"
+QUERY_API_VALIDATION_FAILED = "query_api_validation_failed"
+QUERY_API_PROCESSING = "query_api_processing"
+QUERY_API_COMPLETED = "query_api_completed"
+QUERY_API_FAILED = "query_api_failed"
+
+# Query messages (imported from constants)
+from constants import (
+    MSG_QUERY_RECEIVED,
+    MSG_QUERY_PROCESSING,
+    MSG_QUERY_COMPLETED,
+    MSG_QUERY_SERVICE_INITIALIZED,
+    ERROR_QUERY_EMPTY,
+    ERROR_QUERY_TOO_SHORT,
+    ERROR_QUERY_PROCESSING_FAILED,
+    ERROR_RAG_CHAIN_NOT_INITIALIZED,
+    ERROR_RAG_CHAIN_INITIALIZATION_FAILED,
 )
 
 

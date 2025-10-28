@@ -58,7 +58,7 @@ class TestUploadFile:
         
         service.upload_file("test.pdf", content)
         
-        mock_storage.upload_file.assert_called_once_with("test.pdf", content)
+        mock_storage.upload_file.assert_called_once_with(content, "test.pdf")
     
     def test_upload_file_returns_correct_path(self, service, mock_storage):
         """Test upload returns storage path."""

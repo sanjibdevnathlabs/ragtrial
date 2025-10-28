@@ -654,6 +654,33 @@ LLM_PROVIDER_ANTHROPIC = "anthropic"
 
 
 # ============================================================================
+# API QUERY CONSTANTS
+# ============================================================================
+
+# Query Messages
+MSG_QUERY_RECEIVED = "Query received"
+MSG_QUERY_PROCESSING = "Processing query"
+MSG_QUERY_COMPLETED = "Query completed successfully"
+MSG_QUERY_SERVICE_INITIALIZED = "Query service initialized successfully"
+
+# Query Error Messages
+ERROR_QUERY_EMPTY = "Query cannot be empty"
+ERROR_QUERY_TOO_SHORT = "Query is too short (minimum 3 characters)"
+ERROR_QUERY_PROCESSING_FAILED = "Failed to process query"
+ERROR_RAG_CHAIN_NOT_INITIALIZED = "RAG chain not initialized"
+ERROR_RAG_CHAIN_INITIALIZATION_FAILED = "Failed to initialize RAG chain"
+
+# Query Configuration
+MIN_QUERY_LENGTH = 3
+MAX_QUERY_LENGTH_API = 1000
+
+# Query Response Keys (API-specific, complement RAG response keys)
+RESPONSE_KEY_SUCCESS = "success"
+RESPONSE_KEY_ERROR = "error"
+RESPONSE_KEY_ERROR_CODE = "error_code"
+
+
+# ============================================================================
 # SECURITY GUARDRAILS CONSTANTS
 # ============================================================================
 

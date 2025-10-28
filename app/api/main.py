@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from app.routers import health, upload, files
+from app.routers import health, upload, files, query
 from config import Config
 from logger import get_logger
 import trace.codes as codes
@@ -54,8 +54,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title="RAG Document Upload API",
-    description="API for uploading and managing documents for RAG applications",
+    title="RAG Application API",
+    description="API for document management and RAG query operations",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -75,6 +75,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(upload.router)
 app.include_router(files.router)
+app.include_router(query.router)
 
 
 @app.exception_handler(Exception)
@@ -118,11 +119,16 @@ async def root():
         dict: API welcome message and version
     """
     return {
-        "name": "RAG Document Upload API",
+        "name": "RAG Application API",
         "version": "1.0.0",
         "status": "running",
         "docs": "/docs",
-        "health": "/health"
+        "endpoints": {
+            "health": "/health",
+            "upload": "/upload",
+            "files": "/files",
+            "query": "/query"
+        }
     }
 
 

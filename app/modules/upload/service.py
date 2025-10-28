@@ -106,7 +106,7 @@ class UploadService(metaclass=SingletonMeta):
             Exception: If storage fails
         """
         try:
-            return self.storage.upload_file(filename, content)
+            return self.storage.upload_file(content, filename)
         except Exception as e:
             logger.error(
                 codes.API_UPLOAD_FAILED,

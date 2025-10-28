@@ -362,6 +362,14 @@ class Config(metaclass=SingletonMeta):
         self._populate_config_section(embeddings_settings, "huggingface", self.embeddings.huggingface)
         self._populate_config_section(embeddings_settings, "anthropic", self.embeddings.anthropic)
         
+        # Populate RAG configuration
+        self._populate_config_section(settings, "rag", self.rag)
+        
+        rag_settings = settings.get("rag", {})
+        self._populate_config_section(rag_settings, "google", self.rag.google)
+        self._populate_config_section(rag_settings, "openai", self.rag.openai)
+        self._populate_config_section(rag_settings, "anthropic", self.rag.anthropic)
+        
         logger.info(codes.CONFIG_LOADED, message=codes.MSG_CONFIG_LOADED)
 
     def _validate_config(self) -> None:

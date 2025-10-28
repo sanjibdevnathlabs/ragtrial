@@ -55,7 +55,7 @@ class LocalStorage:
         Upload file to local storage.
         
         Args:
-            file_stream: Binary file stream
+            file_stream: Binary file stream or bytes
             filename: Target filename
             
         Returns:
@@ -69,7 +69,11 @@ class LocalStorage:
             backend=constants.STORAGE_BACKEND_LOCAL
         )
         
-        file_path.write_bytes(file_stream.read())
+        # Handle both bytes and file stream
+        if isinstance(file_stream, bytes):
+            file_path.write_bytes(file_stream)
+        else:
+            file_path.write_bytes(file_stream.read())
         
         logger.info(
             codes.STORAGE_UPLOADED,
