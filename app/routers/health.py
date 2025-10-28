@@ -10,7 +10,7 @@ from app.api.models import HealthResponse
 from app.modules.health import HealthService
 from app.api.dependencies import get_health_service
 
-router = APIRouter(tags=["health"])
+router = APIRouter(prefix="/api/v1", tags=["health"])
 
 
 @router.get("/health", response_model=HealthResponse)

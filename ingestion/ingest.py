@@ -17,7 +17,7 @@ import argparse
 import sys
 import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import constants
 from config import Config
@@ -28,6 +28,7 @@ from logger import get_logger, setup_logging
 from splitter import DocumentSplitter
 from trace import codes
 from vectorstore.factory import create_vectorstore
+from app.modules.file.core import FileService
 
 
 logger = get_logger(__name__)
@@ -157,25 +158,35 @@ def ingest_documents(
     clear_first: bool = False
 ) -> Tuple[int, int, int, int]:
     """
-    Ingest all documents from directory into vectorstore.
+    Ingest unindexed documents from database into vectorstore.
+    
+    Reads the database for files where indexed=false, processes them from
+    the file_path column, stores in vectorstore, and marks as indexed=true.
     
     Args:
-        source_dir: Source directory containing documents
+        source_dir: Source directory (used for backward compatibility, but ignored)
         config: Application configuration
         clear_first: Whether to clear vectorstore first
         
     Returns:
         Tuple of (successful, failed, skipped, total_chunks)
     """
-    # Scan for files
-    files = scan_directory(source_dir)
+    # Initialize file service to query database
+    file_service = FileService()
     
-    if not files:
+    # Get all unindexed files from database
+    unindexed_files = file_service.get_unindexed_files()
+    
+    if not unindexed_files:
         logger.warning(codes.INGESTION_FILES_FOUND, count=0)
-        logger.warning(codes.INGESTION_FILE_SKIPPED, message=codes.MSG_NO_FILES_FOUND)
+        logger.warning(codes.INGESTION_FILE_SKIPPED, message="No unindexed files in database")
         return 0, 0, 0, 0
     
-    logger.info(codes.INGESTION_FILES_FOUND, count=len(files))
+    logger.info(
+        codes.INGESTION_FILES_FOUND,
+        count=len(unindexed_files),
+        message="Unindexed files from database"
+    )
     
     # Initialize components
     embeddings = create_embeddings(config)
@@ -191,26 +202,45 @@ def ingest_documents(
     loader = DocumentLoader()
     splitter = DocumentSplitter()
     
-    # Process files
+    # Process files from database
     successful = 0
     failed = 0
     skipped = 0
     total_chunks = 0
     all_chunks = []
+    file_ids_to_mark = []  # Track file IDs to mark as indexed
     
-    for idx, file_path in enumerate(files, 1):
+    for idx, file_record in enumerate(unindexed_files, 1):
+        file_id = file_record['id']
+        filename = file_record['filename']
+        file_path = Path(file_record['file_path'])
+        
         logger.info(
             codes.INGESTION_PROCESSING_FILE,
             current=idx,
-            total=len(files),
-            filename=file_path.name
+            total=len(unindexed_files),
+            filename=filename,
+            file_id=file_id,
+            file_path=str(file_path)
         )
+        
+        # Check if file exists
+        if not file_path.exists():
+            logger.warning(
+                codes.INGESTION_FILE_SKIPPED,
+                filename=filename,
+                file_id=file_id,
+                reason="File not found in storage"
+            )
+            skipped += 1
+            continue
         
         # Check if supported
         if not LoaderFactory.is_supported(file_path):
             logger.warning(
                 codes.INGESTION_FILE_SKIPPED,
-                filename=file_path.name,
+                filename=filename,
+                file_id=file_id,
                 reason="Unsupported format"
             )
             skipped += 1
@@ -226,18 +256,27 @@ def ingest_documents(
             # Load and collect chunks for batch storage
             documents = loader.load_document(file_path)
             chunks = splitter.split_documents(documents)
+            
+            # Add file metadata to chunks
+            for chunk in chunks:
+                chunk.metadata['file_id'] = file_id
+                chunk.metadata['filename'] = filename
+            
             all_chunks.extend(chunks)
+            file_ids_to_mark.append(file_id)
             
             logger.info(
                 codes.INGESTION_FILE_SUCCESS,
-                filename=file_path.name,
+                filename=filename,
+                file_id=file_id,
                 chunks=chunk_count
             )
         else:
             failed += 1
             logger.error(
                 codes.INGESTION_FILE_ERROR,
-                filename=file_path.name,
+                filename=filename,
+                file_id=file_id,
                 error=error_msg
             )
     
@@ -257,6 +296,30 @@ def ingest_documents(
             codes.INGESTION_FILE_STORED,
             chunk_count=len(all_chunks)
         )
+        
+        # Mark files as indexed in database
+        if file_ids_to_mark:
+            logger.info(
+                codes.REPOSITORY_OPERATION_STARTED,
+                operation="mark_files_as_indexed",
+                count=len(file_ids_to_mark)
+            )
+            
+            for file_id in file_ids_to_mark:
+                try:
+                    file_service.mark_as_indexed(file_id)
+                    logger.info(
+                        codes.REPOSITORY_OPERATION_COMPLETED,
+                        operation="mark_as_indexed",
+                        file_id=file_id
+                    )
+                except Exception as e:
+                    logger.error(
+                        codes.REPOSITORY_OPERATION_FAILED,
+                        operation="mark_as_indexed",
+                        file_id=file_id,
+                        error=str(e)
+                    )
     
     return successful, failed, skipped, total_chunks
 

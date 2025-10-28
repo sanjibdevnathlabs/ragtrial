@@ -164,7 +164,7 @@ verify_ssl = true                 # SSL certificate verification
 # ============================================================================
 
 [database]
-driver = "mysql"                 # Database driver: sqlite, mysql, postgresql
+driver = "sqlite"                # Database driver: sqlite, mysql, postgresql
 pool_pre_ping = true             # Test connections before using
 pool_recycle = 3600              # Recycle connections after 1 hour (seconds)
 connect_timeout = 10             # Connection timeout (seconds)
