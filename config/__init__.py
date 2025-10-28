@@ -9,6 +9,9 @@ from trace import codes
 # Import logger for early logging (before setup_logging is called)
 from logger import get_logger
 
+# Import singleton metaclass for thread-safe singleton pattern
+from utils.singleton import SingletonMeta
+
 # Initialize logger for config module
 logger = get_logger(__name__)
 
@@ -221,10 +224,13 @@ class RAGConfig:
     anthropic: AnthropicLLMConfig = None
 
 
-class Config:
+class Config(metaclass=SingletonMeta):
     """
     The main config object, populated from TOML files.
     Attributes are pre-defined here for safety and clarity.
+    
+    This class is a singleton - only one instance exists per process,
+    ensuring consistent configuration across the application.
     """
     
     # Application metadata
@@ -255,10 +261,22 @@ class Config:
     AppEnv: str = None
 
     def __init__(self):
+        """
+        Initialize configuration from TOML files.
+        
+        Due to singleton pattern, this only runs once per process.
+        """
+        # Singleton guard: only initialize once
+        if hasattr(self, '_initialized'):
+            return
+        
         self._initialize_config_objects()
         settings = self._load_config_files()
         self._apply_config_values(settings)
         self._validate_config()
+        
+        # Mark as initialized
+        self._initialized = True
 
     def _initialize_config_objects(self) -> None:
         """Initialize all configuration objects with default values."""

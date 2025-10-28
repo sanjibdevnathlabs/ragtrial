@@ -7,8 +7,8 @@ Tests file listing, metadata, and deletion operations.
 import pytest
 from unittest.mock import Mock
 
-from api.modules.files import FileService
-from api.models import FileListResponse, FileMetadataResponse
+from app.modules.files import FileService
+from app.api.models import FileListResponse, FileMetadataResponse
 from config import Config
 from storage_backend.base import StorageProtocol
 

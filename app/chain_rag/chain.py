@@ -11,9 +11,9 @@ from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
 from config import Config
-from app.simple_rag.retriever import DocumentRetriever
-from app.simple_rag.prompts import create_rag_prompt, format_context
-from app.simple_rag.response import ResponseFormatter
+from app.chain_rag.retriever import DocumentRetriever
+from app.chain_rag.prompts import create_rag_prompt, format_context
+from app.chain_rag.response import ResponseFormatter
 from app.security.guardrails import GuardrailsManager, GuardrailsConfig
 from logger import get_logger
 from trace import codes

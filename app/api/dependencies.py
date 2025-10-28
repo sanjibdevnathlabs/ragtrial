@@ -73,7 +73,7 @@ def get_health_service(config: Config = Depends(get_config)):
     Returns:
         HealthService: Health check service instance
     """
-    from api.modules.health import HealthService
+    from app.modules.health import HealthService
     return HealthService(config)
 
 
@@ -94,7 +94,7 @@ def get_upload_service(
     Returns:
         UploadService: File upload service instance
     """
-    from api.modules.upload import UploadService
+    from app.modules.upload import UploadService
     return UploadService(config, storage)
 
 
@@ -115,6 +115,6 @@ def get_file_service(
     Returns:
         FileService: File management service instance
     """
-    from api.modules.files import FileService
+    from app.modules.files import FileService
     return FileService(config, storage)
 

@@ -8,7 +8,7 @@ import pytest
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 
-from app.simple_rag.prompts import (
+from app.chain_rag.prompts import (
     create_rag_prompt,
     format_context,
     SYSTEM_PROMPT,

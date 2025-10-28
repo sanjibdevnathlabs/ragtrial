@@ -19,7 +19,7 @@ import pytest
 # ============================================================================
 # TEST ENVIRONMENT SETUP (runs before any imports)
 # ============================================================================
-from api.utils.singleton import SingletonMeta
+from utils.singleton import SingletonMeta
 
 # Set test environment - this ensures test.toml is loaded
 os.environ["APP_ENV"] = "test"

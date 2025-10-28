@@ -253,37 +253,35 @@ class TestProviderTypes:
 class TestFactoryIntegration:
     """Test factory in realistic scenarios (still mocked)."""
 
-    def test_factory_with_all_providers_sequentially(
-        self,
-        config_chroma,
-        config_pinecone,
-        config_qdrant,
-        config_weaviate,
-        mock_embeddings
-    ):
-        """Test factory can create all providers in sequence."""
+    def test_factory_with_all_providers_sequentially(self, mock_embeddings):
+        """Test factory can create all providers in sequence by switching providers."""
+        config = Config()
         providers_created = []
         
         # Chroma
+        config.vectorstore.provider = "chroma"
         with patch("chromadb.Client"):
-            chroma_vs = create_vectorstore(config_chroma, mock_embeddings)
+            chroma_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(chroma_vs).__name__)
         
         # Pinecone
+        config.vectorstore.provider = "pinecone"
         with patch("pinecone.Pinecone"):
-            pinecone_vs = create_vectorstore(config_pinecone, mock_embeddings)
+            pinecone_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(pinecone_vs).__name__)
         
         # Qdrant
+        config.vectorstore.provider = "qdrant"
         with patch("qdrant_client.QdrantClient"):
-            qdrant_vs = create_vectorstore(config_qdrant, mock_embeddings)
+            qdrant_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(qdrant_vs).__name__)
         
         # Weaviate
+        config.vectorstore.provider = "weaviate"
         with patch("weaviate.connect_to_custom") as mock_connect:
             mock_client = MagicMock()
             mock_connect.return_value = mock_client
-            weaviate_vs = create_vectorstore(config_weaviate, mock_embeddings)
+            weaviate_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(weaviate_vs).__name__)
         
         # Verify all 4 providers were created

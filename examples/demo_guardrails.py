@@ -21,7 +21,7 @@ sys.path.insert(0, str(project_root))
 os.environ["GOOGLE_API_KEY"] = os.environ.get("GEMINI_API_KEY", "")
 
 from config import Config
-from app.simple_rag.chain import RAGChain
+from app.chain_rag.chain import RAGChain
 from logger import get_logger
 
 logger = get_logger(__name__)

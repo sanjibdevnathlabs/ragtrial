@@ -6,9 +6,9 @@ Route definitions for health check endpoints.
 
 from fastapi import APIRouter, Depends
 
-from api.models import HealthResponse
-from api.modules.health import HealthService
-from api.dependencies import get_health_service
+from app.api.models import HealthResponse
+from app.modules.health import HealthService
+from app.api.dependencies import get_health_service
 
 router = APIRouter(tags=["health"])
 

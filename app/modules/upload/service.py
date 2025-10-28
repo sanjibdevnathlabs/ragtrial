@@ -4,9 +4,9 @@ Upload service.
 Handles file upload operations.
 """
 
-from api.models import UploadResponse
-from api.modules.upload.validators import UploadValidator
-from api.utils.singleton import SingletonMeta
+from app.api.models import UploadResponse
+from app.modules.upload.validators import UploadValidator
+from utils.singleton import SingletonMeta
 from config import Config
 from storage_backend.base import StorageProtocol
 from logger import get_logger

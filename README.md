@@ -182,7 +182,7 @@ Production-ready API for document upload and management with **thread-safe singl
 ### Start the API Server
 
 ```bash
-uvicorn api.main:app --reload
+uvicorn app.api.main:app --reload
 ```
 
 The API server will start at `http://localhost:8000`

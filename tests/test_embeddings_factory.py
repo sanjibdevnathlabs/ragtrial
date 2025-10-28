@@ -29,7 +29,7 @@ from embeddings import create_embeddings
 
 @pytest.fixture
 def config_google():
-    """Create config with Google provider (using test.toml)."""
+    """Get singleton config and set Google provider."""
     config = Config()
     config.embeddings.provider = "google"
     return config
@@ -37,7 +37,7 @@ def config_google():
 
 @pytest.fixture
 def config_openai():
-    """Create config with OpenAI provider (using test.toml)."""
+    """Get singleton config and set OpenAI provider."""
     config = Config()
     config.embeddings.provider = "openai"
     return config
@@ -45,7 +45,7 @@ def config_openai():
 
 @pytest.fixture
 def config_huggingface():
-    """Create config with HuggingFace provider (using test.toml)."""
+    """Get singleton config and set HuggingFace provider."""
     config = Config()
     config.embeddings.provider = "huggingface"
     return config
@@ -53,7 +53,7 @@ def config_huggingface():
 
 @pytest.fixture
 def config_anthropic():
-    """Create config with Anthropic provider (using test.toml)."""
+    """Get singleton config and set Anthropic provider."""
     config = Config()
     config.embeddings.provider = "anthropic"
     return config
@@ -238,37 +238,36 @@ class TestProviderTypes:
 class TestFactoryIntegration:
     """Test factory in realistic scenarios (still mocked)."""
 
-    def test_factory_with_all_providers_sequentially(
-        self,
-        config_google,
-        config_openai,
-        config_huggingface,
-        config_anthropic
-    ):
-        """Test factory can create all providers in sequence."""
+    def test_factory_with_all_providers_sequentially(self):
+        """Test factory can create all providers in sequence by switching providers."""
+        config = Config()
         providers_created = []
         
         # Google
+        config.embeddings.provider = "google"
         with patch("google.generativeai.configure"):
-            google_emb = create_embeddings(config_google)
+            google_emb = create_embeddings(config)
             providers_created.append(type(google_emb).__name__)
         
         # OpenAI
+        config.embeddings.provider = "openai"
         with patch("openai.OpenAI"):
-            openai_emb = create_embeddings(config_openai)
+            openai_emb = create_embeddings(config)
             providers_created.append(type(openai_emb).__name__)
         
         # HuggingFace
+        config.embeddings.provider = "huggingface"
         with patch("sentence_transformers.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_st.return_value = mock_model
-            hf_emb = create_embeddings(config_huggingface)
+            hf_emb = create_embeddings(config)
             providers_created.append(type(hf_emb).__name__)
         
         # Anthropic
+        config.embeddings.provider = "anthropic"
         with patch("voyageai.Client"):
-            anthropic_emb = create_embeddings(config_anthropic)
+            anthropic_emb = create_embeddings(config)
             providers_created.append(type(anthropic_emb).__name__)
         
         # Verify all 4 providers were created

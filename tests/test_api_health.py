@@ -7,8 +7,8 @@ Tests health status endpoint functionality.
 import pytest
 from unittest.mock import Mock
 
-from api.modules.health import HealthService
-from api.models import HealthResponse
+from app.modules.health import HealthService
+from app.api.models import HealthResponse
 from config import Config
 
 

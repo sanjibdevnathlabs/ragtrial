@@ -7,7 +7,7 @@ Tests file upload validation logic.
 import pytest
 from unittest.mock import Mock
 
-from api.modules.upload.validators import UploadValidator
+from app.modules.upload.validators import UploadValidator
 from config import Config
 
 

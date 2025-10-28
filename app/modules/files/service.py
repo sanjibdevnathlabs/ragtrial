@@ -4,8 +4,8 @@ File management service.
 Handles file listing, metadata, and deletion operations.
 """
 
-from api.models import FileListResponse, FileMetadataResponse
-from api.utils.singleton import SingletonMeta
+from app.api.models import FileListResponse, FileMetadataResponse
+from utils.singleton import SingletonMeta
 from config import Config
 from storage_backend.base import StorageProtocol
 from logger import get_logger

@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 
-from api.main import app
+from app.api.main import app
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def mock_storage():
 @pytest.fixture
 def client(mock_storage):
     """Create test client with mocked storage."""
-    with patch("api.dependencies.create_storage", return_value=mock_storage):
+    with patch("app.api.dependencies.create_storage", return_value=mock_storage):
         yield TestClient(app)
 
 

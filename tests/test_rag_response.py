@@ -7,7 +7,7 @@ Tests response formatting and source extraction for RAG.
 import pytest
 from langchain_core.documents import Document
 
-from app.simple_rag.response import ResponseFormatter
+from app.chain_rag.response import ResponseFormatter
 import constants
 
 

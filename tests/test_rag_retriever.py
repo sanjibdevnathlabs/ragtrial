@@ -7,7 +7,7 @@ Tests retrieval logic for RAG system.
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 
-from app.simple_rag.retriever import DocumentRetriever
+from app.chain_rag.retriever import DocumentRetriever
 from langchain_core.documents import Document
 import constants
 
@@ -45,8 +45,8 @@ class TestDocumentRetrieverInit:
     
     def test_init_success(self, mock_config):
         """Test successful initialization."""
-        with patch("app.simple_rag.retriever.create_embeddings") as mock_create_emb, \
-             patch("app.simple_rag.retriever.create_vectorstore") as mock_create_vs:
+        with patch("app.chain_rag.retriever.create_embeddings") as mock_create_emb, \
+             patch("app.chain_rag.retriever.create_vectorstore") as mock_create_vs:
             
             mock_create_emb.return_value = Mock()
             mock_create_vs.return_value = Mock()
@@ -66,8 +66,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_success(self, mock_config):
         """Test successful document retrieval."""
-        with patch("app.simple_rag.retriever.create_embeddings") as mock_create_emb, \
-             patch("app.simple_rag.retriever.create_vectorstore") as mock_create_vs:
+        with patch("app.chain_rag.retriever.create_embeddings") as mock_create_emb, \
+             patch("app.chain_rag.retriever.create_vectorstore") as mock_create_vs:
             
             mock_create_emb.return_value = Mock()
             mock_vs = Mock()
@@ -89,8 +89,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_empty_query_raises_error(self, mock_config):
         """Test that empty query raises ValueError."""
-        with patch("app.simple_rag.retriever.create_embeddings"), \
-             patch("app.simple_rag.retriever.create_vectorstore"):
+        with patch("app.chain_rag.retriever.create_embeddings"), \
+             patch("app.chain_rag.retriever.create_vectorstore"):
             
             retriever = DocumentRetriever(mock_config)
             
@@ -101,8 +101,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_whitespace_query_raises_error(self, mock_config):
         """Test that whitespace-only query raises ValueError."""
-        with patch("app.simple_rag.retriever.create_embeddings"), \
-             patch("app.simple_rag.retriever.create_vectorstore"):
+        with patch("app.chain_rag.retriever.create_embeddings"), \
+             patch("app.chain_rag.retriever.create_vectorstore"):
             
             retriever = DocumentRetriever(mock_config)
             
@@ -111,8 +111,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_invalid_k_too_small(self, mock_config):
         """Test that k < MIN_RETRIEVAL_K raises ValueError."""
-        with patch("app.simple_rag.retriever.create_embeddings"), \
-             patch("app.simple_rag.retriever.create_vectorstore"):
+        with patch("app.chain_rag.retriever.create_embeddings"), \
+             patch("app.chain_rag.retriever.create_vectorstore"):
             
             retriever = DocumentRetriever(mock_config)
             
@@ -123,8 +123,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_invalid_k_too_large(self, mock_config):
         """Test that k > MAX_RETRIEVAL_K raises ValueError."""
-        with patch("app.simple_rag.retriever.create_embeddings"), \
-             patch("app.simple_rag.retriever.create_vectorstore"):
+        with patch("app.chain_rag.retriever.create_embeddings"), \
+             patch("app.chain_rag.retriever.create_vectorstore"):
             
             retriever = DocumentRetriever(mock_config)
             
@@ -135,8 +135,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_custom_k_value(self, mock_config):
         """Test retrieval with custom k value."""
-        with patch("app.simple_rag.retriever.create_embeddings"), \
-             patch("app.simple_rag.retriever.create_vectorstore") as mock_create_vs:
+        with patch("app.chain_rag.retriever.create_embeddings"), \
+             patch("app.chain_rag.retriever.create_vectorstore") as mock_create_vs:
             
             mock_vs = Mock()
             # Vectorstore returns dicts, not Document objects
@@ -150,8 +150,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_vectorstore_error_raises_runtime_error(self, mock_config):
         """Test that vectorstore error raises RuntimeError."""
-        with patch("app.simple_rag.retriever.create_embeddings"), \
-             patch("app.simple_rag.retriever.create_vectorstore") as mock_create_vs:
+        with patch("app.chain_rag.retriever.create_embeddings"), \
+             patch("app.chain_rag.retriever.create_vectorstore") as mock_create_vs:
             
             mock_vs = Mock()
             mock_vs.query.side_effect = Exception("Vectorstore error")
@@ -166,8 +166,8 @@ class TestDocumentRetrieverRetrieve:
     
     def test_retrieve_no_documents_found(self, mock_config):
         """Test retrieval when no documents found."""
-        with patch("app.simple_rag.retriever.create_embeddings"), \
-             patch("app.simple_rag.retriever.create_vectorstore") as mock_create_vs:
+        with patch("app.chain_rag.retriever.create_embeddings"), \
+             patch("app.chain_rag.retriever.create_vectorstore") as mock_create_vs:
             
             mock_vs = Mock()
             mock_vs.query.return_value = []

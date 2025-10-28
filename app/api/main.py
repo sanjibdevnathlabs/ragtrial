@@ -10,14 +10,22 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from api.routers import health, upload, files
+from app.routers import health, upload, files
 from config import Config
 from logger import get_logger
 import trace.codes as codes
 
 logger = get_logger(__name__)
 
-config = Config()
+
+def get_config() -> Config:
+    """
+    Get the singleton Config instance (lazy initialization).
+    
+    This function ensures Config is only instantiated when actually needed,
+    not at module import time.
+    """
+    return Config()
 
 
 @asynccontextmanager
@@ -28,6 +36,7 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events.
     """
     # Startup
+    config = get_config()
     logger.info(
         codes.API_SERVER_STARTING,
         host=config.api.host,
@@ -55,7 +64,7 @@ app = FastAPI(
 # Configure CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=config.api.cors_origins,
+    allow_origins=get_config().api.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

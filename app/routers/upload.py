@@ -8,9 +8,9 @@ from typing import Union
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 
-from api.models import UploadResponse, ErrorResponse
-from api.modules.upload import UploadService
-from api.dependencies import get_upload_service
+from app.api.models import UploadResponse, ErrorResponse
+from app.modules.upload import UploadService
+from app.api.dependencies import get_upload_service
 from logger import get_logger
 import trace.codes as codes
 

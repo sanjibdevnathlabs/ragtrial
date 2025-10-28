@@ -1,4 +1,4 @@
-.PHONY: help install test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples check-env
+.PHONY: help install test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo check-env
 
 SHELL := /bin/bash
 
@@ -31,6 +31,8 @@ help:
 	@echo "  make check            Run lint + format check"
 	@echo ""
 	@echo "Development:"
+	@echo "  make run-api          Start FastAPI server (with auto-reload)"
+	@echo "  make run-rag-demo     Run RAG query demonstration"
 	@echo "  make run-examples     Run demo examples"
 	@echo "  make check-env        Check environment variables"
 	@echo "  make check-python     Check Python version and packages"
@@ -102,6 +104,18 @@ check: lint format
 	@echo "Code quality check complete!"
 
 # Development
+run-api:
+	@echo "Starting FastAPI server..."
+	@echo "Server will be available at http://localhost:8000"
+	@echo "API docs: http://localhost:8000/docs"
+	@echo ""
+	@./venv/bin/uvicorn app.api.main:app --reload --workers 4 --host 0.0.0.0 --port 8000
+
+run-rag-demo:
+	@echo "Running RAG query demonstration..."
+	@echo ""
+	@./venv/bin/python examples/demo_rag_query.py
+
 run-examples:
 	@echo "Running demo examples..."
 	@echo ""

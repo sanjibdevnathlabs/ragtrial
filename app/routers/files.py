@@ -8,13 +8,13 @@ from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from api.models import (
+from app.api.models import (
     FileListResponse,
     FileMetadataResponse,
     ErrorResponse
 )
-from api.modules.files import FileService
-from api.dependencies import get_file_service
+from app.modules.files import FileService
+from app.api.dependencies import get_file_service
 from logger import get_logger
 import trace.codes as codes
 
