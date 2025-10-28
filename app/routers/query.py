@@ -16,7 +16,7 @@ import trace.codes as codes
 logger = get_logger(__name__)
 
 router = APIRouter(
-    prefix="/query",
+    prefix="/api/v1/query",
     tags=["query"],
     responses={
         404: {"model": ErrorResponse},

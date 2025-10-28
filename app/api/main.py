@@ -125,9 +125,9 @@ async def root():
         "docs": "/docs",
         "endpoints": {
             "health": "/health",
-            "upload": "/upload",
-            "files": "/files",
-            "query": "/query"
+            "upload": "/api/v1/upload",
+            "files": "/api/v1/files",
+            "query": "/api/v1/query"
         }
     }
 

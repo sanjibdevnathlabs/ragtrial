@@ -261,7 +261,7 @@ make run-rag-cli
 **Method 2: REST API**
 ```bash
 # Query endpoint
-curl -X POST http://localhost:8000/query \
+curl -X POST http://localhost:8000/api/v1/query \
   -H "Content-Type: application/json" \
   -d '{"question": "What is this document about?"}'
 ```
@@ -303,30 +303,30 @@ curl http://localhost:8000/health
 
 **Upload File:**
 ```bash
-curl -X POST http://localhost:8000/upload \
+curl -X POST http://localhost:8000/api/v1/upload \
   -F "file=@document.pdf"
 ```
 
 **List Files:**
 ```bash
-curl http://localhost:8000/files
+curl http://localhost:8000/api/v1/files
 ```
 
 **Get File Metadata:**
 ```bash
-curl http://localhost:8000/files/document.pdf
+curl http://localhost:8000/api/v1/files/document.pdf
 ```
 
 **Delete File:**
 ```bash
-curl -X DELETE http://localhost:8000/files/document.pdf
+curl -X DELETE http://localhost:8000/api/v1/files/document.pdf
 ```
 
 ### RAG Query Endpoints ✨
 
 **Query RAG System:**
 ```bash
-curl -X POST http://localhost:8000/query \
+curl -X POST http://localhost:8000/api/v1/query \
   -H "Content-Type: application/json" \
   -d '{
     "question": "What is Apache Kafka?"
@@ -352,7 +352,7 @@ curl -X POST http://localhost:8000/query \
 
 **RAG System Health:**
 ```bash
-curl http://localhost:8000/query/health
+curl http://localhost:8000/api/v1/query/health
 ```
 
 **Response:**
