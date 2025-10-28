@@ -44,8 +44,63 @@ def reset_singletons():
     SingletonMeta._instances.clear()
 
 
+@pytest.fixture(autouse=True)
+def clean_database_after_test():
+    """
+    Clean database data after each test for isolation.
+    
+    This ensures tests don't affect each other.
+    Only runs if database tables exist.
+    """
+    yield
+    
+    # Clean up after test
+    try:
+        from database.session import SessionFactory
+        from sqlalchemy import text
+        
+        sf = SessionFactory()
+        with sf.get_write_session() as session:
+            # Delete all records from files table
+            session.execute(text("DELETE FROM files"))
+    except Exception:
+        # Silently ignore if tables don't exist or other errors
+        pass
+
+
 @pytest.fixture
 def project_root_path():
     """Fixture providing the project root path"""
     return Path(__file__).parent.parent
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_database():
+    """
+    Set up test database before all tests.
+    
+    This fixture:
+    - Removes existing test database
+    - Runs migrations to create schema
+    - Runs once per test session
+    """
+    import subprocess
+    
+    # Clean up old test database
+    test_db_path = project_root / "storage" / "test.db"
+    if test_db_path.exists():
+        test_db_path.unlink()
+    
+    # Run migrations to create schema
+    subprocess.run(
+        ["python", "-m", "migration", "up"],
+        cwd=str(project_root),
+        capture_output=True
+    )
+    
+    yield
+    
+    # Optional: Clean up after all tests
+    if test_db_path.exists():
+        test_db_path.unlink()
 

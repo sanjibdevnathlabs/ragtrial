@@ -1,16 +1,20 @@
 """
 Upload service.
 
-Handles file upload operations.
+Handles file upload operations with database integration.
 """
 
+import hashlib
 from app.api.models import UploadResponse
 from app.modules.upload.validators import UploadValidator
+from app.modules.file.core import FileService as DBFileService
+from app.modules.file.entity import File
 from utils.singleton import SingletonMeta
 from config import Config
 from storage_backend.base import StorageProtocol
 from logger import get_logger
 import trace.codes as codes
+import constants
 
 logger = get_logger(__name__)
 
@@ -19,6 +23,7 @@ class UploadService(metaclass=SingletonMeta):
     """
     Singleton service for file upload operations.
     
+    Uses database for metadata storage and duplicate detection.
     Thread-safe singleton ensures only one instance exists.
     Optimized for high RPS scenarios.
     """
@@ -38,42 +43,90 @@ class UploadService(metaclass=SingletonMeta):
             self.config = config
             self.storage = storage
             self.validator = UploadValidator(config)
+            self.db_file_service = DBFileService()
             self._initialized = True
     
     def upload_file(self, filename: str, content: bytes) -> UploadResponse:
         """
-        Upload file to storage.
+        Upload file to storage with database metadata.
+        
+        Process:
+        1. Validate file
+        2. Calculate checksum
+        3. Check for duplicates
+        4. Generate UUID for storage
+        5. Store with UUID-based name
+        6. Create database record
         
         Args:
-            filename: Name of file
+            filename: Original filename
             content: File content bytes
             
         Returns:
-            UploadResponse: Upload result with metadata
+            UploadResponse: Upload result with full metadata
             
         Raises:
-            ValueError: If validation fails
+            ValueError: If validation fails or duplicate exists
             Exception: If upload fails
         """
         logger.info(codes.API_UPLOAD_STARTED, filename=filename)
         
+        # Step 1: Validate file
         self._validate_file(filename, content)
-        file_path = self._store_file(filename, content)
+        
+        # Step 2: Calculate checksum
+        checksum = self._calculate_checksum(content)
+        
+        # Step 3: Check for duplicates
+        existing = self.db_file_service.check_duplicate(checksum)
+        if existing:
+            logger.warning(
+                codes.API_UPLOAD_FAILED,
+                filename=filename,
+                reason=constants.ERROR_FILE_DUPLICATE,
+                existing_file=existing["filename"]
+            )
+            raise ValueError(
+                f"{constants.ERROR_FILE_DUPLICATE}: {existing['filename']}"
+            )
+        
+        # Step 4: Generate UUID for storage
+        file_id = File.generate_id()
+        file_type = File.get_file_type_from_filename(filename)
+        storage_filename = f"{file_id}.{file_type}"
+        
+        # Step 5: Store file with UUID-based name
+        file_path = self._store_file(storage_filename, content)
+        
+        # Step 6: Create database record
+        file_record = self.db_file_service.create_file_record(
+            filename=filename,
+            file_path=file_path,
+            file_size=len(content),
+            checksum=checksum,
+            storage_backend=self.config.storage.backend
+        )
         
         logger.info(
             codes.API_UPLOAD_COMPLETED,
+            file_id=file_record["id"],
             filename=filename,
             path=file_path,
             size_bytes=len(content),
+            checksum=checksum[:16],
             backend=self.config.storage.backend
         )
         
         return UploadResponse(
             success=True,
-            filename=filename,
-            path=file_path,
-            size=len(content),
-            backend=self.config.storage.backend
+            file_id=file_record["id"],
+            filename=file_record["filename"],
+            path=file_record["file_path"],
+            size=file_record["file_size"],
+            file_type=file_record["file_type"],
+            checksum=file_record["checksum"],
+            backend=file_record["storage_backend"],
+            indexed=file_record["indexed"]
         )
     
     def _validate_file(self, filename: str, content: bytes) -> None:
@@ -90,6 +143,18 @@ class UploadService(metaclass=SingletonMeta):
         self.validator.validate_filename(filename)
         self.validator.validate_extension(filename)
         self.validator.validate_size(content, filename)
+    
+    def _calculate_checksum(self, content: bytes) -> str:
+        """
+        Calculate SHA-256 checksum of content.
+        
+        Args:
+            content: File content bytes
+            
+        Returns:
+            Hex digest checksum
+        """
+        return hashlib.sha256(content).hexdigest()
     
     def _store_file(self, filename: str, content: bytes) -> str:
         """

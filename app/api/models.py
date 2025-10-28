@@ -17,19 +17,27 @@ class UploadResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "success": True,
+                "file_id": "550e8400-e29b-41d4-a716-446655440000",
                 "filename": "document.pdf",
-                "path": "source_docs/document.pdf",
+                "path": "source_docs/550e8400-e29b-41d4-a716-446655440000.pdf",
                 "size": 1048576,
-                "backend": "local"
+                "file_type": "pdf",
+                "checksum": "abc123...",
+                "backend": "local",
+                "indexed": False
             }
         }
     )
     
     success: bool = Field(..., description="Upload success status")
-    filename: str = Field(..., description="Name of uploaded file")
-    path: str = Field(..., description="Storage path of uploaded file")
+    file_id: str = Field(..., description="Unique file ID (UUID)")
+    filename: str = Field(..., description="Original filename")
+    path: str = Field(..., description="Storage path (UUID-based)")
     size: int = Field(..., description="File size in bytes")
-    backend: str = Field(..., description="Storage backend used (local/s3)")
+    file_type: str = Field(..., description="File extension without dot")
+    checksum: str = Field(..., description="SHA-256 checksum")
+    backend: str = Field(..., description="Storage backend (local/s3)")
+    indexed: bool = Field(False, description="Indexed in vectorstore")
 
 
 class ErrorResponse(BaseModel):
@@ -56,19 +64,31 @@ class FileMetadataResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
+                "file_id": "550e8400-e29b-41d4-a716-446655440000",
                 "filename": "document.pdf",
-                "size": "1048576",
-                "modified_time": "2025-10-28T00:00:00",
-                "path": "source_docs/document.pdf"
+                "file_path": "source_docs/550e8400-e29b-41d4-a716-446655440000.pdf",
+                "file_type": "pdf",
+                "file_size": 1048576,
+                "checksum": "abc123...",
+                "storage_backend": "local",
+                "indexed": False,
+                "created_at": 1700000000000,
+                "updated_at": 1700000000000
             }
         }
     )
     
-    filename: str = Field(..., description="File name")
-    size: str = Field(..., description="File size")
-    modified_time: str = Field(..., description="Last modified time")
-    path: Optional[str] = Field(None, description="File path (local storage)")
-    etag: Optional[str] = Field(None, description="ETag (S3 storage)")
+    file_id: str = Field(..., description="Unique file ID (UUID)")
+    filename: str = Field(..., description="Original filename")
+    file_path: str = Field(..., description="Storage path (UUID-based)")
+    file_type: str = Field(..., description="File extension without dot")
+    file_size: int = Field(..., description="File size in bytes")
+    checksum: str = Field(..., description="SHA-256 checksum")
+    storage_backend: str = Field(..., description="Storage backend")
+    indexed: bool = Field(..., description="Indexed in vectorstore")
+    created_at: int = Field(..., description="Creation timestamp (ms)")
+    updated_at: int = Field(..., description="Update timestamp (ms)")
+    indexed_at: Optional[int] = Field(None, description="Index timestamp (ms)")
 
 
 class FileListResponse(BaseModel):
@@ -77,14 +97,21 @@ class FileListResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "files": ["doc1.pdf", "doc2.txt"],
+                "files": [
+                    {
+                        "file_id": "550e8400-e29b-41d4-a716-446655440000",
+                        "filename": "doc1.pdf",
+                        "file_size": 1048576,
+                        "indexed": False
+                    }
+                ],
                 "count": 2,
                 "backend": "local"
             }
         }
     )
     
-    files: list[str] = Field(..., description="List of file names")
+    files: list[dict] = Field(..., description="List of files with metadata")
     count: int = Field(..., description="Total file count")
     backend: str = Field(..., description="Storage backend")
 

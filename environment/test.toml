@@ -100,3 +100,68 @@ port = 8001
 cors_origins = ["*"]
 upload_chunk_size = 1048576
 
+# ============================================================================
+# DATABASE CONFIGURATION (TEST ENVIRONMENT)
+# ============================================================================
+
+[database]
+driver = "sqlite"                # Use SQLite for tests (fast, isolated)
+pool_pre_ping = false            # Not needed for SQLite
+pool_recycle = -1                # Disable for tests
+connect_timeout = 5              # Shorter timeout for tests
+
+# SQLite Configuration (Test)
+[database.sqlite.write]
+path = "storage/test.db"         # File-based database for tests (shared connection)
+debug = false                    # Disable query logging in tests (reduce noise)
+
+[database.sqlite.read]
+path = "storage/test.db"         # File-based database for tests (shared connection)
+debug = false                    # Disable query logging in tests (reduce noise)
+
+# MySQL Configuration (Test - mocked, dummy values)
+[database.mysql.write]
+host = "localhost"
+port = 3306
+database = "test_ragtrial"
+username = "test_user"
+password = "test_password"
+charset = "utf8mb4"
+pool_size = 1                    # Minimal pool for tests
+max_overflow = 1
+debug = false
+
+[database.mysql.read]
+host = "localhost"
+port = 3306
+database = "test_ragtrial"
+username = "test_readonly"
+password = "test_password"
+charset = "utf8mb4"
+pool_size = 1
+max_overflow = 1
+debug = false
+
+# PostgreSQL Configuration (Test - mocked, dummy values)
+[database.postgresql.write]
+host = "localhost"
+port = 5432
+database = "test_ragtrial"
+username = "test_user"
+password = "test_password"
+schema = "public"
+pool_size = 1                    # Minimal pool for tests
+max_overflow = 1
+debug = false
+
+[database.postgresql.read]
+host = "localhost"
+port = 5432
+database = "test_ragtrial"
+username = "test_readonly"
+password = "test_password"
+schema = "public"
+pool_size = 1
+max_overflow = 1
+debug = false
+

@@ -1,46 +1,73 @@
 """
 Tests for file management service.
 
-Tests file listing, metadata, and deletion operations.
+Tests file listing, metadata, and deletion operations with database backend.
 """
 
 import pytest
 from unittest.mock import Mock
+import time
 
-from app.modules.files import FileService
+from app.modules.files import FileManagementService
+from app.modules.file.core import FileService as DBFileService
+from app.modules.file.entity import File
 from app.api.models import FileListResponse, FileMetadataResponse
 from config import Config
 from storage_backend.base import StorageProtocol
 
 
 @pytest.fixture
-def mock_config():
-    """Mock configuration."""
-    config = Mock()
-    config.storage = Mock()
-    config.storage.backend = "local"
-    return config
+def db_file_service():
+    """Get database file service."""
+    return DBFileService()
+
+
+@pytest.fixture
+def sample_files(db_file_service):
+    """Create sample files in database for testing."""
+    files_data = [
+        {
+            "filename": "file1.pdf",
+            "file_path": "source_docs/uuid1.pdf",
+            "file_size": 1024,
+            "checksum": "checksum1" + str(time.time()),
+            "storage_backend": "local"
+        },
+        {
+            "filename": "file2.txt",
+            "file_path": "source_docs/uuid2.txt",
+            "file_size": 2048,
+            "checksum": "checksum2" + str(time.time()),
+            "storage_backend": "local"
+        }
+    ]
+    
+    created_files = []
+    for file_data in files_data:
+        file_record = db_file_service.create_file_record(**file_data)
+        created_files.append(file_record)
+    
+    return created_files
+
+
+@pytest.fixture
+def config():
+    """Get real config."""
+    return Config()
 
 
 @pytest.fixture
 def mock_storage():
     """Mock storage backend."""
     storage = Mock(spec=StorageProtocol)
-    storage.list_files.return_value = ["file1.pdf", "file2.txt"]
-    storage.file_exists.return_value = True
-    storage.get_file_metadata.return_value = {
-        "filename": "test.pdf",
-        "size": 1024,
-        "modified_time": "2025-10-28T00:00:00",
-        "path": "source_docs/test.pdf"
-    }
+    storage.delete_file.return_value = None
     return storage
 
 
 @pytest.fixture
-def service(mock_config, mock_storage):
-    """Create file service instance."""
-    return FileService(mock_config, mock_storage)
+def service(config, mock_storage):
+    """Create file service instance with real database."""
+    return FileManagementService(config, mock_storage)
 
 
 class TestListFiles:
@@ -52,15 +79,16 @@ class TestListFiles:
         
         assert isinstance(result, FileListResponse)
     
-    def test_list_files_includes_all_files(self, service, mock_storage):
-        """Test list includes all files from storage."""
+    def test_list_files_includes_all_files(self, service, sample_files):
+        """Test list includes all files from database."""
         result = service.list_files()
         
-        assert len(result.files) == 2
-        assert "file1.pdf" in result.files
-        assert "file2.txt" in result.files
+        assert result.count == 2
+        filenames = [f["filename"] for f in result.files]
+        assert "file1.pdf" in filenames
+        assert "file2.txt" in filenames
     
-    def test_list_files_includes_count(self, service):
+    def test_list_files_includes_count(self, service, sample_files):
         """Test list includes file count."""
         result = service.list_files()
         
@@ -72,16 +100,8 @@ class TestListFiles:
         
         assert result.backend == "local"
     
-    def test_list_files_calls_storage(self, service, mock_storage):
-        """Test list calls storage backend."""
-        service.list_files()
-        
-        mock_storage.list_files.assert_called_once()
-    
-    def test_list_files_returns_empty_list(self, service, mock_storage):
-        """Test list handles empty storage."""
-        mock_storage.list_files.return_value = []
-        
+    def test_list_files_returns_empty_list(self, service):
+        """Test list handles empty database."""
         result = service.list_files()
         
         assert result.files == []
@@ -91,117 +111,85 @@ class TestListFiles:
 class TestGetFileMetadata:
     """Test suite for file metadata retrieval."""
     
-    def test_get_file_metadata_returns_response(self, service):
+    def test_get_file_metadata_returns_response(self, service, sample_files):
         """Test get metadata returns FileMetadataResponse."""
-        result = service.get_file_metadata("test.pdf")
+        result = service.get_file_metadata("file1.pdf")
         
         assert isinstance(result, FileMetadataResponse)
     
-    def test_get_file_metadata_includes_filename(self, service):
+    def test_get_file_metadata_includes_filename(self, service, sample_files):
         """Test metadata includes filename."""
-        result = service.get_file_metadata("test.pdf")
+        result = service.get_file_metadata("file1.pdf")
         
-        assert result.filename == "test.pdf"
+        assert result.filename == "file1.pdf"
     
-    def test_get_file_metadata_includes_size(self, service):
+    def test_get_file_metadata_includes_size(self, service, sample_files):
         """Test metadata includes file size."""
-        result = service.get_file_metadata("test.pdf")
+        result = service.get_file_metadata("file1.pdf")
         
-        assert result.size == "1024"
+        assert result.file_size == 1024
     
-    def test_get_file_metadata_includes_modified_time(self, service):
-        """Test metadata includes modified time."""
-        result = service.get_file_metadata("test.pdf")
+    def test_get_file_metadata_includes_file_type(self, service, sample_files):
+        """Test metadata includes file type."""
+        result = service.get_file_metadata("file1.pdf")
         
-        assert result.modified_time == "2025-10-28T00:00:00"
+        assert result.file_type == "pdf"
     
-    def test_get_file_metadata_checks_existence(self, service, mock_storage):
-        """Test metadata checks if file exists."""
-        service.get_file_metadata("test.pdf")
-        
-        mock_storage.file_exists.assert_called_once_with("test.pdf")
-    
-    def test_get_file_metadata_raises_for_missing_file(self, service, mock_storage):
+    def test_get_file_metadata_raises_for_missing_file(self, service):
         """Test metadata raises for non-existent file."""
-        mock_storage.file_exists.return_value = False
-        
         with pytest.raises(FileNotFoundError):
             service.get_file_metadata("missing.pdf")
     
-    def test_get_file_metadata_calls_storage(self, service, mock_storage):
-        """Test metadata calls storage backend."""
-        service.get_file_metadata("test.pdf")
-        
-        mock_storage.get_file_metadata.assert_called_once_with("test.pdf")
-    
-    def test_get_file_metadata_includes_path(self, service):
+    def test_get_file_metadata_includes_path(self, service, sample_files):
         """Test metadata includes file path."""
-        result = service.get_file_metadata("test.pdf")
+        result = service.get_file_metadata("file1.pdf")
         
-        assert result.path == "source_docs/test.pdf"
+        assert result.file_path == "source_docs/uuid1.pdf"
+    
+    def test_get_file_metadata_includes_checksum(self, service, sample_files):
+        """Test metadata includes checksum."""
+        result = service.get_file_metadata("file1.pdf")
+        
+        assert result.checksum.startswith("checksum1")
+    
+    def test_get_file_metadata_includes_indexed_status(self, service, sample_files):
+        """Test metadata includes indexed status."""
+        result = service.get_file_metadata("file1.pdf")
+        
+        assert result.indexed is False
 
 
 class TestDeleteFile:
     """Test suite for file deletion."""
     
-    def test_delete_file_returns_success(self, service):
+    def test_delete_file_returns_success(self, service, sample_files, mock_storage):
         """Test delete returns success response."""
-        result = service.delete_file("test.pdf")
+        result = service.delete_file("file1.pdf")
         
         assert result["success"] is True
     
-    def test_delete_file_includes_filename(self, service):
+    def test_delete_file_includes_filename(self, service, sample_files, mock_storage):
         """Test delete response includes filename."""
-        result = service.delete_file("test.pdf")
+        result = service.delete_file("file1.pdf")
         
-        assert result["filename"] == "test.pdf"
+        assert result["filename"] == "file1.pdf"
     
-    def test_delete_file_checks_existence(self, service, mock_storage):
-        """Test delete checks if file exists."""
-        service.delete_file("test.pdf")
-        
-        mock_storage.file_exists.assert_called_once_with("test.pdf")
-    
-    def test_delete_file_raises_for_missing_file(self, service, mock_storage):
+    def test_delete_file_raises_for_missing_file(self, service):
         """Test delete raises for non-existent file."""
-        mock_storage.file_exists.return_value = False
-        
         with pytest.raises(FileNotFoundError):
             service.delete_file("missing.pdf")
     
-    def test_delete_file_calls_storage(self, service, mock_storage):
+    def test_delete_file_calls_storage(self, service, sample_files, mock_storage):
         """Test delete calls storage backend."""
-        service.delete_file("test.pdf")
+        service.delete_file("file1.pdf")
         
-        mock_storage.delete_file.assert_called_once_with("test.pdf")
+        # Storage delete should be called with the file path
+        mock_storage.delete_file.assert_called_once()
     
-    def test_delete_file_propagates_storage_error(self, service, mock_storage):
-        """Test delete propagates storage errors."""
-        mock_storage.delete_file.side_effect = IOError("Permission denied")
+    def test_delete_file_soft_deletes_in_database(self, service, sample_files, db_file_service, mock_storage):
+        """Test delete soft-deletes record in database."""
+        service.delete_file("file1.pdf")
         
-        with pytest.raises(IOError):
-            service.delete_file("test.pdf")
-
-
-class TestGetMetadata:
-    """Test suite for internal metadata retrieval."""
-    
-    def test_get_metadata_returns_dict(self, service, mock_storage):
-        """Test _get_metadata returns dictionary."""
-        result = service._get_metadata("test.pdf")
-        
-        assert isinstance(result, dict)
-    
-    def test_get_metadata_calls_storage(self, service, mock_storage):
-        """Test _get_metadata calls storage."""
-        service._get_metadata("test.pdf")
-        
-        mock_storage.get_file_metadata.assert_called_once()
-    
-    def test_get_metadata_propagates_exception(self, service, mock_storage):
-        """Test _get_metadata propagates exceptions."""
-        mock_storage.get_file_metadata.side_effect = Exception("API error")
-        
-        with pytest.raises(Exception):
-            service._get_metadata("test.pdf")
-
+        # File should not be found after deletion (soft delete)
+        file_data = db_file_service.get_file_by_filename("file1.pdf")
+        assert file_data is None

@@ -363,3 +363,185 @@ from constants import (
     ERROR_OUTPUT_BLOCKED,
 )
 
+
+# ============================================================================
+# DATABASE TRACE CODES & MESSAGES
+# ============================================================================
+
+# Connection trace codes
+DB_CONNECTION_INITIALIZING = "db_connection_initializing"
+DB_CONNECTION_ESTABLISHED = "db_connection_established"
+DB_CONNECTION_FAILED = "db_connection_failed"
+DB_CONNECTION_CLOSED = "db_connection_closed"
+DB_CONNECTION_TIMEOUT = "db_connection_timeout"
+DB_CONNECTION_POOL_CREATED = "db_connection_pool_created"
+DB_CONNECTION_POOL_EXHAUSTED = "db_connection_pool_exhausted"
+
+# Engine trace codes
+DB_ENGINE_CREATING = "db_engine_creating"
+DB_ENGINE_CREATED = "db_engine_created"
+DB_ENGINE_INITIALIZING = "db_engine_initializing"
+DB_ENGINE_INITIALIZED = "db_engine_initialized"
+DB_ENGINE_DISPOSED = "db_engine_disposed"
+
+# Session trace codes
+DB_SESSION_CREATING = "db_session_creating"
+DB_SESSION_CREATED = "db_session_created"
+DB_SESSION_CLOSED = "db_session_closed"
+DB_SESSION_ERROR = "db_session_error"
+DB_SESSION_WRITE = "db_session_write"
+DB_SESSION_READ = "db_session_read"
+
+# Transaction trace codes
+DB_TRANSACTION_STARTED = "db_transaction_started"
+DB_TRANSACTION_COMMITTED = "db_transaction_committed"
+DB_TRANSACTION_ROLLED_BACK = "db_transaction_rolled_back"
+DB_TRANSACTION_FAILED = "db_transaction_failed"
+
+# Query trace codes
+DB_QUERY_STARTED = "db_query_started"
+DB_QUERY_EXECUTED = "db_query_executed"
+DB_QUERY_COMPLETED = "db_query_completed"
+DB_QUERY_FAILED = "db_query_failed"
+DB_QUERY_SLOW = "db_query_slow"
+DB_QUERY_PARAMETERIZED = "db_query_parameterized"
+
+# Repository trace codes
+REPOSITORY_OPERATION_STARTED = "repository_operation_started"
+REPOSITORY_OPERATION_COMPLETED = "repository_operation_completed"
+REPOSITORY_OPERATION_FAILED = "repository_operation_failed"
+REPOSITORY_ENTITY_CREATED = "repository_entity_created"
+REPOSITORY_ENTITY_UPDATED = "repository_entity_updated"
+REPOSITORY_ENTITY_DELETED = "repository_entity_deleted"
+REPOSITORY_ENTITY_FOUND = "repository_entity_found"
+REPOSITORY_ENTITY_NOT_FOUND = "repository_entity_not_found"
+REPOSITORY_DUPLICATE_ENTRY = "repository_duplicate_entry"
+
+# Database repository trace code aliases
+DB_REPOSITORY_STARTED = "repository_operation_started"
+DB_REPOSITORY_COMPLETED = "repository_operation_completed"
+DB_REPOSITORY_FAILED = "repository_operation_failed"
+
+# Migration trace codes
+MIGRATION_SYSTEM_INITIALIZING = "migration_system_initializing"
+MIGRATION_SYSTEM_INITIALIZED = "migration_system_initialized"
+MIGRATION_CHECKING_STATUS = "migration_checking_status"
+MIGRATION_STATUS_RETRIEVED = "migration_status_retrieved"
+MIGRATION_GENERATING = "migration_generating"
+MIGRATION_GENERATED = "migration_generated"
+MIGRATION_APPLYING = "migration_applying"
+MIGRATION_APPLIED = "migration_applied"
+MIGRATION_ROLLING_BACK = "migration_rolling_back"
+MIGRATION_ROLLED_BACK = "migration_rolled_back"
+MIGRATION_FAILED = "migration_failed"
+DB_MIGRATION_FAILED = "db_migration_failed"  # Alias for migration failures
+MIGRATION_UP_STARTED = "migration_up_started"
+MIGRATION_UP_COMPLETED = "migration_up_completed"
+MIGRATION_DOWN_STARTED = "migration_down_started"
+MIGRATION_DOWN_COMPLETED = "migration_down_completed"
+MIGRATION_RESET_STARTED = "migration_reset_started"
+MIGRATION_RESET_COMPLETED = "migration_reset_completed"
+MIGRATION_ALREADY_APPLIED = "migration_already_applied"
+MIGRATION_NOT_APPLIED = "migration_not_applied"
+DB_MIGRATION_STATUS_CHECK = "db_migration_status_check"
+DB_MIGRATION_STATUS = "db_migration_status"
+DB_MIGRATION_PENDING = "db_migration_pending"
+DB_MIGRATION_UP_STARTED = "db_migration_up_started"
+DB_MIGRATION_UP_COMPLETED = "db_migration_up_completed"
+DB_MIGRATION_DOWN_STARTED = "db_migration_down_started"
+DB_MIGRATION_DOWN_COMPLETED = "db_migration_down_completed"
+DB_MIGRATION_GENERATE = "db_migration_generate"
+
+# Database initialization trace codes
+DB_INITIALIZING = "db_initializing"
+DB_INITIALIZED = "db_initialized"
+DB_CREATING_TABLES = "db_creating_tables"
+DB_TABLES_CREATED = "db_tables_created"
+DB_SEEDING = "db_seeding"
+DB_SEEDED = "db_seeded"
+DB_MIGRATION_TABLE_EXISTS = "db_migration_table_exists"
+DB_MIGRATION_TABLE_CREATED = "db_migration_table_created"
+
+# Database messages (imported from constants)
+from constants import (
+    # Error messages
+    ERROR_DB_DRIVER_INVALID,
+    ERROR_DB_DRIVER_UNSUPPORTED,
+    ERROR_DB_CONNECTION_FAILED,
+    ERROR_DB_CONNECTION_TIMEOUT,
+    ERROR_DB_CONNECTION_POOL_EXHAUSTED,
+    ERROR_DB_SESSION_CREATION_FAILED,
+    ERROR_DB_SESSION_ALREADY_CLOSED,
+    ERROR_DB_TRANSACTION_FAILED,
+    ERROR_DB_QUERY_FAILED,
+    ERROR_DB_QUERY_SYNTAX_ERROR,
+    ERROR_DB_CONSTRAINT_VIOLATION,
+    ERROR_DB_INTEGRITY_ERROR,
+    ERROR_DB_NOT_INITIALIZED,
+    ERROR_DB_ENGINE_NOT_INITIALIZED,
+    ERROR_DB_CONFIG_MISSING,
+    ERROR_DB_CONFIG_INVALID,
+    # Success messages
+    MSG_DB_CONNECTION_ESTABLISHED,
+    MSG_DB_CONNECTION_CLOSED,
+    MSG_DB_SESSION_CREATED,
+    MSG_DB_SESSION_CLOSED,
+    MSG_DB_TRANSACTION_COMMITTED,
+    MSG_DB_TRANSACTION_ROLLED_BACK,
+    MSG_DB_QUERY_EXECUTED,
+    MSG_DB_INITIALIZED,
+    MSG_DB_ENGINE_CREATED,
+    MSG_DB_POOL_CONFIGURED,
+    # Operation messages
+    MSG_DB_CONNECTING,
+    MSG_DB_INITIALIZING,
+    MSG_DB_CREATING_TABLES,
+    MSG_DB_MIGRATING,
+    MSG_DB_SEEDING,
+    MSG_DB_CLEANUP,
+    MSG_DB_DISCONNECTING,
+    # Query messages
+    MSG_QUERY_EXECUTED,
+    MSG_QUERY_STARTED,
+    MSG_QUERY_COMPLETED,
+    MSG_QUERY_FAILED,
+    MSG_QUERY_SLOW,
+    # Migration messages
+    ERROR_MIGRATION_FAILED,
+    ERROR_MIGRATION_FILE_NOT_FOUND,
+    ERROR_MIGRATION_ALREADY_APPLIED,
+    ERROR_MIGRATION_NOT_APPLIED,
+    ERROR_MIGRATION_INVALID_VERSION,
+    ERROR_MIGRATION_SYNTAX_ERROR,
+    ERROR_MIGRATION_ROLLBACK_FAILED,
+    ERROR_MIGRATION_DIRECTORY_NOT_FOUND,
+    MSG_MIGRATION_APPLIED,
+    MSG_MIGRATION_ROLLED_BACK,
+    MSG_MIGRATION_GENERATED,
+    MSG_MIGRATION_UP_COMPLETED,
+    MSG_MIGRATION_DOWN_COMPLETED,
+    MSG_MIGRATION_STATUS_RETRIEVED,
+    MSG_MIGRATION_RESET_COMPLETED,
+    MSG_MIGRATION_APPLYING,
+    MSG_MIGRATION_ROLLING_BACK,
+    MSG_MIGRATION_GENERATING,
+    MSG_MIGRATION_CHECKING_STATUS,
+    MSG_MIGRATION_RESETTING,
+    # Repository messages
+    ERROR_REPOSITORY_ENTITY_NOT_FOUND,
+    ERROR_REPOSITORY_DUPLICATE_ENTRY,
+    ERROR_REPOSITORY_INVALID_FIELD,
+    ERROR_REPOSITORY_OPERATION_FAILED,
+    MSG_REPOSITORY_ENTITY_CREATED,
+    MSG_REPOSITORY_ENTITY_UPDATED,
+    MSG_REPOSITORY_ENTITY_DELETED,
+    MSG_REPOSITORY_ENTITY_FOUND,
+    MSG_REPOSITORY_ENTITIES_FOUND,
+    # SQL injection prevention
+    MSG_SQL_INJECTION_PREVENTED,
+    MSG_PARAMETERIZED_QUERY_USED,
+    # Query logging prefixes
+    QUERY_LOG_PREFIX_WRITE,
+    QUERY_LOG_PREFIX_READ,
+)
+

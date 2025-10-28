@@ -1,4 +1,4 @@
-.PHONY: help install test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env
+.PHONY: help install test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
 
 SHELL := /bin/bash
 
@@ -11,7 +11,7 @@ help:
 	@echo "Setup & Installation:"
 	@echo "  make install          Install all dependencies"
 	@echo "  make install-dev      Install dev dependencies"
-	@echo "  make setup-db         Setup and validate databases"
+	@echo "  make setup-database   Run database migrations (setup DB)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test             Run all tests"
@@ -24,6 +24,13 @@ help:
 	@echo "  make populate-db      Populate databases with sample data"
 	@echo "  make cleanup-db       Clean all data from databases"
 	@echo "  make reset-db         Clean and re-populate databases"
+	@echo ""
+	@echo "Database Migrations:"
+	@echo "  make migrate-generate Generate new migration (DESC='description')"
+	@echo "  make migrate-up       Apply all pending migrations"
+	@echo "  make migrate-down     Rollback last migration"
+	@echo "  make migrate-status   Show migration status"
+	@echo "  make migrate-reset    Reset database (rollback all & reapply)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint             Run linter (ruff)"
@@ -89,6 +96,34 @@ cleanup-db:
 
 reset-db: cleanup-db populate-db
 	@echo "Database reset complete!"
+
+# Database Migrations
+migrate-generate:
+	@if [ -z "$(DESC)" ]; then \
+		echo "Usage: make migrate-generate DESC='create_users_table'"; \
+		exit 1; \
+	fi
+	@echo "Generating migration: $(DESC)"
+	@./venv/bin/python -m migration generate $(DESC)
+
+migrate-up:
+	@echo "Applying pending migrations..."
+	@./venv/bin/python -m migration up
+
+migrate-down:
+	@echo "Rolling back last migration..."
+	@./venv/bin/python -m migration down
+
+migrate-status:
+	@echo "Checking migration status..."
+	@./venv/bin/python -m migration status
+
+migrate-reset:
+	@echo "Resetting database migrations..."
+	@./venv/bin/python -m migration reset --yes
+
+setup-database: migrate-up
+	@echo "✅ Database setup complete!"
 
 # Code Quality
 lint:

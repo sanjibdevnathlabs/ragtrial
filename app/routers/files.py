@@ -13,7 +13,7 @@ from app.api.models import (
     FileMetadataResponse,
     ErrorResponse
 )
-from app.modules.files import FileService
+from app.modules.files import FileManagementService
 from app.api.dependencies import get_file_service
 from logger import get_logger
 import trace.codes as codes
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1", tags=["files"])
 
 
 @router.get("/files", response_model=Union[FileListResponse, ErrorResponse])
-async def list_files(service: FileService = Depends(get_file_service)):
+async def list_files(service: FileManagementService = Depends(get_file_service)):
     """
     List all uploaded files.
     
@@ -50,7 +50,7 @@ async def list_files(service: FileService = Depends(get_file_service)):
 @router.get("/files/{filename}", response_model=Union[FileMetadataResponse, ErrorResponse])
 async def get_file_metadata(
     filename: str,
-    service: FileService = Depends(get_file_service)
+    service: FileManagementService = Depends(get_file_service)
 ):
     """
     Get metadata for a specific file.
@@ -86,7 +86,7 @@ async def get_file_metadata(
 @router.delete("/files/{filename}", response_model=dict)
 async def delete_file(
     filename: str,
-    service: FileService = Depends(get_file_service)
+    service: FileManagementService = Depends(get_file_service)
 ):
     """
     Delete a file from storage.

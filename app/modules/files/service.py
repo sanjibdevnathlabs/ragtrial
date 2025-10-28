@@ -1,10 +1,11 @@
 """
 File management service.
 
-Handles file listing, metadata, and deletion operations.
+Handles file listing, metadata, and deletion operations using database.
 """
 
 from app.api.models import FileListResponse, FileMetadataResponse
+from app.modules.file.core import FileService as DBFileService
 from utils.singleton import SingletonMeta
 from config import Config
 from storage_backend.base import StorageProtocol
@@ -14,17 +15,18 @@ import trace.codes as codes
 logger = get_logger(__name__)
 
 
-class FileService(metaclass=SingletonMeta):
+class FileManagementService(metaclass=SingletonMeta):
     """
     Singleton service for file management operations.
     
+    Uses database for metadata storage and queries.
     Thread-safe singleton ensures only one instance exists.
     Optimized for high RPS scenarios.
     """
     
     def __init__(self, config: Config, storage: StorageProtocol):
         """
-        Initialize file service.
+        Initialize file management service.
         
         Only called once - subsequent calls return existing instance.
         
@@ -36,21 +38,22 @@ class FileService(metaclass=SingletonMeta):
         if not hasattr(self, '_initialized'):
             self.config = config
             self.storage = storage
+            self.db_file_service = DBFileService()
             self._initialized = True
     
     def list_files(self) -> FileListResponse:
         """
-        List all files in storage.
+        List all files from database.
         
         Returns:
-            FileListResponse: List of files with count
+            FileListResponse: List of files with metadata
             
         Raises:
             Exception: If listing fails
         """
-        logger.debug(codes.STORAGE_LISTING)
+        logger.debug(codes.API_FILES_LISTED)
         
-        files = self.storage.list_files()
+        files = self.db_file_service.list_all_files()
         
         logger.info(
             codes.API_FILES_LISTED,
@@ -66,10 +69,10 @@ class FileService(metaclass=SingletonMeta):
     
     def get_file_metadata(self, filename: str) -> FileMetadataResponse:
         """
-        Get metadata for a file.
+        Get metadata for a file from database.
         
         Args:
-            filename: Name of file
+            filename: Original filename
             
         Returns:
             FileMetadataResponse: File metadata
@@ -80,28 +83,25 @@ class FileService(metaclass=SingletonMeta):
         """
         logger.debug(codes.API_FILE_METADATA_RETRIEVED, filename=filename)
         
-        if not self.storage.file_exists(filename):
+        file_data = self.db_file_service.get_file_by_filename(filename)
+        
+        if not file_data:
             logger.warning(codes.API_FILE_NOT_FOUND, filename=filename)
             raise FileNotFoundError(codes.MSG_API_FILE_NOT_FOUND)
         
-        metadata = self._get_metadata(filename)
-        
         logger.info(codes.API_FILE_METADATA_RETRIEVED, filename=filename)
         
-        return FileMetadataResponse(
-            filename=metadata.get("filename", filename),
-            size=str(metadata.get("size", 0)),
-            modified_time=metadata.get("modified_time", ""),
-            path=metadata.get("path"),
-            etag=metadata.get("etag")
-        )
+        # Map database field names to API response field names
+        file_data['file_id'] = file_data.pop('id')
+        
+        return FileMetadataResponse(**file_data)
     
     def delete_file(self, filename: str) -> dict:
         """
-        Delete a file from storage.
+        Soft delete a file (database and storage).
         
         Args:
-            filename: Name of file to delete
+            filename: Original filename to delete
             
         Returns:
             dict: Success message with filename
@@ -112,11 +112,21 @@ class FileService(metaclass=SingletonMeta):
         """
         logger.info(codes.API_FILE_DELETED, filename=filename)
         
-        if not self.storage.file_exists(filename):
+        # Get file from database
+        file_data = self.db_file_service.get_file_by_filename(filename)
+        
+        if not file_data:
             logger.warning(codes.API_FILE_NOT_FOUND, filename=filename)
             raise FileNotFoundError(codes.MSG_API_FILE_NOT_FOUND)
         
-        self.storage.delete_file(filename)
+        # Soft delete in database
+        file_id = file_data["id"]
+        self.db_file_service.delete_file(file_id)
+        
+        # Delete from storage backend
+        file_path = file_data["file_path"]
+        if self.storage.file_exists(file_path):
+            self.storage.delete_file(file_path)
         
         logger.info(codes.API_FILE_DELETED, filename=filename)
         
@@ -125,29 +135,4 @@ class FileService(metaclass=SingletonMeta):
             "message": codes.MSG_API_FILE_DELETED,
             "filename": filename
         }
-    
-    def _get_metadata(self, filename: str) -> dict:
-        """
-        Get metadata from storage.
-        
-        Args:
-            filename: Name of file
-            
-        Returns:
-            dict: File metadata
-            
-        Raises:
-            Exception: If metadata retrieval fails
-        """
-        try:
-            return self.storage.get_file_metadata(filename)
-        except Exception as e:
-            logger.error(
-                codes.API_ERROR,
-                operation="get_metadata",
-                filename=filename,
-                error=str(e),
-                exc_info=True
-            )
-            raise
 

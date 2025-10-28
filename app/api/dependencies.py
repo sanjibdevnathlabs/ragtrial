@@ -103,9 +103,9 @@ def get_file_service(
     storage: StorageProtocol = Depends(get_storage)
 ):
     """
-    Get file service instance.
+    Get file management service instance.
     
-    Service is stateless and lightweight.
+    Service uses database for metadata storage and queries.
     Dependencies are injected by FastAPI.
     
     Args:
@@ -113,8 +113,8 @@ def get_file_service(
         storage: Storage backend (injected)
         
     Returns:
-        FileService: File management service instance
+        FileManagementService: File management service instance
     """
-    from app.modules.files import FileService
-    return FileService(config, storage)
+    from app.modules.files import FileManagementService
+    return FileManagementService(config, storage)
 

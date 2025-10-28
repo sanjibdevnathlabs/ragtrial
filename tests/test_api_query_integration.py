@@ -53,7 +53,7 @@ class TestQueryEndpoint:
         mock_service_class.return_value = mock_query_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "What is RAG?"}
         )
         
@@ -71,7 +71,7 @@ class TestQueryEndpoint:
     def test_query_with_empty_question(self, client):
         """Test query with empty question."""
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": ""}
         )
         
@@ -80,7 +80,7 @@ class TestQueryEndpoint:
     def test_query_with_whitespace_only(self, client):
         """Test query with whitespace-only question."""
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "   "}
         )
         
@@ -89,7 +89,7 @@ class TestQueryEndpoint:
     def test_query_too_short(self, client):
         """Test query with question below minimum length."""
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "ab"}
         )
         
@@ -99,7 +99,7 @@ class TestQueryEndpoint:
         """Test query with question exceeding maximum length."""
         long_question = "a" * (constants.MAX_QUERY_LENGTH_API + 1)
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": long_question}
         )
         
@@ -120,7 +120,7 @@ class TestQueryEndpoint:
             mock_service_class.return_value = mock_service
             
             response = client.post(
-                "/query",
+                "/api/v1/query",
                 json={"question": question}
             )
             
@@ -129,7 +129,7 @@ class TestQueryEndpoint:
     def test_query_missing_question_field(self, client):
         """Test query with missing question field."""
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={}
         )
         
@@ -143,7 +143,7 @@ class TestQueryEndpoint:
         mock_service_class.return_value = mock_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "What is RAG?"}
         )
         
@@ -159,7 +159,7 @@ class TestQueryEndpoint:
         mock_service_class.return_value = mock_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "What is RAG?"}
         )
         
@@ -175,7 +175,7 @@ class TestQueryEndpoint:
         mock_service_class.return_value = mock_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "What is RAG?"}
         )
         
@@ -196,7 +196,7 @@ class TestQueryEndpoint:
         mock_service_class.return_value = mock_query_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "obscure question"}
         )
         
@@ -231,7 +231,7 @@ class TestQueryEndpoint:
         mock_service_class.return_value = mock_query_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "test question"}
         )
         
@@ -249,7 +249,7 @@ class TestQueryEndpoint:
         mock_service_class.return_value = mock_query_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "  What is RAG?  "}
         )
         
@@ -265,7 +265,7 @@ class TestQueryHealthEndpoint:
         """Test successful health check."""
         mock_service_class.return_value = mock_query_service
         
-        response = client.get("/query/health")
+        response = client.get("/api/v1/query/health")
         
         assert response.status_code == 200
         data = response.json()
@@ -288,7 +288,7 @@ class TestQueryHealthEndpoint:
         }
         mock_service_class.return_value = mock_service
         
-        response = client.get("/query/health")
+        response = client.get("/api/v1/query/health")
         
         assert response.status_code == 200
         data = response.json()
@@ -303,7 +303,7 @@ class TestQueryHealthEndpoint:
         mock_service.health_check.side_effect = Exception("Service error")
         mock_service_class.return_value = mock_service
         
-        response = client.get("/query/health")
+        response = client.get("/api/v1/query/health")
         
         assert response.status_code == 200
         data = response.json()
@@ -321,7 +321,7 @@ class TestResponseFormat:
         mock_service_class.return_value = mock_query_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "What is RAG?"}
         )
         
@@ -339,7 +339,7 @@ class TestResponseFormat:
         mock_service_class.return_value = mock_query_service
         
         response = client.post(
-            "/query",
+            "/api/v1/query",
             json={"question": "What is RAG?"}
         )
         

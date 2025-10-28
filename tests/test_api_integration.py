@@ -1,14 +1,50 @@
 """
 Integration tests for API endpoints.
 
-Tests full request/response flow with mocked dependencies.
+Tests full request/response flow with database backend.
 """
 
 import pytest
+import time
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 
 from app.api.main import app
+from app.modules.file.core import FileService as DBFileService
+
+
+@pytest.fixture
+def db_file_service():
+    """Get database file service."""
+    return DBFileService()
+
+
+@pytest.fixture
+def sample_integration_files(db_file_service):
+    """Create sample files in database for integration tests."""
+    files_data = [
+        {
+            "filename": "file1.pdf",
+            "file_path": "source_docs/integration-uuid1.pdf",
+            "file_size": 1024,
+            "checksum": "integration_checksum1" + str(time.time()),
+            "storage_backend": "local"
+        },
+        {
+            "filename": "file2.txt",
+            "file_path": "source_docs/integration-uuid2.txt",
+            "file_size": 2048,
+            "checksum": "integration_checksum2" + str(time.time()),
+            "storage_backend": "local"
+        }
+    ]
+    
+    created_files = []
+    for file_data in files_data:
+        file_record = db_file_service.create_file_record(**file_data)
+        created_files.append(file_record)
+    
+    return created_files
 
 
 @pytest.fixture
@@ -16,14 +52,7 @@ def mock_storage():
     """Mock storage backend for integration tests."""
     storage = Mock()
     storage.upload_file.return_value = "source_docs/test.pdf"
-    storage.list_files.return_value = ["file1.pdf", "file2.txt"]
-    storage.file_exists.return_value = True
-    storage.get_file_metadata.return_value = {
-        "filename": "test.pdf",
-        "size": 1024,
-        "modified_time": "2025-10-28T00:00:00",
-        "path": "source_docs/test.pdf"
-    }
+    storage.delete_file.return_value = None
     return storage
 
 
@@ -113,13 +142,13 @@ class TestUploadEndpoint:
 class TestListFilesEndpoint:
     """Test suite for list files endpoint."""
     
-    def test_list_files_returns_200(self, client):
+    def test_list_files_returns_200(self, client, sample_integration_files):
         """Test list files endpoint returns 200 OK."""
         response = client.get("/api/v1/files")
         
         assert response.status_code == 200
     
-    def test_list_files_returns_file_array(self, client):
+    def test_list_files_returns_file_array(self, client, sample_integration_files):
         """Test list files returns files array."""
         response = client.get("/api/v1/files")
         data = response.json()
@@ -127,7 +156,7 @@ class TestListFilesEndpoint:
         assert "files" in data
         assert isinstance(data["files"], list)
     
-    def test_list_files_includes_count(self, client):
+    def test_list_files_includes_count(self, client, sample_integration_files):
         """Test list files includes count."""
         response = client.get("/api/v1/files")
         data = response.json()
@@ -135,7 +164,7 @@ class TestListFilesEndpoint:
         assert "count" in data
         assert data["count"] == 2
     
-    def test_list_files_includes_backend(self, client):
+    def test_list_files_includes_backend(self, client, sample_integration_files):
         """Test list files includes backend."""
         response = client.get("/api/v1/files")
         data = response.json()
@@ -146,30 +175,29 @@ class TestListFilesEndpoint:
 class TestGetFileMetadataEndpoint:
     """Test suite for get file metadata endpoint."""
     
-    def test_get_metadata_returns_200(self, client):
+    def test_get_metadata_returns_200(self, client, sample_integration_files):
         """Test get metadata endpoint returns 200 OK."""
-        response = client.get("/api/v1/files/test.pdf")
+        response = client.get("/api/v1/files/file1.pdf")
         
         assert response.status_code == 200
     
-    def test_get_metadata_includes_filename(self, client):
+    def test_get_metadata_includes_filename(self, client, sample_integration_files):
         """Test metadata response includes filename."""
-        response = client.get("/api/v1/files/test.pdf")
+        response = client.get("/api/v1/files/file1.pdf")
         data = response.json()
         
         assert "filename" in data
+        assert data["filename"] == "file1.pdf"
     
-    def test_get_metadata_includes_size(self, client):
+    def test_get_metadata_includes_size(self, client, sample_integration_files):
         """Test metadata response includes size."""
-        response = client.get("/api/v1/files/test.pdf")
+        response = client.get("/api/v1/files/file1.pdf")
         data = response.json()
         
-        assert "size" in data
+        assert "file_size" in data
     
-    def test_get_metadata_returns_404_for_missing_file(self, client, mock_storage):
+    def test_get_metadata_returns_404_for_missing_file(self, client):
         """Test metadata returns 404 for non-existent file."""
-        mock_storage.file_exists.return_value = False
-        
         response = client.get("/api/v1/files/missing.pdf")
         
         assert response.status_code == 404
@@ -178,30 +206,28 @@ class TestGetFileMetadataEndpoint:
 class TestDeleteFileEndpoint:
     """Test suite for delete file endpoint."""
     
-    def test_delete_file_returns_200(self, client):
+    def test_delete_file_returns_200(self, client, sample_integration_files):
         """Test delete file endpoint returns 200 OK."""
-        response = client.delete("/api/v1/files/test.pdf")
+        response = client.delete("/api/v1/files/file1.pdf")
         
         assert response.status_code == 200
     
-    def test_delete_file_returns_success(self, client):
+    def test_delete_file_returns_success(self, client, sample_integration_files):
         """Test delete returns success response."""
-        response = client.delete("/api/v1/files/test.pdf")
+        response = client.delete("/api/v1/files/file1.pdf")
         data = response.json()
         
         assert data["success"] is True
     
-    def test_delete_file_includes_filename(self, client):
+    def test_delete_file_includes_filename(self, client, sample_integration_files):
         """Test delete response includes filename."""
-        response = client.delete("/api/v1/files/test.pdf")
+        response = client.delete("/api/v1/files/file1.pdf")
         data = response.json()
         
-        assert data["filename"] == "test.pdf"
+        assert data["filename"] == "file1.pdf"
     
-    def test_delete_file_returns_404_for_missing_file(self, client, mock_storage):
+    def test_delete_file_returns_404_for_missing_file(self, client):
         """Test delete returns 404 for non-existent file."""
-        mock_storage.file_exists.return_value = False
-        
         response = client.delete("/api/v1/files/missing.pdf")
         
         assert response.status_code == 404

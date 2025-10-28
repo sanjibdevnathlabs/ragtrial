@@ -53,12 +53,19 @@ class TestUploadFile:
         assert result.size == len(content)
     
     def test_upload_file_calls_storage(self, service, mock_storage):
-        """Test upload calls storage backend."""
+        """Test upload calls storage backend with UUID-based filename."""
         content = b"test content"
         
         service.upload_file("test.pdf", content)
         
-        mock_storage.upload_file.assert_called_once_with(content, "test.pdf")
+        # Storage should be called with UUID-based filename (not original)
+        mock_storage.upload_file.assert_called_once()
+        call_args = mock_storage.upload_file.call_args
+        assert call_args[0][0] == content  # First arg is content
+        # Second arg should be UUID.pdf (not "test.pdf")
+        uuid_filename = call_args[0][1]
+        assert uuid_filename.endswith(".pdf")
+        assert uuid_filename != "test.pdf"  # Should be UUID-based
     
     def test_upload_file_returns_correct_path(self, service, mock_storage):
         """Test upload returns storage path."""
@@ -102,10 +109,13 @@ class TestUploadFile:
     
     def test_upload_file_accepts_all_allowed_extensions(self, service):
         """Test upload accepts all configured extensions."""
-        content = b"test content"
-        filenames = ["doc.pdf", "notes.txt", "readme.md"]
+        filenames = [
+            ("doc.pdf", b"pdf content"),
+            ("notes.txt", b"txt content"),
+            ("readme.md", b"md content")
+        ]
         
-        for filename in filenames:
+        for filename, content in filenames:
             result = service.upload_file(filename, content)
             assert result.success is True
 
