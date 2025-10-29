@@ -132,7 +132,7 @@ test-html:
 
 test-ci:
 	@echo "Running unit tests for CI (with xml + term + html coverage)..."
-	@APP_ENV=test $(PYTHON) -m pytest \
+	@$(PYTHON) -m pytest \
 		-m "not integration" \
 		-n auto \
 		--cov=. \
@@ -160,7 +160,7 @@ setup-test-chromadb:
 # Note: Parallel execution with SELECT FOR UPDATE deadlock prevention
 test-integration:
 	@echo "🧪 Running integration tests (parallel, ~1s)..."
-	@APP_ENV=test $(PYTHON) -m pytest \
+	@$(PYTHON) -m pytest \
 		-m "integration" \
 		-n auto \
 		-vv \

@@ -43,7 +43,7 @@ storage/*
 watch_*
 
 # Models (downloaded by embeddings)
-models/
+/models/
 
 # Testing & Coverage
 .pytest_cache/

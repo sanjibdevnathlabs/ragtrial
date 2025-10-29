@@ -1,0 +1,132 @@
+# CI Environment Configuration
+# This configuration is used during CI/CD testing in GitHub Actions
+# 
+# IMPORTANT: All API keys and secrets are DUMMY values for testing only
+# Tests should NEVER make actual API calls - everything is mocked
+# 
+# Key differences from test.toml:
+# - MySQL host is 'mysql' (Docker service name) instead of 'localhost'
+# - Everything else is identical to test.toml
+
+[app]
+name = "ragtrial-app-ci"
+version = "1.0.0"
+environment = "ci"
+
+[embeddings]
+provider = "google"  # Default for tests (will be mocked)
+dimension = 768
+
+[embeddings.google]
+model = "text-embedding-004"
+api_key = "test-google-api-key-dummy"  # Dummy key - tests are mocked
+verify_ssl = false  # Disabled for tests
+
+[embeddings.openai]
+model = "text-embedding-3-small"
+api_key = "test-openai-api-key-dummy"  # Dummy key - tests are mocked
+batch_size = 100
+dimensions = 1536
+verify_ssl = false  # Disabled for tests
+
+[embeddings.huggingface]
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+cache_folder = "./models/huggingface_test"  # Separate test cache
+device = "cpu"
+
+[embeddings.anthropic]
+model = "voyage-2"
+api_key = "test-voyage-api-key-dummy"  # Dummy key - tests are mocked
+verify_ssl = false  # Disabled for tests
+
+[vectorstore]
+provider = "chroma"  # Default for tests
+collection_name = "test_collection"  # Test-specific collection name
+
+[vectorstore.chroma]
+persist_directory = "./storage/chroma_test"  # Separate test storage
+collection_name = "test_collection"
+
+[vectorstore.pinecone]
+api_key = "test-pinecone-api-key-dummy"  # Dummy key - tests are mocked
+environment = "test-env"
+index_name = "test-index"
+verify_ssl = false  # Disabled for tests
+
+[vectorstore.qdrant]
+url = "http://localhost:6333"
+collection_name = "test_collection"
+api_key = "test-qdrant-api-key-dummy"  # Dummy key - tests are mocked
+
+[vectorstore.weaviate]
+url = "http://localhost:8080"
+class_name = "TestDocument"
+api_key = "test-weaviate-api-key-dummy"  # Dummy key - tests are mocked
+
+[logging]
+level = "WARNING"  # Reduce noise during tests
+format = "json"
+
+# Storage Backend Configuration (Test)
+[storage]
+backend = "local"
+max_file_size_mb = 100
+allowed_extensions = [".pdf", ".txt", ".md", ".csv", ".docx", ".json"]
+
+# Local Storage settings
+[storage.local]
+path = "storage/test_documents"
+create_if_missing = true
+
+# S3 Storage settings (for testing)
+[storage.s3]
+bucket_name = "test-rag-documents"
+region = "us-east-1"
+use_explicit_credentials = true
+access_key_id = "test"
+secret_access_key = "test"
+endpoint_url = ""
+use_localstack = false
+role_arn = ""
+role_session_name = "test-session"
+
+# API Configuration (Test)
+[api]
+host = "127.0.0.1"
+port = 8001
+cors_origins = ["*"]
+upload_chunk_size = 1048576
+
+# ============================================================================
+# DATABASE CONFIGURATION (CI ENVIRONMENT)
+# ============================================================================
+
+[database]
+driver = "mysql"                 # Use MySQL for tests (supports parallel execution)
+pool_pre_ping = true             # Check connection before using
+pool_recycle = 3600              # Recycle connections after 1 hour
+connect_timeout = 10             # Connection timeout
+
+# MySQL Configuration (CI - uses Docker service name 'mysql')
+[database.mysql.write]
+host = "mysql"                   # Docker service name (not localhost!)
+port = 3306
+database = "test_ragtrial"       # Dedicated test database
+username = "test_ragtrial"       # CI user
+password = "test_ragtrial"       # CI password
+charset = "utf8mb4"
+pool_size = 10                   # Support parallel test execution
+max_overflow = 20                # Allow burst during parallel tests
+debug = true                     # Disable query logging in tests
+
+[database.mysql.read]
+host = "mysql"                   # Docker service name (not localhost!)
+port = 3306
+database = "test_ragtrial"
+username = "test_ragtrial"
+password = "test_ragtrial"
+charset = "utf8mb4"
+pool_size = 10
+max_overflow = 20
+debug = true
+
