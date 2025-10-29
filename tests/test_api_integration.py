@@ -53,14 +53,10 @@ def db_session():
     session_factory = SessionFactory()
     engine = session_factory.get_write_engine()
     
-    # Create connection and start transaction
     connection = engine.connect()
     transaction = connection.begin()
-    
-    # Create session bound to this transactional connection
     session = Session(bind=connection)
     
-    # Override commit to just flush (don't actually commit)
     original_commit = session.commit
     def mock_commit():
         session.flush()  # Write to transaction but don't commit
@@ -69,9 +65,7 @@ def db_session():
     
     yield session
     
-    # CRITICAL: Rollback transaction (never commit in tests)
-    # This ensures NO test data persists
-    session.commit = original_commit  # Restore original
+    session.commit = original_commit
     session.close()
     transaction.rollback()
     connection.close()
@@ -93,7 +87,6 @@ def override_db_dependency(db_session):
     from unittest.mock import patch, MagicMock
     from contextlib import contextmanager
     
-    # Create a mock session factory that returns our transactional session
     @contextmanager
     def mock_write_session():
         yield db_session
@@ -108,9 +101,7 @@ def override_db_dependency(db_session):
     mock_factory.get_write_engine = lambda: db_session.get_bind()
     mock_factory.get_read_engine = lambda: db_session.get_bind()
     
-    # Patch SessionFactory to return our mock
     with patch("database.session.SessionFactory", return_value=mock_factory):
-        # Also patch it where it's imported in app modules
         with patch("app.modules.file.core.SessionFactory", return_value=mock_factory):
             yield
     
@@ -132,7 +123,6 @@ def sample_integration_files(db_file_service):
     This prevents deadlocks when multiple test workers try to insert files
     with the same checksum simultaneously.
     """
-    # Generate unique checksums for this test run
     unique_id = str(uuid.uuid4())
     
     files_data = [
@@ -225,7 +215,6 @@ class TestUploadEndpoint:
     
     def test_upload_returns_200(self, client, mock_storage):
         """Test upload endpoint returns 200 OK."""
-        # Unique content to avoid checksum collision in parallel tests
         content = f"test content {uuid.uuid4()}".encode()
         files = {"file": ("test.pdf", content, "application/pdf")}
         
@@ -235,7 +224,6 @@ class TestUploadEndpoint:
     
     def test_upload_returns_success_response(self, client, mock_storage):
         """Test upload returns success response."""
-        # Unique content to avoid checksum collision in parallel tests
         content = f"test content {uuid.uuid4()}".encode()
         files = {"file": ("test.pdf", content, "application/pdf")}
         
@@ -246,7 +234,6 @@ class TestUploadEndpoint:
     
     def test_upload_includes_filename(self, client, mock_storage):
         """Test upload response includes filename."""
-        # Unique content to avoid checksum collision in parallel tests
         content = f"test content {uuid.uuid4()}".encode()
         files = {"file": ("test.pdf", content, "application/pdf")}
         

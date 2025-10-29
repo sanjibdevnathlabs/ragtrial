@@ -108,13 +108,9 @@ class FileService:
         )
 
         try:
-            # Generate UUID for file ID
             file_id = File.generate_id()
-            
-            # Extract file type (without dot)
             file_type = File.get_file_type_from_filename(filename)
             
-            # Create file entity
             file = File(
                 id=file_id,
                 filename=filename,
@@ -126,8 +122,6 @@ class FileService:
                 indexed=False
             )
 
-            # Insert into database
-            # UNIQUE constraint on checksum prevents duplicates atomically
             with self.session_factory.get_write_session() as session:
                 created_file = self.repository.create(session, file)
                 
@@ -141,8 +135,6 @@ class FileService:
                 return created_file.to_dict()
 
         except IntegrityError as e:
-            # UNIQUE constraint violation - duplicate checksum
-            # Fetch the existing file to provide helpful error message
             with self.session_factory.get_read_session() as session:
                 existing = self.repository.find_by_checksum(session, checksum)
                 existing_filename = existing.filename if existing else "unknown"

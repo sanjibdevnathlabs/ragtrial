@@ -73,22 +73,14 @@ class UploadService(metaclass=SingletonMeta):
         """
         logger.info(codes.API_UPLOAD_STARTED, filename=filename)
         
-        # Step 1: Validate file
         self._validate_file(filename, content)
-        
-        # Step 2: Calculate checksum
         checksum = self._calculate_checksum(content)
         
-        # Step 3: Generate UUID for storage
         file_id = File.generate_id()
         file_type = File.get_file_type_from_filename(filename)
         storage_filename = f"{file_id}.{file_type}"
-        
-        # Step 4: Store file with UUID-based name
         file_path = self._store_file(storage_filename, content)
         
-        # Step 5: Create database record (with atomic duplicate check)
-        # Note: create_file_record now does SELECT ... FOR UPDATE to prevent deadlocks
         try:
             file_record = self.db_file_service.create_file_record(
                 filename=filename,
@@ -98,14 +90,12 @@ class UploadService(metaclass=SingletonMeta):
                 storage_backend=self.config.storage.backend
             )
         except ValueError as e:
-            # Duplicate detected - log and re-raise
             logger.warning(
                 codes.API_UPLOAD_FAILED,
                 filename=filename,
                 reason=constants.ERROR_FILE_DUPLICATE,
                 error=str(e)
             )
-            # Clean up stored file since DB insert failed
             try:
                 self.storage.delete_file(file_path)
             except Exception as cleanup_error:
