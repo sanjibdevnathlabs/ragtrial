@@ -26,7 +26,17 @@ jobs:
         with:
           python-version: '3.13'
       
+      - name: Cache security tools
+        uses: actions/cache@v4
+        id: cache-security
+        with:
+          path: ~/.cache/pip
+          key: security-tools-${{ runner.os }}-bandit-safety-pip-audit-v1
+          restore-keys: |
+            security-tools-${{ runner.os }}-
+      
       - name: Install security tools
+        if: steps.cache-security.outputs.cache-hit != 'true'
         run: pip install bandit safety pip-audit
       
       - name: Run Bandit security linter

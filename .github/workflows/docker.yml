@@ -6,9 +6,6 @@ on:
     types:
       - completed
     branches: [ master ]
-  pull_request:
-    branches:
-      - master
   push:
     tags:
       - 'v*'
@@ -24,7 +21,7 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'pull_request' || github.event_name == 'push' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
     
     steps:
       - name: Checkout code
@@ -57,19 +54,15 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          # For PRs: build only linux/amd64 (faster)
-          # For master/develop: build linux/amd64,linux/arm64 (multi-platform)
-          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
-          push: ${{ github.event_name != 'pull_request' }}
+          platforms: linux/amd64,linux/arm64
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Pass base image tag (commit SHA) to Dockerfile
+          # Pass base image tag (commit SHA from workflow_run trigger)
           build-args: |
-            BASE_IMAGE_TAG=${{ github.event.workflow_run.head_sha || github.sha }}
+            BASE_IMAGE_TAG=${{ github.event.workflow_run.head_sha }}
           cache-from: type=gha
-          # For PRs: use min mode (faster, only cache final image)
-          # For push: use max mode (cache all layers for better reuse)
-          cache-to: type=gha,mode=${{ github.event_name == 'pull_request' && 'min' || 'max' }}
+          cache-to: type=gha,mode=max
       
       - name: Update Docker Hub description
         if: github.ref == 'refs/heads/master'
