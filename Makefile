@@ -49,6 +49,23 @@ help:
 	@echo "  make clean            Clean temporary files"
 	@echo "  make clean-all        Clean everything (including storage)"
 	@echo ""
+	@echo "Docker:"
+	@echo "  make docker-build     Build Docker image"
+	@echo "  make docker-run       Start all services (API, MySQL, ChromaDB)"
+	@echo "  make docker-stop      Stop all services"
+	@echo "  make docker-restart   Restart all services"
+	@echo "  make docker-logs      View API logs"
+	@echo "  make docker-logs-all  View all service logs"
+	@echo "  make docker-test      Run tests in Docker"
+	@echo "  make docker-push      Push image to Docker Hub"
+	@echo "  make docker-shell     Open shell in API container"
+	@echo "  make docker-clean     Clean Docker resources"
+	@echo ""
+	@echo "Pre-commit Hooks:"
+	@echo "  make pre-commit-install   Install pre-commit hooks"
+	@echo "  make pre-commit-run       Run pre-commit on all files"
+	@echo "  make pre-commit-update    Update pre-commit hooks"
+	@echo ""
 
 # Installation
 install:
@@ -253,3 +270,85 @@ check-python:
 	@echo ""
 	@echo "Installed packages:"
 	@./venv/bin/pip list | grep -E "(pytest|structlog|chroma|pinecone|qdrant|weaviate)" || echo "No matching packages found"
+
+# ==============================================================================
+# Docker Commands
+# ==============================================================================
+
+.PHONY: docker-build docker-run docker-stop docker-logs docker-test docker-push docker-clean
+
+docker-build:
+	@echo "🐳 Building Docker image..."
+	@docker build -t ragtrial:local .
+	@echo "✅ Docker image built: ragtrial:local"
+
+docker-run:
+	@echo "🚀 Starting Docker Compose services..."
+	@docker-compose up -d
+	@echo ""
+	@echo "✅ Services running:"
+	@echo "   📡 API:      http://localhost:8000"
+	@echo "   📊 API Docs: http://localhost:8000/docs"
+	@echo "   🔍 Health:   http://localhost:8000/api/v1/health"
+	@echo "   💾 ChromaDB: http://localhost:8001"
+	@echo ""
+	@docker-compose ps
+
+docker-stop:
+	@echo "🛑 Stopping Docker Compose services..."
+	@docker-compose down
+	@echo "✅ Services stopped"
+
+docker-restart:
+	@echo "🔄 Restarting Docker Compose services..."
+	@docker-compose restart
+	@echo "✅ Services restarted"
+
+docker-logs:
+	@echo "📋 Following API logs (Ctrl+C to exit)..."
+	@docker-compose logs -f api
+
+docker-logs-all:
+	@echo "📋 Following all service logs (Ctrl+C to exit)..."
+	@docker-compose logs -f
+
+docker-test:
+	@echo "🧪 Running tests in Docker..."
+	@docker-compose exec api pytest -v
+
+docker-push:
+	@echo "📤 Pushing to Docker Hub..."
+	@docker tag ragtrial:local yourusername/ragtrial:local
+	@docker push yourusername/ragtrial:local
+	@echo "✅ Pushed to Docker Hub"
+
+docker-clean:
+	@echo "🧹 Cleaning Docker resources..."
+	@docker-compose down -v
+	@docker system prune -f
+	@echo "✅ Docker cleaned"
+
+docker-shell:
+	@echo "🐚 Opening shell in API container..."
+	@docker-compose exec api /bin/bash
+
+# ==============================================================================
+# Pre-commit Hooks
+# ==============================================================================
+
+.PHONY: pre-commit-install pre-commit-run pre-commit-update
+
+pre-commit-install:
+	@echo "🔧 Installing pre-commit hooks..."
+	@pip install pre-commit
+	@pre-commit install
+	@echo "✅ Pre-commit hooks installed"
+
+pre-commit-run:
+	@echo "🔍 Running pre-commit on all files..."
+	@pre-commit run --all-files
+
+pre-commit-update:
+	@echo "⬆️  Updating pre-commit hooks..."
+	@pre-commit autoupdate
+	@echo "✅ Pre-commit hooks updated"

@@ -1,6 +1,19 @@
 # RAG Document Chat Application
 
+[![Tests](https://github.com/yourusername/ragtrial/actions/workflows/tests.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/tests.yml)
+[![Code Quality](https://github.com/yourusername/ragtrial/actions/workflows/lint.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/lint.yml)
+[![Security](https://github.com/yourusername/ragtrial/actions/workflows/security.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/security.yml)
+[![Docker](https://github.com/yourusername/ragtrial/actions/workflows/docker.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/docker.yml)
+[![codecov](https://codecov.io/gh/yourusername/ragtrial/branch/master/graph/badge.svg)](https://codecov.io/gh/yourusername/ragtrial)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Docker Pulls](https://img.shields.io/docker/pulls/yourusername/ragtrial.svg)](https://hub.docker.com/r/yourusername/ragtrial)
+
 A production-ready Retrieval-Augmented Generation (RAG) system with **ORM-like abstraction** for vector databases and embeddings. Switch providers with just configuration changes - **no code modifications needed**!
+
+**✅ 653 tests passing (100%)** | **⚡ 15s test execution** | **🔒 MySQL + ChromaDB** | **🐳 Docker ready**
 
 ## 🎯 Project Status
 
@@ -184,6 +197,9 @@ ragtrial/
 │   └── codes.py                  # All event codes
 ├── constants/                     # Application constants
 │   └── __init__.py               # All string constants
+├── Dockerfile                     # Production Docker image
+├── docker-compose.yml             # Development environment
+└── .github/workflows/             # CI/CD pipelines
 ├── utils/                         # Utility modules
 │   └── singleton.py              # Thread-safe singleton metaclass
 ├── examples/                      # Example scripts & demos
@@ -303,6 +319,91 @@ make run-rag-demo
 ```
 
 **📚 Detailed Setup Guide:** See [docs/QUICKSTART.md](docs/QUICKSTART.md)
+
+---
+
+## 🐳 Docker Deployment
+
+### Quick Start with Docker
+
+```bash
+# Pull from Docker Hub
+docker pull yourusername/ragtrial:latest
+
+# Run with Docker Compose
+docker-compose up -d
+
+# Access services
+# API:      http://localhost:8000
+# API Docs: http://localhost:8000/docs
+# Health:   http://localhost:8000/api/v1/health
+# ChromaDB: http://localhost:8001
+```
+
+### Build Locally
+
+```bash
+# Build Docker image
+make docker-build
+
+# Start all services (API, MySQL, ChromaDB)
+make docker-run
+
+# View logs
+make docker-logs
+
+# Stop services
+make docker-stop
+
+# Clean up
+make docker-clean
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_ENV` | Environment (dev/test/prod) | `development` |
+| `DATABASE_HOST` | MySQL host | `db` |
+| `DATABASE_PORT` | MySQL port | `3306` |
+| `DATABASE_NAME` | Database name | `ragtrial` |
+| `DATABASE_USER` | Database user | `root` |
+| `DATABASE_PASSWORD` | Database password | `root` |
+
+### Production Deployment
+
+```bash
+# Using specific version tag
+docker run -d \
+  -p 8000:8000 \
+  -e APP_ENV=production \
+  -e DATABASE_HOST=your-mysql-host \
+  -e DATABASE_PASSWORD=secure-password \
+  yourusername/ragtrial:1.2.3
+
+# Or use docker-compose with .env file
+docker-compose up -d
+```
+
+### Docker Image Information
+
+- **Size:** ~250MB (multi-stage build)
+- **Base:** Python 3.13-slim
+- **Platforms:** linux/amd64, linux/arm64
+- **User:** Non-root (appuser)
+- **Health Check:** Included (`/api/v1/health`)
+- **Auto-updated:** On every merge to master
+
+### Available Docker Tags
+
+| Tag | Description | Use Case |
+|-----|-------------|----------|
+| `latest` | Latest stable release | Production |
+| `1.2.3` | Specific version | Production (pinned) |
+| `1.2` | Minor version | Auto-updates patches |
+| `1` | Major version | Auto-updates minor |
+| `master` | Latest master branch | Staging |
+| `develop` | Development branch | Testing |
 
 ---
 

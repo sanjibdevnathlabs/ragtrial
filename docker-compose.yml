@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ragtrial:dev
+    container_name: ragtrial-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=${APP_ENV:-development}
+      - DATABASE_HOST=db
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=ragtrial
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=root
+    depends_on:
+      db:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    volumes:
+      - ./storage:/app/storage
+    networks:
+      - ragtrial-network
+    restart: unless-stopped
+  
+  db:
+    image: mysql:8.0
+    container_name: ragtrial-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ragtrial
+      MYSQL_USER: ragtrial
+      MYSQL_PASSWORD: ragtrial
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts:/docker-entrypoint-initdb.d
+    networks:
+      - ragtrial-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ragtrial-chroma
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - ragtrial-network
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    restart: unless-stopped
+
+networks:
+  ragtrial-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  chroma_data:
+

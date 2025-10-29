@@ -1,0 +1,57 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  schedule:
+    - cron: '0 0 * * 1'
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Install security tools
+        run: |
+          pip install bandit safety pip-audit
+      
+      - name: Run Bandit security linter
+        run: |
+          bandit -r . \
+            -f json \
+            -o bandit-report.json \
+            --exclude ./venv,./tests,./scripts
+        continue-on-error: true
+      
+      - name: Run Safety vulnerability check
+        run: |
+          pip install -r requirements.txt
+          safety check --json > safety-report.json
+        continue-on-error: true
+      
+      - name: Run pip-audit
+        run: |
+          pip-audit --format json > pip-audit-report.json
+        continue-on-error: true
+      
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+            pip-audit-report.json
+          retention-days: 30
+
