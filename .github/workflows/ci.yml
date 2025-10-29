@@ -62,7 +62,7 @@ jobs:
         with:
           images: ${{ env.BASE_IMAGE }}
           tags: |
-            type=sha,format=long
+            type=raw,value=${{ env.COMMIT_SHA }}
       
       - name: Build and push base image
         if: steps.check.outputs.exists == 'false'
@@ -76,12 +76,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
+      - name: Verify image is pullable
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          echo "⏳ Waiting for Docker Hub to propagate the image..."
+          for i in {1..30}; do
+            if docker pull ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }} > /dev/null 2>&1; then
+              echo "✅ Image is pullable from Docker Hub"
+              docker rmi ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }} > /dev/null 2>&1 || true
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Image not pullable after 30 attempts"
+              exit 1
+            fi
+            echo "⏳ Attempt $i/30 - waiting 2 seconds..."
+            sleep 2
+          done
+      
       - name: Image details
         run: |
           if [ "${{ steps.check.outputs.exists }}" = "true" ]; then
             echo "✅ Base image already exists (skipped build)"
           else
-            echo "✅ Base image built and pushed successfully!"
+            echo "✅ Base image built, pushed, and verified pullable!"
           fi
           echo ""
           echo "📦 Image: ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }}"
@@ -284,7 +302,7 @@ jobs:
         with:
           images: ${{ env.DOCKER_IMAGE }}
           tags: |
-            type=sha,format=long
+            type=raw,value=${{ github.event.pull_request.head.sha || github.sha }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
       
       - name: Build and push Docker image
