@@ -100,3 +100,35 @@ port = 8001
 cors_origins = ["*"]
 upload_chunk_size = 1048576
 
+# ============================================================================
+# DATABASE CONFIGURATION (TEST ENVIRONMENT)
+# ============================================================================
+
+[database]
+driver = "mysql"                 # Use MySQL for tests (supports parallel execution)
+pool_pre_ping = true             # Check connection before using
+pool_recycle = 3600              # Recycle connections after 1 hour
+connect_timeout = 10             # Connection timeout
+
+# MySQL Configuration (Test Database)
+[database.mysql.write]
+host = "localhost"
+port = 3306
+database = "test_ragtrial"       # Dedicated test database
+username = "test_ragtrial"                # Using root (adjust as needed)
+password = "test_ragtrial"                    # Empty password for local dev
+charset = "utf8mb4"
+pool_size = 10                   # Support parallel test execution
+max_overflow = 20                # Allow burst during parallel tests
+debug = true                    # Disable query logging in tests
+
+[database.mysql.read]
+host = "localhost"
+port = 3306
+database = "test_ragtrial"
+username = "test_ragtrial"
+password = "test_ragtrial"
+charset = "utf8mb4"
+pool_size = 10
+max_overflow = 20
+debug = true

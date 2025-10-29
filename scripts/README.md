@@ -89,6 +89,61 @@ APP_ENV=dev ./venv/bin/python3 scripts/cleanup_all_databases.py
 
 ---
 
+### 4. `setup_test_mysql.sql`
+**Purpose:** Create dedicated MySQL test database and user for automated tests.
+
+**What it does:**
+- Creates `test_ragtrial` database with UTF-8 support
+- Creates `test_ragtrial` user with password `test_ragtrial`
+- Grants all privileges on `test_ragtrial` database to test user
+- Verifies setup with status queries
+
+**Usage:**
+
+**Option 1 - Using make command (recommended):**
+```bash
+make setup-test-db
+# This will prompt for MySQL root password
+```
+
+**Option 2 - Direct SQL execution:**
+```bash
+# With MySQL root password
+mysql -u root -p < scripts/setup_test_mysql.sql
+
+# Or with sudo (if MySQL configured that way)
+sudo mysql < scripts/setup_test_mysql.sql
+```
+
+**What gets created:**
+```
+Database: test_ragtrial
+Username: test_ragtrial
+Password: test_ragtrial
+```
+
+**Security:**
+- Test user ONLY has access to `test_ragtrial` database
+- Your development database (`ragtrial`) remains protected
+- Test user cannot access other databases
+
+**When to use:**
+- First-time test environment setup
+- Setting up CI/CD test database
+- After fresh MySQL installation
+- When test database was accidentally dropped
+
+**Verification:**
+```bash
+# Test connection with new user
+mysql -u test_ragtrial -ptest_ragtrial test_ragtrial -e "SHOW TABLES;"
+
+# Check grants
+mysql -u root -p -e "SHOW GRANTS FOR 'test_ragtrial'@'localhost';"
+```
+
+---
+
 ## Environment Configuration
 
 All scripts respect the `APP_ENV` environment variable:

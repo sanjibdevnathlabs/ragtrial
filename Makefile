@@ -1,4 +1,4 @@
-.PHONY: help install test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env
+.PHONY: help install install-cpu test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
 
 SHELL := /bin/bash
 
@@ -10,25 +10,35 @@ help:
 	@echo ""
 	@echo "Setup & Installation:"
 	@echo "  make install          Install all dependencies"
+	@echo "  make install-cpu      Install with PyTorch CPU-only (RECOMMENDED, saves ~1.9GB)"
 	@echo "  make install-dev      Install dev dependencies"
-	@echo "  make setup-db         Setup and validate databases"
+	@echo "  make setup-database   Run database migrations (setup DB)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test             Run all tests"
-	@echo "  make test-verbose     Run tests with verbose output"
-	@echo "  make test-coverage    Run tests with coverage report"
-	@echo "  make test-config      Run config tests only"
-	@echo "  make test-logging     Run logging tests only"
+	@echo "  make test             Run unit tests with coverage (parallel, ~10s)"
+	@echo "  make test-html        Run unit tests with HTML coverage report"
+	@echo "  make test-ci          Run unit tests for CI (xml + term + html)"
+	@echo "  make test-integration Run integration tests (parallel, ~1s)"
+	@echo "  make test-clean       Clean up test storage artifacts"
+	@echo "  make setup-test-chromadb  Set up ChromaDB test collection"
 	@echo ""
 	@echo "Database Management:"
 	@echo "  make populate-db      Populate databases with sample data"
 	@echo "  make cleanup-db       Clean all data from databases"
 	@echo "  make reset-db         Clean and re-populate databases"
 	@echo ""
+	@echo "Database Migrations:"
+	@echo "  make migrate-generate Generate new migration (DESC='description')"
+	@echo "  make migrate-up       Apply all pending migrations"
+	@echo "  make migrate-down     Rollback last migration"
+	@echo "  make migrate-status   Show migration status"
+	@echo "  make migrate-reset    Reset database (rollback all & reapply)"
+	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint             Run linter (ruff)"
-	@echo "  make format           Format code (black)"
-	@echo "  make check            Run lint + format check"
+	@echo "  make format           Format code (black + isort)"
+	@echo "  make lint-check       Check code formatting (no changes)"
+	@echo "  make lint             Run flake8 linter (reports issues)"
+	@echo "  make lint-all         Run all linting checks (format + lint)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make run-api          Start FastAPI server (with auto-reload)"
@@ -42,11 +52,41 @@ help:
 	@echo "  make clean            Clean temporary files"
 	@echo "  make clean-all        Clean everything (including storage)"
 	@echo ""
+	@echo "Docker (Recommended for Development):"
+	@echo "  make docker-setup        🔧 First-time setup (build all images)"
+	@echo "  make docker-up           🚀 Start all services (auto-builds if needed)"
+	@echo "  make docker-down         🛑 Stop all services"
+	@echo "  make docker-status       📊 Check service health status"
+	@echo ""
+	@echo "Docker - Working with Services:"
+	@echo "  make docker-logs         View API logs (follow mode)"
+	@echo "  make docker-logs-all     View all service logs"
+	@echo "  make docker-logs-migration View migration logs"
+	@echo "  make docker-ingest       📥 Run ingestion for uploaded files"
+	@echo "  make docker-shell        Enter API container shell"
+	@echo "  make docker-db-shell     Enter MySQL shell"
+	@echo ""
+	@echo "Docker - Build & Maintenance:"
+	@echo "  make docker-build-base   Build base image (with all dependencies)"
+	@echo "  make docker-rebuild      🔨 Force rebuild all images"
+	@echo "  make docker-clean        🧹 Clean all Docker resources"
+	@echo "  make docker-restart      Restart all services"
+	@echo ""
+	@echo "Pre-commit Hooks:"
+	@echo "  make pre-commit-install   Install pre-commit hooks"
+	@echo "  make pre-commit-run       Run pre-commit on all files"
+	@echo "  make pre-commit-update    Update pre-commit hooks"
+	@echo ""
 
 # Installation
 install:
 	@echo "Installing dependencies..."
 	@./venv/bin/pip install -r requirements.txt
+
+install-cpu:
+	@echo "Installing dependencies with PyTorch CPU-only (no NVIDIA CUDA packages)..."
+	@./venv/bin/pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+	@echo "✅ Installed successfully! (Saved ~1.9GB by avoiding CUDA packages)"
 
 install-dev:
 	@echo "Installing dev dependencies..."
@@ -54,55 +94,187 @@ install-dev:
 	@./venv/bin/pip install pytest pytest-cov black ruff
 
 # Testing
+# Default: Run unit tests with terminal coverage (fast, no external dependencies)
 test:
-	@echo "Running all tests..."
-	@./venv/bin/python -m pytest tests/ -v
+	@echo "Running unit tests with coverage (parallel execution)..."
+	@APP_ENV=test $(PYTHON) -m pytest \
+		-m "not integration" \
+		-n auto \
+		--ff \
+		--cov=. \
+		--cov-report=term \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
 
-test-verbose:
-	@echo "Running tests with verbose output..."
-	@./venv/bin/python -m pytest tests/ -vv
+# Run unit tests with HTML coverage report (for detailed analysis)
+test-html:
+	@echo "Running unit tests with HTML coverage report (parallel execution)..."
+	@APP_ENV=test $(PYTHON) -m pytest \
+		-m "not integration" \
+		-n auto \
+		--ff \
+		--cov=. \
+		--cov-report=html \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
 
-test-coverage:
-	@echo "Running tests with coverage..."
-	@./venv/bin/python -m pytest tests/ --cov=. --cov-report=html --cov-report=term
+test-ci:
+	@echo "Running unit tests for CI (with xml + term + html coverage)..."
+	@$(PYTHON) -m pytest \
+		-m "not integration" \
+		-n auto \
+		--cov=. \
+		--cov-report=xml \
+		--cov-report=term-missing \
+		--cov-report=html \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
+	@echo ""
+	@echo "📊 HTML coverage report generated: htmlcov/index.html"
+	@echo "💡 Open with: open htmlcov/index.html"
 
-test-config:
-	@echo "Running config tests..."
-	@./venv/bin/python -m pytest tests/test_config.py tests/test_config_advanced.py -v
+setup-test-chromadb:
+	@echo "📦 Setting up ChromaDB test collection..."
+	@mkdir -p storage/chroma_test
+	@echo "✅ ChromaDB test directory ready at: storage/chroma_test/"
 
-test-logging:
-	@echo "Running logging tests..."
-	@./venv/bin/python -m pytest tests/test_logging.py -v
+# Run integration tests (requires MySQL test database)
+# Note: Parallel execution with SELECT FOR UPDATE deadlock prevention
+test-integration:
+	@echo "🧪 Running integration tests (parallel, ~1s)..."
+	@$(PYTHON) -m pytest \
+		-m "integration" \
+		-n auto \
+		-vv \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
+
+# Clean up test artifacts (storage directories only)
+# Note: Database test data is automatically cleaned after each test
+test-clean:
+	@echo "🧹 Cleaning up test artifacts..."
+	@rm -rf storage/chroma_test && echo "  ✓ Removed storage/chroma_test/" || true
+	@rm -rf storage/test_documents && echo "  ✓ Removed storage/test_documents/" || true
+	@echo "  ℹ️  Database test data auto-cleaned (see clean_database fixture)"
+	@echo "✅ Test cleanup complete!"
 
 # Database Management
 setup-db:
 	@echo "Setting up database..."
-	@./venv/bin/python scripts/setup_database.py
+	@$(PYTHON) scripts/setup_database.py
 
 populate-db:
 	@echo "Populating databases with sample data..."
-	@./venv/bin/python scripts/populate_sample_data.py
+	@$(PYTHON) scripts/populate_sample_data.py
 
 cleanup-db:
 	@echo "Cleaning up databases..."
-	@./venv/bin/python scripts/cleanup_all_databases.py
+	@$(PYTHON) scripts/cleanup_all_databases.py
 
 reset-db: cleanup-db populate-db
 	@echo "Database reset complete!"
 
-# Code Quality
-lint:
-	@echo "Running linter..."
-	@which ruff > /dev/null 2>&1 || (echo "ruff not installed. Run: make install-dev" && exit 1)
-	@./venv/bin/ruff check . --fix
+# Database Migrations
+migrate-generate:
+	@if [ -z "$(DESC)" ]; then \
+		echo "Usage: make migrate-generate DESC='create_users_table'"; \
+		exit 1; \
+	fi
+	@echo "Generating migration: $(DESC)"
+	@$(PYTHON) -m migration generate $(DESC)
 
+migrate-up:
+	@echo "Applying pending migrations..."
+	@$(PYTHON) -m migration up
+
+migrate-down:
+	@echo "Rolling back last migration..."
+	@$(PYTHON) -m migration down
+
+migrate-status:
+	@echo "Checking migration status..."
+	@$(PYTHON) -m migration status
+
+migrate-reset:
+	@echo "Resetting database migrations..."
+	@$(PYTHON) -m migration reset --yes
+
+setup-database: migrate-up
+	@echo "✅ Database setup complete!"
+
+# ==============================================================================
+# Code Quality Commands
+# ==============================================================================
+
+# Variables for code quality tools
+LINT_EXCLUDE := --exclude='/(venv|htmlcov|tests|scripts|examples)/'
+FLAKE8_EXCLUDE := --exclude=venv,htmlcov,tests,scripts,examples
+ISORT_SKIP := --skip-gitignore --skip tests --skip scripts --skip examples --skip venv --skip htmlcov
+
+# Python command (use venv if available, otherwise use system python)
+PYTHON := $(shell if [ -f ./venv/bin/python ]; then echo "./venv/bin/python"; else echo "python"; fi)
+BLACK := $(shell if [ -f ./venv/bin/black ]; then echo "./venv/bin/black"; else echo "black"; fi)
+ISORT := $(shell if [ -f ./venv/bin/isort ]; then echo "./venv/bin/isort"; else echo "isort"; fi)
+FLAKE8 := $(shell if [ -f ./venv/bin/flake8 ]; then echo "./venv/bin/flake8"; else echo "flake8"; fi)
+
+.PHONY: format lint-check lint lint-all black-check isort-check flake8-check
+
+# Format code with black and isort (production code only)
 format:
-	@echo "Formatting code..."
-	@which black > /dev/null 2>&1 || (echo "black not installed. Run: make install-dev" && exit 1)
-	@./venv/bin/black .
+	@echo "🎨 Formatting code with Black..."
+	@$(BLACK) . $(LINT_EXCLUDE)
+	@echo "📦 Sorting imports with isort..."
+	@$(ISORT) . --profile=black $(ISORT_SKIP)
+	@echo "✅ Code formatting complete!"
 
-check: lint format
-	@echo "Code quality check complete!"
+# Check code formatting without making changes
+black-check:
+	@echo "🔍 Checking code formatting with Black..."
+	@$(BLACK) --check --diff . $(LINT_EXCLUDE)
+
+isort-check:
+	@echo "🔍 Checking import sorting with isort..."
+	@$(ISORT) --check-only --diff --profile=black . $(ISORT_SKIP)
+
+flake8-check:
+	@echo "🔍 Running Flake8 linter..."
+	@$(FLAKE8) . --max-line-length=88 --extend-ignore=E203,W503 \
+		--count --show-source --statistics $(FLAKE8_EXCLUDE)
+
+# Check formatting (for CI/CD and pre-push)
+lint-check: black-check isort-check
+	@echo "✅ All formatting checks passed!"
+
+# Run flake8 linter (reports issues, doesn't block)
+lint: flake8-check
+
+# Run all linting checks
+lint-all: lint-check lint
+	@echo "✅ All code quality checks complete!"
 
 # Development
 run-api:
@@ -115,21 +287,21 @@ run-api:
 run-rag-cli:
 	@echo "Starting Interactive RAG CLI..."
 	@echo ""
-	@./venv/bin/python -m app.cli.main
+	@$(PYTHON) -m app.cli.main
 
 run-rag-demo:
 	@echo "Running RAG query demonstration..."
 	@echo ""
-	@./venv/bin/python examples/demo_rag_query.py
+	@$(PYTHON) examples/demo_rag_query.py
 
 run-examples:
 	@echo "Running demo examples..."
 	@echo ""
 	@echo "1. Running vectorstore demo..."
-	@./venv/bin/python examples/demo_vectorstore.py
+	@$(PYTHON) examples/demo_vectorstore.py
 	@echo ""
 	@echo "2. Running provider switching demo..."
-	@./venv/bin/python examples/demo_provider_switching.py
+	@$(PYTHON) examples/demo_provider_switching.py
 
 check-env:
 	@echo "Checking environment variables..."
@@ -143,7 +315,7 @@ check-env:
 
 # Cleanup
 clean:
-	@echo "Cleaning temporary files..."
+	@echo "🧹 Cleaning temporary files..."
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete
 	@find . -type f -name "*.pyo" -delete
@@ -152,7 +324,8 @@ clean:
 	@find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name ".coverage" -delete
-	@echo "Cleanup complete!"
+	@find . -type f -name ".DS_Store" -delete
+	@echo "✅ Cleanup complete!"
 
 clean-all: clean
 	@echo "Cleaning all files including storage..."
@@ -164,7 +337,225 @@ clean-all: clean
 # Python version check
 check-python:
 	@echo "Python version:"
-	@./venv/bin/python --version
+	@$(PYTHON) --version
 	@echo ""
 	@echo "Installed packages:"
 	@./venv/bin/pip list | grep -E "(pytest|structlog|chroma|pinecone|qdrant|weaviate)" || echo "No matching packages found"
+
+# ==============================================================================
+# Docker Commands
+# ==============================================================================
+
+.PHONY: docker-build docker-build-base docker-setup docker-up docker-down docker-stop docker-restart \
+        docker-logs docker-logs-all docker-logs-migration docker-ingest docker-test docker-push \
+        docker-clean docker-shell docker-db-shell docker-rebuild docker-status
+
+docker-build:
+	@echo "🐳 Building Docker image..."
+	@echo "Using base image: sanjibdevnath/ragtrial-base:local"
+	@docker build -f docker/Dockerfile --build-arg BASE_IMAGE_TAG=local -t ragtrial:local .
+	@echo "✅ Docker image built: ragtrial:local"
+
+docker-build-base:
+	@echo "🐳 Building base image with all dependencies..."
+	@docker build -f docker/Dockerfile.base -t sanjibdevnath/ragtrial-base:local .
+	@echo "✅ Base image built: sanjibdevnath/ragtrial-base:local"
+	@echo ""
+	@echo "💡 To push to Docker Hub:"
+	@echo "   make docker-push-base"
+
+docker-push-base:
+	@echo "📤 Pushing base image to Docker Hub..."
+	@docker tag sanjibdevnath/ragtrial-base:local sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)
+	@docker push sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)
+	@echo "✅ Base image pushed: sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)"
+
+docker-setup:
+	@echo "🔧 Setting up Docker environment for first-time use..."
+	@echo ""
+	@echo "Step 1/3: Building base image with dependencies..."
+	@$(MAKE) docker-build-base
+	@echo ""
+	@echo "Step 2/3: Building application images..."
+	@docker-compose -f deployment/local/docker-compose.yml build
+	@echo ""
+	@echo "Step 3/3: Creating Docker volumes..."
+	@docker volume create local_mysql_data 2>/dev/null || true
+	@docker volume create local_chroma_data 2>/dev/null || true
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo "✅ Docker setup complete!"
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Run: make docker-up      # Start all services"
+	@echo "  2. Visit: http://localhost:8000/docs"
+	@echo ""
+
+docker-up:
+	@echo "🚀 Starting Docker stack (with automatic setup if needed)..."
+	@echo ""
+	@# Check if base image exists, if not, build it
+	@if ! docker images | grep -q "sanjibdevnath/ragtrial-base.*local"; then \
+		echo "⚠️  Base image not found. Building it first..."; \
+		echo ""; \
+		$(MAKE) docker-build-base; \
+		echo ""; \
+	fi
+	@# Build and start services
+	@echo "📦 Building and starting services..."
+	@docker-compose -f deployment/local/docker-compose.yml up -d --build
+	@echo ""
+	@echo "⏳ Waiting for services to be healthy..."
+	@sleep 5
+	@echo ""
+	@# Show migration logs
+	@echo "📋 Migration Status:"
+	@docker logs ragtrial-migration 2>&1 | tail -5 || echo "Migration container not found"
+	@echo ""
+	@# Check if API is healthy
+	@echo "🏥 Health Check:"
+	@for i in 1 2 3 4 5; do \
+		if curl -s http://localhost:8000/api/v1/health > /dev/null 2>&1; then \
+			echo "✅ API is healthy!"; \
+			break; \
+		else \
+			echo "⏳ Waiting for API... ($$i/5)"; \
+			sleep 2; \
+		fi; \
+	done
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo "✅ Docker stack is running!"
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "📡 Services:"
+	@echo "   API:      http://localhost:8000"
+	@echo "   API Docs: http://localhost:8000/docs"
+	@echo "   Health:   http://localhost:8000/api/v1/health"
+	@echo "   ChromaDB: http://localhost:8001"
+	@echo "   MySQL:    localhost:3306 (user: ragtrial, password: ragtrial)"
+	@echo ""
+	@echo "🛠️  Useful commands:"
+	@echo "   make docker-logs        # View API logs"
+	@echo "   make docker-logs-all    # View all logs"
+	@echo "   make docker-ingest      # Run ingestion for uploaded files"
+	@echo "   make docker-shell       # Enter API container"
+	@echo "   make docker-down        # Stop all services"
+	@echo ""
+	@docker-compose -f deployment/local/docker-compose.yml ps
+
+docker-down:
+	@echo "🛑 Stopping Docker Compose services..."
+	@docker-compose -f deployment/local/docker-compose.yml down
+	@echo "✅ Services stopped"
+
+docker-stop:
+	@echo "🛑 Stopping Docker Compose services..."
+	@docker-compose -f deployment/local/docker-compose.yml down
+	@echo "✅ Services stopped"
+
+docker-restart:
+	@echo "🔄 Restarting Docker Compose services..."
+	@docker-compose -f deployment/local/docker-compose.yml restart
+	@echo "✅ Services restarted"
+
+docker-logs:
+	@echo "📋 Following API logs (Ctrl+C to exit)..."
+	@docker-compose -f deployment/local/docker-compose.yml logs -f api
+
+docker-logs-all:
+	@echo "📋 Following all service logs (Ctrl+C to exit)..."
+	@docker-compose -f deployment/local/docker-compose.yml logs -f
+
+docker-test:
+	@echo "🧪 Running tests in Docker..."
+	@docker-compose -f deployment/local/docker-compose.yml exec api pytest -v
+
+docker-push:
+	@echo "📤 Pushing to Docker Hub..."
+	@docker tag ragtrial:local yourusername/ragtrial:local
+	@docker push yourusername/ragtrial:local
+	@echo "✅ Pushed to Docker Hub"
+
+docker-clean:
+	@echo "🧹 Cleaning Docker resources..."
+	@docker-compose -f deployment/local/docker-compose.yml down -v
+	@docker system prune -f
+	@echo "✅ Docker cleaned"
+
+docker-shell:
+	@echo "🐚 Opening shell in API container..."
+	@docker-compose -f deployment/local/docker-compose.yml exec api /bin/bash
+
+docker-ingest:
+	@echo "📥 Running ingestion for uploaded files..."
+	@docker-compose -f deployment/local/docker-compose.yml exec api python -m ingestion.ingest
+	@echo ""
+	@echo "✅ Ingestion complete!"
+
+docker-logs-migration:
+	@echo "📋 Migration logs:"
+	@docker logs ragtrial-migration 2>&1 || echo "Migration container not found"
+
+docker-rebuild:
+	@echo "🔨 Forcing rebuild of all images..."
+	@echo ""
+	@echo "Step 1/3: Rebuilding base image..."
+	@$(MAKE) docker-build-base
+	@echo ""
+	@echo "Step 2/3: Rebuilding application images..."
+	@docker-compose -f deployment/local/docker-compose.yml build --no-cache
+	@echo ""
+	@echo "Step 3/3: Restarting services..."
+	@docker-compose -f deployment/local/docker-compose.yml down
+	@docker-compose -f deployment/local/docker-compose.yml up -d
+	@echo ""
+	@echo "✅ Rebuild complete!"
+
+docker-db-shell:
+	@echo "💾 Opening MySQL shell..."
+	@docker-compose -f deployment/local/docker-compose.yml exec db mysql -u ragtrial -pragtrial ragtrial
+
+docker-status:
+	@echo "📊 Docker Stack Status:"
+	@echo ""
+	@docker-compose -f deployment/local/docker-compose.yml ps
+	@echo ""
+	@echo "🏥 Health Checks:"
+	@if curl -s http://localhost:8000/api/v1/health > /dev/null 2>&1; then \
+		echo "✅ API: Healthy"; \
+	else \
+		echo "❌ API: Down"; \
+	fi
+	@if docker ps | grep -q ragtrial-db; then \
+		echo "✅ MySQL: Running"; \
+	else \
+		echo "❌ MySQL: Down"; \
+	fi
+	@if docker ps | grep -q ragtrial-chroma; then \
+		echo "✅ ChromaDB: Running"; \
+	else \
+		echo "❌ ChromaDB: Down"; \
+	fi
+
+# ==============================================================================
+# Pre-commit Hooks
+# ==============================================================================
+
+.PHONY: pre-commit-install pre-commit-run pre-commit-update
+
+pre-commit-install:
+	@echo "🔧 Installing pre-commit hooks..."
+	@pip install pre-commit
+	@pre-commit install
+	@echo "✅ Pre-commit hooks installed"
+
+pre-commit-run:
+	@echo "🔍 Running pre-commit on all files..."
+	@pre-commit run --all-files
+
+pre-commit-update:
+	@echo "⬆️  Updating pre-commit hooks..."
+	@pre-commit autoupdate
+	@echo "✅ Pre-commit hooks updated"

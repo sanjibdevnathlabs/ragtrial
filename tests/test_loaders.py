@@ -34,7 +34,9 @@ from loader.strategies import (
 
 # Suppress InsecureRequestWarning from unstructured library
 # This library makes HTTP calls to download dependencies on first use
-pytestmark = pytest.mark.filterwarnings("ignore::urllib3.exceptions.InsecureRequestWarning")
+pytestmark = pytest.mark.filterwarnings(
+    "ignore::urllib3.exceptions.InsecureRequestWarning"
+)
 
 
 # ============================================================================
@@ -437,7 +439,7 @@ class TestMetadataEnrichment:
         sample_md,
         sample_docx,
         sample_csv,
-        sample_json
+        sample_json,
     ):
         """Test that all formats get metadata enrichment."""
         test_files = [
@@ -470,11 +472,7 @@ class TestMetadataEnrichment:
 class TestErrorHandling:
     """Test error handling in document loaders."""
 
-    def test_load_file_not_exists_error_message(
-        self,
-        document_loader,
-        fixtures_dir
-    ):
+    def test_load_file_not_exists_error_message(self, document_loader, fixtures_dir):
         """Test error message when file doesn't exist."""
         nonexistent = fixtures_dir / "does_not_exist.txt"
 
@@ -485,11 +483,7 @@ class TestErrorHandling:
         assert constants.ERROR_FILE_NOT_FOUND in error_message
         assert str(nonexistent) in error_message
 
-    def test_load_unsupported_format_error_message(
-        self,
-        document_loader,
-        fixtures_dir
-    ):
+    def test_load_unsupported_format_error_message(self, document_loader, fixtures_dir):
         """Test error message when format is unsupported."""
         unsupported = fixtures_dir / "test.xyz"
         unsupported.touch()
@@ -514,4 +508,3 @@ class TestErrorHandling:
 
         # If we get here without exception, test fails
         # The factory should raise ValueError for unsupported formats
-

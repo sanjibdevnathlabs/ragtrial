@@ -1,0 +1,37 @@
+# CI/CD Base Image with all dependencies pre-installed
+# This image is used by all GitHub Actions workflows to avoid repeated pip installs
+
+FROM python:3.13-slim
+
+LABEL maintainer="sanjibdevnath"
+LABEL description="CI/CD base image for ragtrial with pre-installed dependencies"
+
+# Set working directory
+WORKDIR /workspace
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies (build tools + runtime libraries)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    make \
+    git \
+    default-libmysqlclient-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies (CPU-only PyTorch)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
+# Verify installation
+RUN python -c "import pytest; import fastapi; import sqlalchemy; print('✅ All dependencies installed')"
+
+# Default command
+CMD ["/bin/bash"]
+

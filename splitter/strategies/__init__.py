@@ -10,4 +10,3 @@ from splitter.strategies.token import TokenSplitterStrategy
 __all__ = [
     "TokenSplitterStrategy",
 ]
-

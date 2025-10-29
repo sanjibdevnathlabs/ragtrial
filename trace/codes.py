@@ -250,6 +250,9 @@ API_FILES_LISTED = "api_files_listed"
 API_FILE_METADATA_RETRIEVED = "api_file_metadata_retrieved"
 API_VALIDATION_ERROR = "api_validation_error"
 API_ERROR = "api_error"
+API_ROUTES_REGISTERED = "api_routes_registered"
+API_ROUTE_REGISTERED = "api_route_registered"
+API_ROUTES_COUNT = "api_routes_count"
 
 # API messages
 MSG_API_SERVER_STARTED = "API server started successfully"
@@ -289,19 +292,6 @@ RAG_QUERY_COMPLETED = "rag_query_completed"
 RAG_QUERY_FAILED = "rag_query_failed"
 
 # RAG messages (imported from constants)
-from constants import (
-    MSG_RAG_CHAIN_INITIALIZED,
-    MSG_RAG_QUERY_PROCESSING,
-    MSG_RAG_QUERY_COMPLETED,
-    MSG_RAG_NO_RELEVANT_DOCS,
-    MSG_RAG_INSUFFICIENT_CONTEXT,
-    ERROR_RAG_CHAIN_INIT_FAILED,
-    ERROR_RAG_QUERY_FAILED,
-    ERROR_RAG_RETRIEVAL_FAILED,
-    ERROR_RAG_LLM_FAILED,
-    ERROR_RAG_INVALID_QUERY,
-)
-
 
 # ============================================================================
 # API QUERY TRACE CODES & MESSAGES
@@ -313,20 +303,6 @@ QUERY_API_VALIDATION_FAILED = "query_api_validation_failed"
 QUERY_API_PROCESSING = "query_api_processing"
 QUERY_API_COMPLETED = "query_api_completed"
 QUERY_API_FAILED = "query_api_failed"
-
-# Query messages (imported from constants)
-from constants import (
-    MSG_QUERY_RECEIVED,
-    MSG_QUERY_PROCESSING,
-    MSG_QUERY_COMPLETED,
-    MSG_QUERY_SERVICE_INITIALIZED,
-    ERROR_QUERY_EMPTY,
-    ERROR_QUERY_TOO_SHORT,
-    ERROR_QUERY_PROCESSING_FAILED,
-    ERROR_RAG_CHAIN_NOT_INITIALIZED,
-    ERROR_RAG_CHAIN_INITIALIZATION_FAILED,
-)
-
 
 # ============================================================================
 # SECURITY GUARDRAILS TRACE CODES & MESSAGES
@@ -347,19 +323,101 @@ QUERY_BLOCKED_BY_GUARDRAILS = "query_blocked_by_guardrails"
 OUTPUT_BLOCKED_BY_GUARDRAILS = "output_blocked_by_guardrails"
 
 # Security messages (imported from constants)
-from constants import (
-    MSG_GUARDRAILS_INITIALIZED,
-    MSG_INPUT_VALIDATION_PASSED,
-    MSG_NO_INJECTION_DETECTED,
-    MSG_OUTPUT_VALIDATION_PASSED,
-    MSG_SECURITY_VIOLATIONS_DETECTED,
-    MSG_OUTPUT_VIOLATIONS_DETECTED,
-    MSG_QUERY_BLOCKED,
-    MSG_LLM_OUTPUT_BLOCKED,
-    ERROR_INVALID_INPUT,
-    ERROR_PROMPT_INJECTION,
-    ERROR_UNSAFE_OUTPUT,
-    ERROR_BLOCKED_BY_GUARDRAILS,
-    ERROR_OUTPUT_BLOCKED,
-)
 
+# ============================================================================
+# DATABASE TRACE CODES & MESSAGES
+# ============================================================================
+
+# Connection trace codes
+DB_CONNECTION_INITIALIZING = "db_connection_initializing"
+DB_CONNECTION_ESTABLISHED = "db_connection_established"
+DB_CONNECTION_FAILED = "db_connection_failed"
+DB_CONNECTION_CLOSED = "db_connection_closed"
+DB_CONNECTION_TIMEOUT = "db_connection_timeout"
+DB_CONNECTION_POOL_CREATED = "db_connection_pool_created"
+DB_CONNECTION_POOL_EXHAUSTED = "db_connection_pool_exhausted"
+
+# Engine trace codes
+DB_ENGINE_CREATING = "db_engine_creating"
+DB_ENGINE_CREATED = "db_engine_created"
+DB_ENGINE_INITIALIZING = "db_engine_initializing"
+DB_ENGINE_INITIALIZED = "db_engine_initialized"
+DB_ENGINE_DISPOSED = "db_engine_disposed"
+
+# Session trace codes
+DB_SESSION_CREATING = "db_session_creating"
+DB_SESSION_CREATED = "db_session_created"
+DB_SESSION_CLOSED = "db_session_closed"
+DB_SESSION_ERROR = "db_session_error"
+DB_SESSION_WRITE = "db_session_write"
+DB_SESSION_READ = "db_session_read"
+
+# Transaction trace codes
+DB_TRANSACTION_STARTED = "db_transaction_started"
+DB_TRANSACTION_COMMITTED = "db_transaction_committed"
+DB_TRANSACTION_ROLLED_BACK = "db_transaction_rolled_back"
+DB_TRANSACTION_FAILED = "db_transaction_failed"
+
+# Query trace codes
+DB_QUERY_STARTED = "db_query_started"
+DB_QUERY_EXECUTED = "db_query_executed"
+DB_QUERY_COMPLETED = "db_query_completed"
+DB_QUERY_FAILED = "db_query_failed"
+DB_QUERY_SLOW = "db_query_slow"
+DB_QUERY_PARAMETERIZED = "db_query_parameterized"
+
+# Repository trace codes
+REPOSITORY_OPERATION_STARTED = "repository_operation_started"
+REPOSITORY_OPERATION_COMPLETED = "repository_operation_completed"
+REPOSITORY_OPERATION_FAILED = "repository_operation_failed"
+REPOSITORY_ENTITY_CREATED = "repository_entity_created"
+REPOSITORY_ENTITY_UPDATED = "repository_entity_updated"
+REPOSITORY_ENTITY_DELETED = "repository_entity_deleted"
+REPOSITORY_ENTITY_FOUND = "repository_entity_found"
+REPOSITORY_ENTITY_NOT_FOUND = "repository_entity_not_found"
+REPOSITORY_DUPLICATE_ENTRY = "repository_duplicate_entry"
+
+# Database repository trace code aliases
+DB_REPOSITORY_STARTED = "repository_operation_started"
+DB_REPOSITORY_COMPLETED = "repository_operation_completed"
+DB_REPOSITORY_FAILED = "repository_operation_failed"
+
+# Migration trace codes
+MIGRATION_SYSTEM_INITIALIZING = "migration_system_initializing"
+MIGRATION_SYSTEM_INITIALIZED = "migration_system_initialized"
+MIGRATION_CHECKING_STATUS = "migration_checking_status"
+MIGRATION_STATUS_RETRIEVED = "migration_status_retrieved"
+MIGRATION_GENERATING = "migration_generating"
+MIGRATION_GENERATED = "migration_generated"
+MIGRATION_APPLYING = "migration_applying"
+MIGRATION_APPLIED = "migration_applied"
+MIGRATION_ROLLING_BACK = "migration_rolling_back"
+MIGRATION_ROLLED_BACK = "migration_rolled_back"
+MIGRATION_FAILED = "migration_failed"
+DB_MIGRATION_FAILED = "db_migration_failed"  # Alias for migration failures
+MIGRATION_UP_STARTED = "migration_up_started"
+MIGRATION_UP_COMPLETED = "migration_up_completed"
+MIGRATION_DOWN_STARTED = "migration_down_started"
+MIGRATION_DOWN_COMPLETED = "migration_down_completed"
+MIGRATION_RESET_STARTED = "migration_reset_started"
+MIGRATION_RESET_COMPLETED = "migration_reset_completed"
+MIGRATION_ALREADY_APPLIED = "migration_already_applied"
+MIGRATION_NOT_APPLIED = "migration_not_applied"
+DB_MIGRATION_STATUS_CHECK = "db_migration_status_check"
+DB_MIGRATION_STATUS = "db_migration_status"
+DB_MIGRATION_PENDING = "db_migration_pending"
+DB_MIGRATION_UP_STARTED = "db_migration_up_started"
+DB_MIGRATION_UP_COMPLETED = "db_migration_up_completed"
+DB_MIGRATION_DOWN_STARTED = "db_migration_down_started"
+DB_MIGRATION_DOWN_COMPLETED = "db_migration_down_completed"
+DB_MIGRATION_GENERATE = "db_migration_generate"
+
+# Database initialization trace codes
+DB_INITIALIZING = "db_initializing"
+DB_INITIALIZED = "db_initialized"
+DB_CREATING_TABLES = "db_creating_tables"
+DB_TABLES_CREATED = "db_tables_created"
+DB_SEEDING = "db_seeding"
+DB_SEEDED = "db_seeded"
+DB_MIGRATION_TABLE_EXISTS = "db_migration_table_exists"
+DB_MIGRATION_TABLE_CREATED = "db_migration_table_created"

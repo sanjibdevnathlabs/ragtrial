@@ -1,15 +1,23 @@
 """
 Tests for upload service.
 
-Tests file upload business logic.
+Unit tests with mocked database - no real DB connections.
+Following best practices for fast, isolated testing.
+
+Test Coverage:
+- File upload business logic
+- Validation
+- Storage integration
+- Duplicate detection
+- Error handling
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock
 
 from app.modules.upload import UploadService
-from app.api.models import UploadResponse
-from config import Config
+from app.modules.upload.response import UploadResponse
 from storage_backend.base import StorageProtocol
 
 
@@ -33,141 +41,178 @@ def mock_storage():
 
 
 @pytest.fixture
-def service(mock_config, mock_storage):
-    """Create upload service instance."""
-    return UploadService(mock_config, mock_storage)
+def mock_db_file_service():
+    """Mock database file service."""
+    service = MagicMock()
+    service.check_duplicate.return_value = None  # No duplicates by default
+
+    # Dynamic return value that uses the actual parameters
+    def create_file_record_side_effect(**kwargs):
+        return {
+            "id": "test-id",
+            "filename": kwargs.get("filename", "test.pdf"),
+            "file_path": kwargs.get("file_path", "source_docs/test.pdf"),
+            "file_size": kwargs.get("file_size", 100),
+            "checksum": kwargs.get("checksum", "test-checksum"),
+            "file_type": "pdf",
+            "indexed": False,
+            "storage_backend": kwargs.get("storage_backend", "local"),
+        }
+
+    service.create_file_record.side_effect = create_file_record_side_effect
+    return service
+
+
+@pytest.fixture
+def service(mock_config, mock_storage, mock_db_file_service):
+    """Create upload service instance with mocked dependencies."""
+    with patch("database.session.SessionFactory"):
+        with patch(
+            "app.modules.upload.service.DBFileService",
+            return_value=mock_db_file_service,
+        ):
+            return UploadService(mock_config, mock_storage)
 
 
 class TestUploadFile:
     """Test suite for file upload."""
-    
+
     def test_upload_file_success(self, service, mock_storage):
         """Test successful file upload."""
         content = b"test content"
-        
+
         result = service.upload_file("test.pdf", content)
-        
+
         assert isinstance(result, UploadResponse)
         assert result.success is True
         assert result.filename == "test.pdf"
         assert result.size == len(content)
-    
+
     def test_upload_file_calls_storage(self, service, mock_storage):
-        """Test upload calls storage backend."""
+        """Test upload calls storage backend with UUID-based filename."""
         content = b"test content"
-        
+
         service.upload_file("test.pdf", content)
-        
-        mock_storage.upload_file.assert_called_once_with(content, "test.pdf")
-    
+
+        # Storage should be called with UUID-based filename (not original)
+        mock_storage.upload_file.assert_called_once()
+        call_args = mock_storage.upload_file.call_args
+        assert call_args[0][0] == content  # First arg is content
+        # Second arg should be UUID.pdf (not "test.pdf")
+        uuid_filename = call_args[0][1]
+        assert uuid_filename.endswith(".pdf")
+        assert uuid_filename != "test.pdf"  # Should be UUID-based
+
     def test_upload_file_returns_correct_path(self, service, mock_storage):
         """Test upload returns storage path."""
         content = b"test content"
         mock_storage.upload_file.return_value = "custom/path/file.pdf"
-        
+
         result = service.upload_file("test.pdf", content)
-        
+
         assert result.path == "custom/path/file.pdf"
-    
+
     def test_upload_file_rejects_empty_filename(self, service):
         """Test upload fails for empty filename."""
         content = b"test content"
-        
+
         with pytest.raises(ValueError):
             service.upload_file("", content)
-    
+
     def test_upload_file_rejects_invalid_extension(self, service):
         """Test upload fails for invalid extension."""
         content = b"test content"
-        
+
         with pytest.raises(ValueError):
             service.upload_file("virus.exe", content)
-    
+
     def test_upload_file_rejects_oversized_file(self, service):
         """Test upload fails for oversized file."""
         content = b"x" * (101 * 1024 * 1024)
-        
+
         with pytest.raises(ValueError):
             service.upload_file("large.pdf", content)
-    
+
     def test_upload_file_propagates_storage_error(self, service, mock_storage):
         """Test upload propagates storage errors."""
         content = b"test content"
         mock_storage.upload_file.side_effect = Exception("Storage failed")
-        
+
         with pytest.raises(Exception) as exc_info:
             service.upload_file("test.pdf", content)
-        
+
         assert "Storage failed" in str(exc_info.value)
-    
+
     def test_upload_file_accepts_all_allowed_extensions(self, service):
         """Test upload accepts all configured extensions."""
-        content = b"test content"
-        filenames = ["doc.pdf", "notes.txt", "readme.md"]
-        
-        for filename in filenames:
+        filenames = [
+            ("doc.pdf", b"pdf content"),
+            ("notes.txt", b"txt content"),
+            ("readme.md", b"md content"),
+        ]
+
+        for filename, content in filenames:
             result = service.upload_file(filename, content)
             assert result.success is True
 
 
 class TestValidateFile:
     """Test suite for file validation."""
-    
+
     def test_validate_file_calls_all_validators(self, service):
         """Test validation calls all validator methods."""
         content = b"test content"
-        
+
         service._validate_file("test.pdf", content)
-        
+
         # No exception means all validators passed
-    
+
     def test_validate_file_fails_on_filename(self, service):
         """Test validation fails for invalid filename."""
         content = b"test content"
-        
+
         with pytest.raises(ValueError):
             service._validate_file("", content)
-    
+
     def test_validate_file_fails_on_extension(self, service):
         """Test validation fails for invalid extension."""
         content = b"test content"
-        
+
         with pytest.raises(ValueError):
             service._validate_file("file.exe", content)
-    
+
     def test_validate_file_fails_on_size(self, service):
         """Test validation fails for invalid size."""
         content = b"x" * (101 * 1024 * 1024)
-        
+
         with pytest.raises(ValueError):
             service._validate_file("test.pdf", content)
 
 
 class TestStoreFile:
     """Test suite for file storage."""
-    
+
     def test_store_file_returns_path(self, service, mock_storage):
         """Test store returns file path."""
         content = b"test content"
         mock_storage.upload_file.return_value = "path/to/file.pdf"
-        
+
         path = service._store_file("test.pdf", content)
-        
+
         assert path == "path/to/file.pdf"
-    
+
     def test_store_file_calls_storage(self, service, mock_storage):
         """Test store calls storage backend."""
         content = b"test content"
-        
+
         service._store_file("test.pdf", content)
-        
+
         mock_storage.upload_file.assert_called_once()
-    
+
     def test_store_file_propagates_exception(self, service, mock_storage):
         """Test store propagates storage exceptions."""
         content = b"test content"
         mock_storage.upload_file.side_effect = IOError("Disk full")
-        
+
         with pytest.raises(IOError):
             service._store_file("test.pdf", content)
-

@@ -8,11 +8,11 @@ All constants use UPPER_SNAKE_CASE naming convention.
 
 Usage:
     from trace import codes
-    
+
     logger.info(codes.INGESTION_SCRIPT_STARTED)
-    logger.error(codes.GEMINI_API_KEY_MISSING, 
+    logger.error(codes.GEMINI_API_KEY_MISSING,
                  message=codes.MSG_GEMINI_API_KEY_MISSING)
-    
+
     logger.info(codes.CONFIG_LOADED, message=codes.MSG_CONFIG_LOADED)
 """
 

@@ -1,0 +1,422 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+# Cancel in-progress runs when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASE_IMAGE: sanjibdevnath/ragtrial-base
+  DOCKER_IMAGE: sanjibdevnath/ragtrial
+
+jobs:
+  # =============================================================================
+  # STAGE 1: Build Base Image (Foundation)
+  # =============================================================================
+  build-base-image:
+    name: Build Base Image
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate image tag
+        id: tag
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            # Master: use commit SHA
+            TAG="${{ github.sha }}"
+            echo "🏷️  Master build - using commit SHA"
+          else
+            # PR: use branch name hash (reuse same base for all commits in PR)
+            BRANCH="${{ github.head_ref || github.ref_name }}"
+            TAG="br-$(echo -n "$BRANCH" | md5sum | cut -c1-12)"
+            echo "🏷️  PR build - using branch hash: $TAG"
+            echo "📝 Branch: $BRANCH"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Check if base image exists
+        id: check
+        run: |
+          if docker manifest inspect ${{ env.BASE_IMAGE }}:${{ env.IMAGE_TAG }} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✅ Base image already exists: ${{ env.IMAGE_TAG }}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "🔨 Need to build base image: ${{ env.IMAGE_TAG }}"
+          fi
+      
+      - name: Extract metadata
+        if: steps.check.outputs.exists == 'false'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BASE_IMAGE }}
+          tags: |
+            type=raw,value=${{ env.IMAGE_TAG }}
+      
+      - name: Build and push base image
+        if: steps.check.outputs.exists == 'false'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.base
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Image details
+        run: |
+          if [ "${{ steps.check.outputs.exists }}" = "true" ]; then
+            echo "✅ Base image already exists (skipped build)"
+          else
+            echo "✅ Base image built and pushed successfully!"
+          fi
+          echo ""
+          echo "📦 Image: ${{ env.BASE_IMAGE }}:${{ env.IMAGE_TAG }}"
+          if [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            echo "🔒 Commit SHA tag for master branch"
+          else
+            echo "🔄 Branch hash tag - reused across all commits in this PR"
+          fi
+
+  # =============================================================================
+  # STAGE 2: Parallel Quality Checks (No dependencies)
+  # =============================================================================
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Cache linting tools
+        uses: actions/cache@v4
+        id: cache-lint
+        with:
+          path: ~/.cache/pip
+          key: lint-tools-${{ runner.os }}-black-flake8-isort-mypy-v1
+          restore-keys: |
+            lint-tools-${{ runner.os }}-
+      
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8 isort
+      
+      - name: Check code formatting with Black
+        run: make black-check
+      
+      - name: Check import sorting with isort
+        run: make isort-check
+      
+      - name: Lint with Flake8
+        run: make flake8-check
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      
+      - name: Cache security tools
+        uses: actions/cache@v4
+        id: cache-security
+        with:
+          path: ~/.cache/pip
+          key: security-tools-${{ runner.os }}-bandit-safety-pip-audit-v1
+          restore-keys: |
+            security-tools-${{ runner.os }}-
+      
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety pip-audit
+      
+      - name: Run Bandit security linter
+        run: |
+          bandit -r . \
+            -f json \
+            -o bandit-report.json \
+            --exclude ./venv,./tests,./scripts
+        continue-on-error: true
+      
+      - name: Run Safety vulnerability check
+        run: safety check --json > safety-report.json
+        continue-on-error: true
+      
+      - name: Run pip-audit
+        run: |
+          pip-audit -r requirements.txt --format json > pip-audit-report.json
+        continue-on-error: true
+      
+      - name: Upload security reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+            pip-audit-report.json
+          retention-days: 30
+
+  # =============================================================================
+  # STAGE 3: Tests (Depends on base image)
+  # =============================================================================
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: build-base-image
+    container: sanjibdevnath/ragtrial-base:${{ needs.build-base-image.outputs.image_tag }}
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Identify PR Details
+        uses: jwalton/gh-find-current-pr@v1
+        id: findPr
+      
+      - name: Run unit tests with coverage
+        env:
+          APP_ENV: ci
+        run: |
+          make test-ci
+          # Extract coverage percentage from pytest output
+          COVERAGE=$(python -m coverage report --format=total)
+          echo "COVERAGE=${COVERAGE}%" >> $GITHUB_ENV
+      
+      - name: Upload coverage to Codecov
+        id: codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-unit-tests
+      
+      - name: Post Coverage as Comment
+        if: steps.findPr.outputs.pr != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Code Coverage
+          number: ${{ steps.findPr.outputs.pr }}
+          recreate: true
+          message: |
+            ## 📊 Test Coverage Report
+            
+            | Metric | Value |
+            |--------|-------|
+            | **Total Coverage** | `${{ env.COVERAGE }}` |
+            | **PR Number** | [#${{ steps.findPr.outputs.pr }}](${{ github.event.pull_request.html_url || format('https://github.com/{0}/pull/{1}', github.repository, steps.findPr.outputs.pr) }}) |
+            | **Commit** | [`${{ github.event.pull_request.head.sha || github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.event.pull_request.head.sha || github.sha }}) |
+            
+            ### 📈 Coverage Reports
+            
+            - 🔍 **[View on Codecov](${{ steps.codecov.outputs.url || format('https://app.codecov.io/github/{0}/commit/{1}', github.repository, github.event.pull_request.head.sha || github.sha) }})**
+            - 📄 **[Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+            
+            ---
+            <sub>Updated automatically by CI pipeline</sub>
+      
+      - name: Upload coverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov/
+          retention-days: 30
+  
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build-base-image
+    container: sanjibdevnath/ragtrial-base:${{ needs.build-base-image.outputs.image_tag }}
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_ragtrial
+          MYSQL_USER: test_ragtrial
+          MYSQL_PASSWORD: test_ragtrial
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run database migrations
+        env:
+          APP_ENV: ci
+        run: make migrate-up
+      
+      - name: Run integration tests
+        env:
+          APP_ENV: ci
+        run: make test-integration
+
+  # =============================================================================
+  # STAGE 4: Docker Build (Depends on tests)
+  # =============================================================================
+  docker-build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [build-base-image, unit-tests, integration-tests]
+    if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BASE_IMAGE_TAG=${{ needs.build-base-image.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=${{ github.event_name == 'pull_request' && 'min' || 'max' }}
+      
+      - name: Update Docker Hub description
+        if: github.ref == 'refs/heads/master'
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ env.DOCKER_IMAGE }}
+          readme-filepath: ./README.md
+
+  # =============================================================================
+  # STAGE 5: Security Scan of Docker Image (After docker build)
+  # =============================================================================
+  docker-security-scan:
+    name: Scan Docker Image
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # =============================================================================
+  # STAGE 6: Cleanup Old Images (Master only, after successful build)
+  # =============================================================================
+  cleanup-images:
+    name: Cleanup Old Docker Images
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: github.ref == 'refs/heads/master'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
+      - name: Cleanup base images (keep last 5)
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          chmod +x scripts/cleanup_docker_images.sh
+          ./scripts/cleanup_docker_images.sh ragtrial-base
+      
+      - name: Cleanup app images (keep last 5)
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          ./scripts/cleanup_docker_images.sh ragtrial
+      
+      - name: Summary
+        run: |
+          echo "✅ Docker Hub cleanup complete!"
+          echo ""
+          echo "📊 Retention policy applied:"
+          echo "  - Base images: Keep last 5 SHA tags"
+          echo "  - App images: Keep last 5 SHA tags + latest"
+          echo "  - Branch images: Keep last 3 per branch hash"
+

@@ -1,0 +1,58 @@
+# Git
+.git/
+.gitignore
+.github/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+
+# Storage
+storage/
+*.db
+*.sqlite3
+
+# Documentation
+*.md
+docs/
+memory_bank/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CI/CD
+.github/
+
+# Development
+# Makefile - Needed for migration Dockerfile
+deployment/
+.dockerignore
+docker/
+scripts/
+examples/
+source_docs/
+
+# Models
+models/
+

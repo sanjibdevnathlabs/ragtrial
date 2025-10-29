@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  migration:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.migration
+      args:
+        BASE_IMAGE_TAG: local
+    image: ragtrial-migration:dev
+    container_name: ragtrial-migration
+    environment:
+      - APP_ENV=docker
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ragtrial-network
+    restart: "no"
+  
+  api:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+      args:
+        BASE_IMAGE_TAG: local
+    image: ragtrial:dev
+    container_name: ragtrial-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=docker
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+      migration:
+        condition: service_completed_successfully
+    volumes:
+      - ../../storage:/app/storage
+    networks:
+      - ragtrial-network
+    restart: unless-stopped
+  
+  db:
+    image: mysql:8.0
+    container_name: ragtrial-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ragtrial
+      MYSQL_USER: ragtrial
+      MYSQL_PASSWORD: ragtrial
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ragtrial-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ragtrial-chroma
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - ragtrial-network
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    restart: unless-stopped
+
+networks:
+  ragtrial-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  chroma_data:
+

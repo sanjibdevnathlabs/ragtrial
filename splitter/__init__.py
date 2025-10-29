@@ -9,10 +9,10 @@ Public API:
     - DocumentSplitter: Main facade for splitting documents
     - SplitterFactory: Factory for creating splitter strategies
     - SplitterProtocol: Interface for splitter implementations
-    
+
 Usage:
     from splitter import DocumentSplitter
-    
+
     splitter = DocumentSplitter(chunk_size=512, chunk_overlap=100)
     chunks = splitter.split_documents(documents)
 """
@@ -26,4 +26,3 @@ __all__ = [
     "SplitterFactory",
     "SplitterProtocol",
 ]
-

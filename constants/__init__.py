@@ -8,7 +8,7 @@ All constants use UPPER_SNAKE_CASE naming convention.
 
 Usage:
     import constants
-    
+
     logger.info(codes.SCRIPT_STARTED, header=constants.SETUP_HEADER)
 """
 
@@ -172,6 +172,7 @@ HTTP_STATUS_INTERNAL_ERROR = "Internal Server Error"
 ERROR_FILE_TOO_LARGE = "File size exceeds maximum allowed"
 ERROR_INVALID_FILE_TYPE = "File type not allowed"
 ERROR_NO_FILE_PROVIDED = "No file provided"
+ERROR_FILE_DUPLICATE = "File with same content already exists"
 ERROR_UPLOAD_FAILED_API = "File upload failed"
 
 # API success messages
@@ -322,9 +323,16 @@ DEMO_SWITCH_STEP_2 = "2. Change [vectorstore] provider = 'pinecone'"
 DEMO_SWITCH_STEP_3 = "3. Run this script again - NO CODE CHANGES!"
 
 # Sample demo data
-DEMO_DOC_RAG = "RAG stands for Retrieval-Augmented Generation, a technique for improving LLM responses."
-DEMO_DOC_VECTOR_DB = "Vector databases store embeddings for efficient similarity search."
-DEMO_DOC_CHROMA = "ChromaDB is a popular open-source vector database for AI applications."
+DEMO_DOC_RAG = (
+    "RAG stands for Retrieval-Augmented Generation, "
+    "a technique for improving LLM responses."
+)
+DEMO_DOC_VECTOR_DB = (
+    "Vector databases store embeddings for efficient similarity search."
+)
+DEMO_DOC_CHROMA = (
+    "ChromaDB is a popular open-source vector database for AI applications."
+)
 DEMO_DOC_LANGCHAIN = "LangChain provides abstractions for building LLM applications."
 DEMO_DOC_PYTHON = "Python is a great language for data science and machine learning."
 
@@ -362,7 +370,9 @@ CLEANUP_RETRIEVING_NAMESPACES = "  📋 Retrieving all namespaces from Pinecone.
 CLEANUP_FOUND_NAMESPACES = "  📁 Found {} namespace(s): {}"
 CLEANUP_DELETING_NAMESPACE = "  🗑️  Deleting all vectors from namespace '{}'..."
 CLEANUP_DELETING_DEFAULT = "  🗑️  Deleting all vectors from default namespace..."
-CLEANUP_WAITING_PROPAGATION = "  ⏳ Waiting 3 seconds for Pinecone deletion to propagate..."
+CLEANUP_WAITING_PROPAGATION = (
+    "  ⏳ Waiting 3 seconds for Pinecone deletion to propagate..."
+)
 
 # Cleanup provider list
 CLEANUP_PROVIDERS = ["chroma", "qdrant", "weaviate", "pinecone"]
@@ -497,19 +507,36 @@ TASK_TYPE_DOCUMENT = "retrieval_document"
 
 # Embeddings error messages
 ERROR_OPENAI_NOT_INSTALLED = "openai package not installed. Run: pip install openai"
-ERROR_SENTENCE_TRANSFORMERS_NOT_INSTALLED = "sentence-transformers package not installed. Run: pip install sentence-transformers"
-ERROR_VOYAGEAI_NOT_INSTALLED = "voyageai package not installed. Run: pip install voyageai"
+ERROR_SENTENCE_TRANSFORMERS_NOT_INSTALLED = (
+    "sentence-transformers package not installed. "
+    "Run: pip install sentence-transformers"
+)
+ERROR_VOYAGEAI_NOT_INSTALLED = (
+    "voyageai package not installed. Run: pip install voyageai"
+)
 MSG_SSL_CERTIFI_BUNDLE = "Using certifi certificate bundle for SSL verification"
 MSG_SSL_DISABLED_DEV = "SSL verification disabled for OpenAI API (development only)"
-MSG_SSL_DISABLED_VOYAGEAI_DEV = "SSL verification disabled for Voyage AI API (development only)"
+MSG_SSL_DISABLED_VOYAGEAI_DEV = (
+    "SSL verification disabled for Voyage AI API (development only)"
+)
 
 # Vectorstore error messages
-ERROR_COLLECTION_NOT_INITIALIZED = "Collection not initialized. Call initialize() first."
+ERROR_COLLECTION_NOT_INITIALIZED = (
+    "Collection not initialized. Call initialize() first."
+)
 ERROR_INDEX_NOT_INITIALIZED = "Index not initialized. Call initialize() first."
-ERROR_PINECONE_NOT_INSTALLED = "pinecone package not installed. Run: pip install pinecone"
-ERROR_QDRANT_NOT_INSTALLED = "qdrant-client package not installed. Run: pip install qdrant-client"
-ERROR_WEAVIATE_NOT_INSTALLED = "weaviate-client package not installed. Run: pip install weaviate-client"
-MSG_SSL_DISABLED_PINECONE_DEV = "⚠️  SSL verification disabled - DEVELOPMENT ONLY, NOT FOR PRODUCTION"
+ERROR_PINECONE_NOT_INSTALLED = (
+    "pinecone package not installed. Run: pip install pinecone"
+)
+ERROR_QDRANT_NOT_INSTALLED = (
+    "qdrant-client package not installed. Run: pip install qdrant-client"
+)
+ERROR_WEAVIATE_NOT_INSTALLED = (
+    "weaviate-client package not installed. Run: pip install weaviate-client"
+)
+MSG_SSL_DISABLED_PINECONE_DEV = (
+    "⚠️  SSL verification disabled - DEVELOPMENT ONLY, NOT FOR PRODUCTION"
+)
 
 # Vectorstore operation names
 OPERATION_ADD_DOCUMENTS = "add_documents"
@@ -740,3 +767,197 @@ GUARDRAILS_KEY_VALIDATORS = "validators"
 GUARDRAILS_STATUS_ACTIVE = "active"
 GUARDRAILS_STATUS_DISABLED = "disabled"
 
+
+# ============================================================================
+# DATABASE CONSTANTS
+# ============================================================================
+
+# Database drivers
+DB_DRIVER_SQLITE = "sqlite"
+DB_DRIVER_MYSQL = "mysql"
+DB_DRIVER_POSTGRESQL = "postgresql"
+
+# Database connection modes
+DB_MODE_READ = "read"
+DB_MODE_WRITE = "write"
+
+# Database connection string prefixes
+DB_PREFIX_SQLITE = "sqlite:///"
+DB_PREFIX_MYSQL = "mysql+pymysql://"
+DB_PREFIX_POSTGRESQL = "postgresql+psycopg2://"
+
+# Database error messages
+ERROR_DB_DRIVER_INVALID = "Invalid database driver"
+ERROR_DB_DRIVER_UNSUPPORTED = "Unsupported database driver"
+ERROR_DB_CONNECTION_FAILED = "Database connection failed"
+ERROR_DB_CONNECTION_TIMEOUT = "Database connection timeout"
+ERROR_DB_CONNECTION_POOL_EXHAUSTED = "Database connection pool exhausted"
+ERROR_DB_SESSION_CREATION_FAILED = "Failed to create database session"
+ERROR_DB_SESSION_ALREADY_CLOSED = "Database session already closed"
+ERROR_DB_TRANSACTION_FAILED = "Database transaction failed"
+ERROR_DB_QUERY_FAILED = "Database query failed"
+ERROR_DB_QUERY_SYNTAX_ERROR = "Database query syntax error"
+ERROR_DB_CONSTRAINT_VIOLATION = "Database constraint violation"
+ERROR_DB_INTEGRITY_ERROR = "Database integrity error"
+ERROR_DB_NOT_INITIALIZED = "Database not initialized"
+ERROR_DB_ENGINE_NOT_INITIALIZED = "Database engine not initialized"
+ERROR_DB_CONFIG_MISSING = "Database configuration missing"
+ERROR_DB_CONFIG_INVALID = "Database configuration invalid"
+ERROR_DB_MIGRATION_TABLE_CREATION_FAILED = "Failed to create migrations table"
+ERROR_DB_MIGRATION_TABLE_CHECK_FAILED = "Failed to check migrations table"
+ERROR_DB_MIGRATION_STATUS_CHECK_FAILED = "Failed to check migration status"
+ERROR_DB_MIGRATION_UP_FAILED = "Failed to apply migration"
+ERROR_DB_MIGRATION_DOWN_FAILED = "Failed to rollback migration"
+ERROR_DB_ENTITY_CREATION_FAILED = "Failed to create database entity"
+ERROR_DB_ENTITY_UPDATE_FAILED = "Failed to update database entity"
+ERROR_DB_ENTITY_DELETION_FAILED = "Failed to delete database entity"
+
+# Database success messages
+MSG_DB_CONNECTION_ESTABLISHED = "Database connection established"
+MSG_DB_CONNECTION_CLOSED = "Database connection closed"
+MSG_DB_SESSION_CREATED = "Database session created"
+MSG_DB_SESSION_CLOSED = "Database session closed"
+MSG_DB_TRANSACTION_COMMITTED = "Database transaction committed"
+MSG_DB_TABLES_CREATED = "Database tables created successfully"
+MSG_DB_MIGRATION_TABLE_CREATED = "Migrations table created successfully"
+MSG_DB_MIGRATION_STATUS_CHECK = "Checking migration status"
+MSG_DB_MIGRATION_STATUS = "Migration status retrieved"
+MSG_DB_MIGRATION_PENDING = "Pending migrations found"
+MSG_DB_MIGRATION_UP_STARTED = "Starting migration up"
+MSG_DB_MIGRATION_UP_COMPLETED = "Migration up completed"
+MSG_DB_MIGRATION_DOWN_STARTED = "Starting migration down"
+MSG_DB_MIGRATION_DOWN_COMPLETED = "Migration down completed"
+MSG_DB_MIGRATION_APPLIED = "Migration applied successfully"
+MSG_DB_MIGRATION_ROLLED_BACK = "Migration rolled back successfully"
+MSG_DB_TRANSACTION_ROLLED_BACK = "Database transaction rolled back"
+MSG_DB_ENTITY_CREATED = "Database entity created successfully"
+MSG_DB_ENTITY_UPDATED = "Database entity updated successfully"
+MSG_DB_ENTITY_DELETED = "Database entity deleted successfully"
+MSG_DB_QUERY_EXECUTED = "Database query executed"
+MSG_DB_INITIALIZED = "Database initialized"
+MSG_DB_ENGINE_CREATED = "Database engine created"
+MSG_DB_POOL_CONFIGURED = "Database connection pool configured"
+
+# Database operation messages
+MSG_DB_CONNECTING = "Connecting to database"
+MSG_DB_INITIALIZING = "Initializing database"
+MSG_DB_CREATING_TABLES = "Creating database tables"
+MSG_DB_MIGRATING = "Running database migrations"
+MSG_DB_SEEDING = "Seeding database"
+MSG_DB_CLEANUP = "Cleaning up database"
+MSG_DB_DISCONNECTING = "Disconnecting from database"
+
+# Query logging prefixes
+QUERY_LOG_PREFIX_WRITE = "[WRITE_DB]"
+QUERY_LOG_PREFIX_READ = "[READ_DB]"
+
+# Query logging messages
+MSG_QUERY_EXECUTED = "Query executed"
+MSG_QUERY_STARTED = "Query started"
+MSG_QUERY_COMPLETED = "Query completed"
+MSG_QUERY_FAILED = "Query failed"
+MSG_QUERY_SLOW = "Slow query detected"
+
+# Migration error messages
+ERROR_MIGRATION_FAILED = "Migration failed"
+ERROR_MIGRATION_FILE_NOT_FOUND = "Migration file not found"
+ERROR_MIGRATION_ALREADY_APPLIED = "Migration already applied"
+ERROR_MIGRATION_NOT_APPLIED = "Migration not applied"
+ERROR_MIGRATION_INVALID_VERSION = "Invalid migration version"
+ERROR_MIGRATION_SYNTAX_ERROR = "Migration syntax error"
+ERROR_MIGRATION_ROLLBACK_FAILED = "Migration rollback failed"
+ERROR_MIGRATION_DIRECTORY_NOT_FOUND = "Migration directory not found"
+
+# Migration success messages
+MSG_MIGRATION_APPLIED = "Migration applied"
+MSG_MIGRATION_ROLLED_BACK = "Migration rolled back"
+MSG_MIGRATION_GENERATED = "Migration file generated"
+MSG_MIGRATION_UP_COMPLETED = "Migration up completed"
+MSG_MIGRATION_DOWN_COMPLETED = "Migration down completed"
+MSG_MIGRATION_STATUS_RETRIEVED = "Migration status retrieved"
+MSG_MIGRATION_RESET_COMPLETED = "Migration reset completed"
+
+# Migration operation messages
+MSG_MIGRATION_APPLYING = "Applying migration"
+MSG_MIGRATION_ROLLING_BACK = "Rolling back migration"
+MSG_MIGRATION_GENERATING = "Generating migration file"
+MSG_MIGRATION_CHECKING_STATUS = "Checking migration status"
+MSG_MIGRATION_RESETTING = "Resetting migrations"
+
+# Repository error messages
+ERROR_REPOSITORY_ENTITY_NOT_FOUND = "Entity not found"
+ERROR_REPOSITORY_DUPLICATE_ENTRY = "Duplicate entry"
+ERROR_REPOSITORY_INVALID_FIELD = "Invalid field name"
+ERROR_REPOSITORY_OPERATION_FAILED = "Repository operation failed"
+
+# Repository success messages
+MSG_REPOSITORY_ENTITY_CREATED = "Entity created"
+MSG_REPOSITORY_ENTITY_UPDATED = "Entity updated"
+MSG_REPOSITORY_ENTITY_DELETED = "Entity deleted"
+MSG_REPOSITORY_ENTITY_FOUND = "Entity found"
+MSG_REPOSITORY_ENTITIES_FOUND = "Entities found"
+
+# SQL injection prevention messages
+MSG_SQL_INJECTION_PREVENTED = "SQL injection attempt prevented"
+MSG_PARAMETERIZED_QUERY_USED = "Parameterized query used"
+
+# Database metadata
+DB_TABLE_MIGRATIONS = "migrations"
+DB_TABLE_FILES = "files"
+
+# Database column names (common)
+DB_COLUMN_ID = "id"
+DB_COLUMN_CREATED_AT = "created_at"
+DB_COLUMN_UPDATED_AT = "updated_at"
+DB_COLUMN_DELETED_AT = "deleted_at"
+
+# File table column names
+DB_COLUMN_FILENAME = "filename"
+DB_COLUMN_FILE_PATH = "file_path"
+DB_COLUMN_FILE_TYPE = "file_type"
+DB_COLUMN_FILE_SIZE = "file_size"
+DB_COLUMN_CHECKSUM = "checksum"
+DB_COLUMN_STORAGE_BACKEND = "storage_backend"
+DB_COLUMN_INDEXED = "indexed"
+DB_COLUMN_INDEXED_AT = "indexed_at"
+
+# Migration table column names
+DB_COLUMN_VERSION = "version"
+DB_COLUMN_NAME = "name"
+DB_COLUMN_APPLIED_AT = "applied_at"
+
+# Database constraints
+DB_CONSTRAINT_UNIQUE_FILENAME = "unique_filename"
+DB_CONSTRAINT_UNIQUE_CHECKSUM = "unique_checksum"
+
+# Connection pool settings
+DB_POOL_SIZE_DEFAULT = 5
+DB_POOL_SIZE_READ_DEFAULT = 10
+DB_MAX_OVERFLOW_DEFAULT = 10
+DB_MAX_OVERFLOW_READ_DEFAULT = 20
+DB_POOL_PRE_PING_DEFAULT = True
+DB_POOL_RECYCLE_DEFAULT = 3600
+DB_CONNECT_TIMEOUT_DEFAULT = 10
+
+# ============================================================================
+# API UPLOAD CONSTANTS
+# ============================================================================
+
+# Upload error messages
+ERROR_UPLOAD_BOTH_FIELDS = (
+    "Cannot use both 'file' and 'files' fields. Use one or the other."
+)
+ERROR_UPLOAD_NO_FILES = "No files provided"
+ERROR_UPLOAD_NO_FILE_OR_FILES = (
+    "No file or files provided. Use 'file' for single upload "
+    "or 'files' for batch upload."
+)
+ERROR_UPLOAD_FAILED = "Upload failed"
+ERROR_UPLOAD_READ_FAILED = "Failed to read uploaded file"
+
+# Upload error codes
+ERROR_CODE_INVALID_REQUEST = "INVALID_REQUEST"
+ERROR_CODE_NO_FILES = "NO_FILES"
+ERROR_CODE_VALIDATION_ERROR = "VALIDATION_ERROR"
+ERROR_CODE_UPLOAD_ERROR = "UPLOAD_ERROR"
+ERROR_CODE_READ_ERROR = "READ_ERROR"

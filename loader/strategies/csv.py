@@ -12,14 +12,14 @@ from langchain_core.documents import Document
 
 class CSVLoaderStrategy:
     """Strategy for loading CSV documents.
-    
+
     Uses CSVLoader from LangChain to parse CSV files.
     Each row becomes a separate document.
     """
 
     def __init__(self, file_path: str):
         """Initialize CSV loader.
-        
+
         Args:
             file_path: Path to CSV file
         """
@@ -28,12 +28,11 @@ class CSVLoaderStrategy:
 
     def load(self) -> List[Document]:
         """Load CSV document.
-        
+
         Returns:
             List of Document objects (one per row)
-            
+
         Raises:
             Exception: If CSV loading fails
         """
         return self._loader.load()
-

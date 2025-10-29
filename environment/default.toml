@@ -57,7 +57,7 @@ default_https_port = 443         # Default HTTPS port for secure connections
 
 # Embeddings Configuration
 [embeddings]
-provider = "google"              # Which embeddings: google, openai, huggingface, cohere, anthropic
+provider = "google"              # Which embeddings: google, openai, huggingface, anthropic
 dimension = 768
 
 # Google Embeddings settings
@@ -158,3 +158,77 @@ model = "claude-3-5-sonnet-20241022"  # Model: claude-3-5-sonnet, claude-3-opus,
 temperature = 0.1                 # Lower temperature for factual answers (0.0-1.0)
 max_tokens = 1000                 # Maximum response length
 verify_ssl = true                 # SSL certificate verification
+
+# ============================================================================
+# DATABASE CONFIGURATION (MASTER-SLAVE ARCHITECTURE)
+# ============================================================================
+
+[database]
+driver = "sqlite"                # Database driver: sqlite, mysql, postgresql
+pool_pre_ping = true             # Test connections before using
+pool_recycle = 3600              # Recycle connections after 1 hour (seconds)
+connect_timeout = 10             # Connection timeout (seconds)
+
+# ----------------------------------------------------------------------------
+# SQLite Configuration
+# ----------------------------------------------------------------------------
+
+[database.sqlite.write]
+path = "storage/metadata.db"     # SQLite database file path (write/master)
+debug = false                    # Enable query logging for write operations
+
+[database.sqlite.read]
+path = "storage/metadata.db"     # SQLite database file path (read/slave)
+debug = false                    # Enable query logging for read operations
+
+# ----------------------------------------------------------------------------
+# MySQL Configuration
+# ----------------------------------------------------------------------------
+
+[database.mysql.write]
+host = "localhost"               # MySQL master host
+port = 3306                      # MySQL master port
+database = "ragtrial"            # Database name
+username = "ragtrial_user"       # Database user (write access)
+password = ""                    # Database password (use env var in production)
+charset = "utf8mb4"              # Character set
+pool_size = 5                    # Connection pool size (write)
+max_overflow = 10                # Maximum overflow connections
+debug = false                    # Enable query logging for write operations
+
+[database.mysql.read]
+host = "localhost"               # MySQL slave host (can be different for read replica)
+port = 3306                      # MySQL slave port
+database = "ragtrial"            # Database name
+username = "ragtrial_readonly"   # Database user (read-only access recommended)
+password = ""                    # Database password (use env var in production)
+charset = "utf8mb4"              # Character set
+pool_size = 10                   # Connection pool size (read) - more connections for reads
+max_overflow = 20                # Maximum overflow connections
+debug = false                    # Enable query logging for read operations
+
+# ----------------------------------------------------------------------------
+# PostgreSQL Configuration
+# ----------------------------------------------------------------------------
+
+[database.postgresql.write]
+host = "localhost"               # PostgreSQL master host
+port = 5432                      # PostgreSQL master port
+database = "ragtrial"            # Database name
+username = "ragtrial_user"       # Database user (write access)
+password = ""                    # Database password (use env var in production)
+schema = "public"                # Database schema
+pool_size = 5                    # Connection pool size (write)
+max_overflow = 10                # Maximum overflow connections
+debug = false                    # Enable query logging for write operations
+
+[database.postgresql.read]
+host = "localhost"               # PostgreSQL slave host (can be different for read replica)
+port = 5432                      # PostgreSQL slave port
+database = "ragtrial"            # Database name
+username = "ragtrial_readonly"   # Database user (read-only access recommended)
+password = ""                    # Database password (use env var in production)
+schema = "public"                # Database schema
+pool_size = 10                   # Connection pool size (read) - more connections for reads
+max_overflow = 20                # Maximum overflow connections
+debug = false                    # Enable query logging for read operations
