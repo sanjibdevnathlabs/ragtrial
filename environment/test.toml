@@ -105,62 +105,30 @@ upload_chunk_size = 1048576
 # ============================================================================
 
 [database]
-driver = "sqlite"                # Use SQLite for tests (fast, isolated)
-pool_pre_ping = false            # Not needed for SQLite
-pool_recycle = -1                # Disable for tests
-connect_timeout = 5              # Shorter timeout for tests
+driver = "mysql"                 # Use MySQL for tests (supports parallel execution)
+pool_pre_ping = true             # Check connection before using
+pool_recycle = 3600              # Recycle connections after 1 hour
+connect_timeout = 10             # Connection timeout
 
-# SQLite Configuration (Test)
-[database.sqlite.write]
-path = "storage/test.db"         # File-based database for tests (shared connection)
-debug = false                    # Disable query logging in tests (reduce noise)
-
-[database.sqlite.read]
-path = "storage/test.db"         # File-based database for tests (shared connection)
-debug = false                    # Disable query logging in tests (reduce noise)
-
-# MySQL Configuration (Test - mocked, dummy values)
+# MySQL Configuration (Test Database)
 [database.mysql.write]
 host = "localhost"
 port = 3306
-database = "test_ragtrial"
-username = "test_user"
-password = "test_password"
+database = "test_ragtrial"       # Dedicated test database
+username = "test_ragtrial"                # Using root (adjust as needed)
+password = "test_ragtrial"                    # Empty password for local dev
 charset = "utf8mb4"
-pool_size = 1                    # Minimal pool for tests
-max_overflow = 1
-debug = false
+pool_size = 10                   # Support parallel test execution
+max_overflow = 20                # Allow burst during parallel tests
+debug = true                    # Disable query logging in tests
 
 [database.mysql.read]
 host = "localhost"
 port = 3306
 database = "test_ragtrial"
-username = "test_readonly"
-password = "test_password"
+username = "test_ragtrial"
+password = "test_ragtrial"
 charset = "utf8mb4"
-pool_size = 1
-max_overflow = 1
-debug = false
-
-# PostgreSQL Configuration (Test - mocked, dummy values)
-[database.postgresql.write]
-host = "localhost"
-port = 5432
-database = "test_ragtrial"
-username = "test_user"
-password = "test_password"
-schema = "public"
-pool_size = 1                    # Minimal pool for tests
-max_overflow = 1
-debug = false
-
-[database.postgresql.read]
-host = "localhost"
-port = 5432
-database = "test_ragtrial"
-username = "test_readonly"
-password = "test_password"
-schema = "public"
-pool_size = 1
-max_overflow = 1
-debug = false
+pool_size = 10
+max_overflow = 20
+debug = true

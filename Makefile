@@ -14,11 +14,10 @@ help:
 	@echo "  make setup-database   Run database migrations (setup DB)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test             Run unit tests with coverage"
+	@echo "  make test             Run unit tests with coverage (parallel, ~10s)"
 	@echo "  make test-html        Run unit tests with HTML coverage report"
-	@echo "  make test-integration Run integration tests (auto-setup SQLite)"
-	@echo "  make test-clean       Clean up test artifacts (DB, storage)"
-	@echo "  make setup-test-db    Set up SQLite test database"
+	@echo "  make test-integration Run integration tests (parallel, ~1s)"
+	@echo "  make test-clean       Clean up test storage artifacts"
 	@echo "  make setup-test-chromadb  Set up ChromaDB test collection"
 	@echo ""
 	@echo "Database Management:"
@@ -64,10 +63,10 @@ install-dev:
 # Testing
 # Default: Run unit tests with terminal coverage (fast, no external dependencies)
 test:
-	@echo "Running unit tests with coverage..."
+	@echo "Running unit tests with coverage (parallel execution)..."
 	@APP_ENV=test ./venv/bin/python -m pytest \
 		-m "not integration" \
-		-vv \
+		-n auto \
 		--ff \
 		--cov=. \
 		--cov-report=term \
@@ -82,10 +81,10 @@ test:
 
 # Run unit tests with HTML coverage report (for detailed analysis)
 test-html:
-	@echo "Running unit tests with HTML coverage report..."
+	@echo "Running unit tests with HTML coverage report (parallel execution)..."
 	@APP_ENV=test ./venv/bin/python -m pytest \
 		-m "not integration" \
-		-vv \
+		-n auto \
 		--ff \
 		--cov=. \
 		--cov-report=html \
@@ -101,23 +100,18 @@ test-html:
 	@echo "📊 HTML coverage report generated: htmlcov/index.html"
 	@echo "💡 Open with: open htmlcov/index.html"
 
-# Set up SQLite test database
-setup-test-db:
-	@echo "📦 Setting up SQLite test database..."
-	@APP_ENV=test $(MAKE) migrate-up
-	@echo "✅ Test database ready at: storage/test.db"
-
-# Set up ChromaDB test collection
 setup-test-chromadb:
 	@echo "📦 Setting up ChromaDB test collection..."
 	@mkdir -p storage/chroma_test
 	@echo "✅ ChromaDB test directory ready at: storage/chroma_test/"
 
-# Run integration tests (requires SQLite test database)
-test-integration: setup-test-db
-	@echo "🧪 Running integration tests..."
+# Run integration tests (requires MySQL test database)
+# Note: Parallel execution with SELECT FOR UPDATE deadlock prevention
+test-integration:
+	@echo "🧪 Running integration tests (parallel, ~1s)..."
 	@APP_ENV=test ./venv/bin/python -m pytest \
 		-m "integration" \
+		-n auto \
 		-vv \
 		--ignore=scripts \
 		--ignore=examples \
@@ -128,12 +122,13 @@ test-integration: setup-test-db
 		--ignore=migration/versions \
 		--ignore=migration/templates
 
-# Clean up test artifacts (database, storage, etc.)
+# Clean up test artifacts (storage directories only)
+# Note: Database test data is automatically cleaned after each test
 test-clean:
 	@echo "🧹 Cleaning up test artifacts..."
-	@rm -f storage/test.db && echo "  ✓ Removed storage/test.db" || true
 	@rm -rf storage/chroma_test && echo "  ✓ Removed storage/chroma_test/" || true
 	@rm -rf storage/test_documents && echo "  ✓ Removed storage/test_documents/" || true
+	@echo "  ℹ️  Database test data auto-cleaned (see clean_database fixture)"
 	@echo "✅ Test cleanup complete!"
 
 # Database Management

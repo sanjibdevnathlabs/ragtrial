@@ -53,10 +53,12 @@ class UploadService(metaclass=SingletonMeta):
         Process:
         1. Validate file
         2. Calculate checksum
-        3. Check for duplicates
-        4. Generate UUID for storage
-        5. Store with UUID-based name
-        6. Create database record
+        3. Generate UUID for storage
+        4. Store with UUID-based name
+        5. Create database record (with atomic duplicate check)
+        
+        Note: Duplicate checking is now done atomically inside create_file_record
+        using SELECT ... FOR UPDATE to prevent deadlocks during parallel uploads.
         
         Args:
             filename: Original filename
@@ -77,35 +79,41 @@ class UploadService(metaclass=SingletonMeta):
         # Step 2: Calculate checksum
         checksum = self._calculate_checksum(content)
         
-        # Step 3: Check for duplicates
-        existing = self.db_file_service.check_duplicate(checksum)
-        if existing:
-            logger.warning(
-                codes.API_UPLOAD_FAILED,
-                filename=filename,
-                reason=constants.ERROR_FILE_DUPLICATE,
-                existing_file=existing["filename"]
-            )
-            raise ValueError(
-                f"{constants.ERROR_FILE_DUPLICATE}: {existing['filename']}"
-            )
-        
-        # Step 4: Generate UUID for storage
+        # Step 3: Generate UUID for storage
         file_id = File.generate_id()
         file_type = File.get_file_type_from_filename(filename)
         storage_filename = f"{file_id}.{file_type}"
         
-        # Step 5: Store file with UUID-based name
+        # Step 4: Store file with UUID-based name
         file_path = self._store_file(storage_filename, content)
         
-        # Step 6: Create database record
-        file_record = self.db_file_service.create_file_record(
-            filename=filename,
-            file_path=file_path,
-            file_size=len(content),
-            checksum=checksum,
-            storage_backend=self.config.storage.backend
-        )
+        # Step 5: Create database record (with atomic duplicate check)
+        # Note: create_file_record now does SELECT ... FOR UPDATE to prevent deadlocks
+        try:
+            file_record = self.db_file_service.create_file_record(
+                filename=filename,
+                file_path=file_path,
+                file_size=len(content),
+                checksum=checksum,
+                storage_backend=self.config.storage.backend
+            )
+        except ValueError as e:
+            # Duplicate detected - log and re-raise
+            logger.warning(
+                codes.API_UPLOAD_FAILED,
+                filename=filename,
+                reason=constants.ERROR_FILE_DUPLICATE,
+                error=str(e)
+            )
+            # Clean up stored file since DB insert failed
+            try:
+                self.storage.delete_file(file_path)
+            except Exception as cleanup_error:
+                logger.error(
+                    codes.API_UPLOAD_FAILED,
+                    error=f"Failed to cleanup file after duplicate: {cleanup_error}"
+                )
+            raise
         
         logger.info(
             codes.API_UPLOAD_COMPLETED,

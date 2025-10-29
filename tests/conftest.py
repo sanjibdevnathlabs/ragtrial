@@ -150,10 +150,12 @@ def cleanup_test_artifacts():
     Clean up test artifacts after all tests complete.
     
     This fixture runs once at the end of the entire test session
-    and removes all test-related files and directories.
+    and removes test-related storage directories.
+    
+    Note: Database cleanup is handled per-test in integration test fixtures.
+    MySQL database tables are truncated, not deleted.
     
     Cleaned up:
-    - storage/test.db (SQLite test database)
     - storage/chroma_test/ (ChromaDB test collection)
     - storage/test_documents/ (Test document storage)
     """
@@ -168,20 +170,15 @@ def cleanup_test_artifacts():
     storage_dir = project_root / "storage"
     
     cleanup_paths = [
-        storage_dir / "test.db",
         storage_dir / "chroma_test",
         storage_dir / "test_documents",
     ]
     
     for path in cleanup_paths:
         try:
-            if path.exists():
-                if path.is_file():
-                    path.unlink()
-                    print(f"✓ Cleaned up: {path}")
-                elif path.is_dir():
-                    shutil.rmtree(path)
-                    print(f"✓ Cleaned up: {path}")
+            if path.exists() and path.is_dir():
+                shutil.rmtree(path)
+                print(f"✓ Cleaned up: {path}")
         except Exception as e:
             print(f"⚠ Failed to clean up {path}: {e}")
 

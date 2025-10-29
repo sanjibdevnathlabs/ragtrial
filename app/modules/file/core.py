@@ -78,7 +78,12 @@ class FileService:
         storage_backend: str = "local"
     ) -> Dict:
         """
-        Create file metadata record.
+        Create file metadata record with atomic duplicate detection.
+        
+        Strategy: Rely on UNIQUE constraint on checksum column for atomic duplicate
+        prevention. MySQL's UNIQUE index naturally prevents duplicate inserts at
+        the database level without requiring SELECT ... FOR UPDATE which can cause
+        gap lock deadlocks.
         
         Args:
             filename: Original filename
@@ -92,7 +97,10 @@ class FileService:
             
         Raises:
             DatabaseQueryError: If creation fails
+            ValueError: If duplicate checksum exists
         """
+        from sqlalchemy.exc import IntegrityError
+        
         logger.info(
             codes.DB_REPOSITORY_STARTED,
             operation="create_file_record",
@@ -118,7 +126,8 @@ class FileService:
                 indexed=False
             )
 
-            # Save to database
+            # Insert into database
+            # UNIQUE constraint on checksum prevents duplicates atomically
             with self.session_factory.get_write_session() as session:
                 created_file = self.repository.create(session, file)
                 
@@ -131,6 +140,22 @@ class FileService:
                 
                 return created_file.to_dict()
 
+        except IntegrityError as e:
+            # UNIQUE constraint violation - duplicate checksum
+            # Fetch the existing file to provide helpful error message
+            with self.session_factory.get_read_session() as session:
+                existing = self.repository.find_by_checksum(session, checksum)
+                existing_filename = existing.filename if existing else "unknown"
+            
+            logger.warning(
+                codes.DB_REPOSITORY_FAILED,
+                operation="create_file_record",
+                error=f"Duplicate checksum detected: {existing_filename}"
+            )
+            raise ValueError(
+                f"{constants.ERROR_FILE_DUPLICATE}: {existing_filename}"
+            ) from e
+            
         except Exception as e:
             logger.error(
                 codes.DB_REPOSITORY_FAILED,

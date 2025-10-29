@@ -14,11 +14,11 @@ Test Coverage:
 - File metadata endpoint with database
 """
 
+import uuid
 import pytest
 
 # Mark all tests in this module as integration tests
 pytestmark = pytest.mark.integration
-import time
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 
@@ -28,24 +28,93 @@ from database.session import SessionFactory
 from sqlalchemy import text
 
 
-@pytest.fixture(autouse=True)
-def clean_database():
-    """Clean database before each integration test."""
-    # Clean before test
+@pytest.fixture(scope="function")
+def db_session():
+    """
+    Provide transactional database session for each test.
+    
+    Strategy:
+    - Create connection and start nested transaction (savepoint)
+    - Bind session to this transactional connection
+    - Mock commit() to do nothing (just flush)
+    - Yield session for test to use
+    - Rollback transaction (NEVER commit)
+    - Close session and connection
+    
+    Benefits:
+    - Perfect isolation between parallel tests
+    - No data persists in database
+    - Fast (rollback is instant)
+    - No cleanup needed
+    """
+    from sqlalchemy.orm import Session
+    from unittest.mock import patch
+    
     session_factory = SessionFactory()
     engine = session_factory.get_write_engine()
     
-    # Delete all files
-    with engine.connect() as conn:
-        conn.execute(text("DELETE FROM files"))
-        conn.commit()
+    # Create connection and start transaction
+    connection = engine.connect()
+    transaction = connection.begin()
     
-    yield
+    # Create session bound to this transactional connection
+    session = Session(bind=connection)
     
-    # Optional: Clean after test as well
-    with engine.connect() as conn:
-        conn.execute(text("DELETE FROM files"))
-        conn.commit()
+    # Override commit to just flush (don't actually commit)
+    original_commit = session.commit
+    def mock_commit():
+        session.flush()  # Write to transaction but don't commit
+    
+    session.commit = mock_commit
+    
+    yield session
+    
+    # CRITICAL: Rollback transaction (never commit in tests)
+    # This ensures NO test data persists
+    session.commit = original_commit  # Restore original
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+
+@pytest.fixture(scope="function")
+def override_db_dependency(db_session):
+    """
+    Override SessionFactory to use our transactional session.
+    
+    This ensures ALL database operations in the app use our
+    test transaction, which gets rolled back after the test.
+    
+    Benefits:
+    - Perfect isolation for parallel tests
+    - No data persists in database
+    - No manual cleanup needed
+    """
+    from unittest.mock import patch, MagicMock
+    from contextlib import contextmanager
+    
+    # Create a mock session factory that returns our transactional session
+    @contextmanager
+    def mock_write_session():
+        yield db_session
+    
+    @contextmanager
+    def mock_read_session():
+        yield db_session
+    
+    mock_factory = MagicMock()
+    mock_factory.get_write_session = mock_write_session
+    mock_factory.get_read_session = mock_read_session
+    mock_factory.get_write_engine = lambda: db_session.get_bind()
+    mock_factory.get_read_engine = lambda: db_session.get_bind()
+    
+    # Patch SessionFactory to return our mock
+    with patch("database.session.SessionFactory", return_value=mock_factory):
+        # Also patch it where it's imported in app modules
+        with patch("app.modules.file.core.SessionFactory", return_value=mock_factory):
+            yield
+    
+    # No cleanup needed - handled by db_session fixture
 
 
 @pytest.fixture
@@ -56,20 +125,29 @@ def db_file_service():
 
 @pytest.fixture
 def sample_integration_files(db_file_service):
-    """Create sample files in database for integration tests."""
+    """
+    Create sample files in database for integration tests.
+    
+    Uses uuid4() for checksums to ensure uniqueness in parallel test execution.
+    This prevents deadlocks when multiple test workers try to insert files
+    with the same checksum simultaneously.
+    """
+    # Generate unique checksums for this test run
+    unique_id = str(uuid.uuid4())
+    
     files_data = [
         {
             "filename": "file1.pdf",
             "file_path": "source_docs/integration-uuid1.pdf",
             "file_size": 1024,
-            "checksum": "integration_checksum1" + str(time.time()),
+            "checksum": f"integration_checksum1_{unique_id}",
             "storage_backend": "local"
         },
         {
             "filename": "file2.txt",
             "file_path": "source_docs/integration-uuid2.txt",
             "file_size": 2048,
-            "checksum": "integration_checksum2" + str(time.time()),
+            "checksum": f"integration_checksum2_{unique_id}",
             "storage_backend": "local"
         }
     ]
@@ -92,8 +170,14 @@ def mock_storage():
 
 
 @pytest.fixture
-def client(mock_storage):
-    """Create test client with mocked storage."""
+def client(mock_storage, override_db_dependency):
+    """
+    Create test client with mocked storage and transactional database.
+    
+    The override_db_dependency fixture ensures all database operations
+    happen within a transaction that gets rolled back after the test.
+    This provides perfect isolation for parallel test execution.
+    """
     with patch("app.api.dependencies.create_storage", return_value=mock_storage):
         yield TestClient(app)
 
@@ -141,7 +225,9 @@ class TestUploadEndpoint:
     
     def test_upload_returns_200(self, client, mock_storage):
         """Test upload endpoint returns 200 OK."""
-        files = {"file": ("test.pdf", b"test content", "application/pdf")}
+        # Unique content to avoid checksum collision in parallel tests
+        content = f"test content {uuid.uuid4()}".encode()
+        files = {"file": ("test.pdf", content, "application/pdf")}
         
         response = client.post("/api/v1/upload", files=files)
         
@@ -149,7 +235,9 @@ class TestUploadEndpoint:
     
     def test_upload_returns_success_response(self, client, mock_storage):
         """Test upload returns success response."""
-        files = {"file": ("test.pdf", b"test content", "application/pdf")}
+        # Unique content to avoid checksum collision in parallel tests
+        content = f"test content {uuid.uuid4()}".encode()
+        files = {"file": ("test.pdf", content, "application/pdf")}
         
         response = client.post("/api/v1/upload", files=files)
         data = response.json()
@@ -158,7 +246,9 @@ class TestUploadEndpoint:
     
     def test_upload_includes_filename(self, client, mock_storage):
         """Test upload response includes filename."""
-        files = {"file": ("test.pdf", b"test content", "application/pdf")}
+        # Unique content to avoid checksum collision in parallel tests
+        content = f"test content {uuid.uuid4()}".encode()
+        files = {"file": ("test.pdf", content, "application/pdf")}
         
         response = client.post("/api/v1/upload", files=files)
         data = response.json()
