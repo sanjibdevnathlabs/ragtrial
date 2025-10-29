@@ -1,0 +1,44 @@
+name: PR Image Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup-pr-images:
+    name: Delete ALL PR Base Images
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate branch hash
+        id: hash
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          HASH=$(echo -n "$BRANCH" | md5sum | cut -c1-12)
+          echo "hash=br-$HASH" >> $GITHUB_OUTPUT
+          echo "📦 Will delete ALL base images for branch: $BRANCH"
+          echo "🏷️  Branch hash tag: br-$HASH"
+      
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
+      - name: Delete ALL base images for this branch
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          chmod +x scripts/cleanup_docker_images.sh
+          ./scripts/cleanup_docker_images.sh ragtrial-base delete-branch "${{ steps.hash.outputs.hash }}"
+      
+      - name: Summary
+        run: |
+          echo "✅ PR Cleanup Complete!"
+          echo ""
+          echo "🗑️  Deleted ALL base images with tag: ${{ steps.hash.outputs.hash }}"
+          echo "📊 Docker Hub cleaned for merged/closed PR"
+          echo ""
+          echo "ℹ️  App images were never pushed for PRs (build-only)"
+

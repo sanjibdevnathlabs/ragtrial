@@ -35,6 +35,9 @@ venv/
 config/dev.toml
 environment/dev.toml
 
+# Docker Hub Credentials (local testing only)
+environment/dockerenv.toml
+
 # Storage
 storage/*
 

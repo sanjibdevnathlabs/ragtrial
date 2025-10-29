@@ -34,7 +34,8 @@ deployment/local/
 - Pre-installs all `requirements.txt` dependencies
 - Used by all GitHub Actions workflows (no more `pip install`!)
 - Built automatically when `requirements.txt` changes
-- SHA-tagged for isolation (no race conditions between PRs)
+- Smart tagging: branch hash for PRs, commit SHA for master
+- Automatic cleanup to keep Docker Hub clean
 - Reduces CI/CD time by 70% (no package installation)
 
 ### GitHub Actions Workflow (Single Unified Pipeline)
@@ -75,6 +76,56 @@ Stage 1: Build Base Image
 ✅ Docker build waits for tests (ensures quality)
 ✅ Works on PRs from feature branches (no workflow_run issues!)
 ✅ Total time: ~8-12 minutes (with parallelization)
+```
+
+### Docker Image Tagging Strategy
+
+**Smart Tagging for Efficient CI/CD:**
+
+| Scenario | Base Image Tag | App Image Tag | Behavior |
+|----------|----------------|---------------|----------|
+| **PR Commits** | `br-abc123` (branch hash) | Not pushed (build-only) | All commits in same PR reuse same base image |
+| **Master Commits** | `SHA` (full commit SHA) | `SHA` + `latest` | New image for each commit |
+
+**Benefits:**
+- ✅ **PR Efficiency**: All commits in a PR reuse the same base image (no rebuild unless deps change)
+- ✅ **No Race Conditions**: Branch hashes isolate PRs from each other
+- ✅ **Reproducibility**: Master builds use commit SHA for exact versioning
+- ✅ **Fast CI**: Base image only builds once per PR (not per commit)
+
+### Automated Docker Hub Cleanup
+
+**Two cleanup workflows keep Docker Hub clean:**
+
+#### 1. `.github/workflows/pr-cleanup.yml` - On PR Close/Merge
+```yaml
+Trigger: pull_request [closed]
+Action:  Delete ALL branch-hash images (br-abc123) for that PR
+Result:  Docker Hub cleaned immediately after PR merge
+```
+
+#### 2. `.github/workflows/ci.yml` - After Master Build
+```yaml
+Job:     cleanup-images (runs after docker-build on master)
+Action:  Keep last 5 SHA-tagged images, delete older ones
+Result:  Docker Hub maintains only recent versions
+```
+
+**Retention Policy:**
+| Image Type | Tag Pattern | Keep Count | When Deleted |
+|------------|-------------|------------|--------------|
+| Base (PR) | `br-abc123` | 3 per branch | All deleted when PR closes |
+| Base (Master) | `SHA` | 5 | After 5 newer commits |
+| App (Master) | `SHA` | 5 | After 5 newer commits |
+| App (Master) | `latest` | 1 | Always kept (rolling) |
+
+**Cleanup Script:**
+```bash
+# Manual cleanup (dry-run by default if using dockerenv.toml)
+./scripts/cleanup_docker_images.sh ragtrial-base
+
+# Delete specific branch images
+./scripts/cleanup_docker_images.sh ragtrial-base delete-branch br-abc123
 ```
 
 ### GitHub Templates
