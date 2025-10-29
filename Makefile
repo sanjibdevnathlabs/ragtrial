@@ -1,4 +1,4 @@
-.PHONY: help install test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
+.PHONY: help install install-cpu test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
 
 SHELL := /bin/bash
 
@@ -10,6 +10,7 @@ help:
 	@echo ""
 	@echo "Setup & Installation:"
 	@echo "  make install          Install all dependencies"
+	@echo "  make install-cpu      Install with PyTorch CPU-only (RECOMMENDED, saves ~1.9GB)"
 	@echo "  make install-dev      Install dev dependencies"
 	@echo "  make setup-database   Run database migrations (setup DB)"
 	@echo ""
@@ -51,19 +52,25 @@ help:
 	@echo "  make clean            Clean temporary files"
 	@echo "  make clean-all        Clean everything (including storage)"
 	@echo ""
-	@echo "Docker:"
-	@echo "  make docker-build        Build Docker image"
-	@echo "  make docker-build-base   Build base image (with all dependencies)"
-	@echo "  make docker-push-base    Push base image to Docker Hub"
-	@echo "  make docker-run          Start all services (API, MySQL, ChromaDB)"
-	@echo "  make docker-stop         Stop all services"
-	@echo "  make docker-restart      Restart all services"
-	@echo "  make docker-logs         View API logs"
+	@echo "Docker (Recommended for Development):"
+	@echo "  make docker-setup        🔧 First-time setup (build all images)"
+	@echo "  make docker-up           🚀 Start all services (auto-builds if needed)"
+	@echo "  make docker-down         🛑 Stop all services"
+	@echo "  make docker-status       📊 Check service health status"
+	@echo ""
+	@echo "Docker - Working with Services:"
+	@echo "  make docker-logs         View API logs (follow mode)"
 	@echo "  make docker-logs-all     View all service logs"
-	@echo "  make docker-test         Run tests in Docker"
-	@echo "  make docker-push         Push image to Docker Hub"
-	@echo "  make docker-shell        Open shell in API container"
-	@echo "  make docker-clean        Clean Docker resources"
+	@echo "  make docker-logs-migration View migration logs"
+	@echo "  make docker-ingest       📥 Run ingestion for uploaded files"
+	@echo "  make docker-shell        Enter API container shell"
+	@echo "  make docker-db-shell     Enter MySQL shell"
+	@echo ""
+	@echo "Docker - Build & Maintenance:"
+	@echo "  make docker-build-base   Build base image (with all dependencies)"
+	@echo "  make docker-rebuild      🔨 Force rebuild all images"
+	@echo "  make docker-clean        🧹 Clean all Docker resources"
+	@echo "  make docker-restart      Restart all services"
 	@echo ""
 	@echo "Pre-commit Hooks:"
 	@echo "  make pre-commit-install   Install pre-commit hooks"
@@ -75,6 +82,11 @@ help:
 install:
 	@echo "Installing dependencies..."
 	@./venv/bin/pip install -r requirements.txt
+
+install-cpu:
+	@echo "Installing dependencies with PyTorch CPU-only (no NVIDIA CUDA packages)..."
+	@./venv/bin/pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+	@echo "✅ Installed successfully! (Saved ~1.9GB by avoiding CUDA packages)"
 
 install-dev:
 	@echo "Installing dev dependencies..."
@@ -303,7 +315,7 @@ check-env:
 
 # Cleanup
 clean:
-	@echo "Cleaning temporary files..."
+	@echo "🧹 Cleaning temporary files..."
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete
 	@find . -type f -name "*.pyo" -delete
@@ -312,7 +324,8 @@ clean:
 	@find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name ".coverage" -delete
-	@echo "Cleanup complete!"
+	@find . -type f -name ".DS_Store" -delete
+	@echo "✅ Cleanup complete!"
 
 clean-all: clean
 	@echo "Cleaning all files including storage..."
@@ -333,11 +346,14 @@ check-python:
 # Docker Commands
 # ==============================================================================
 
-.PHONY: docker-build docker-run docker-stop docker-logs docker-test docker-push docker-clean
+.PHONY: docker-build docker-build-base docker-setup docker-up docker-down docker-stop docker-restart \
+        docker-logs docker-logs-all docker-logs-migration docker-ingest docker-test docker-push \
+        docker-clean docker-shell docker-db-shell docker-rebuild docker-status
 
 docker-build:
 	@echo "🐳 Building Docker image..."
-	@docker build -f docker/Dockerfile -t ragtrial:local .
+	@echo "Using base image: sanjibdevnath/ragtrial-base:local"
+	@docker build -f docker/Dockerfile --build-arg BASE_IMAGE_TAG=local -t ragtrial:local .
 	@echo "✅ Docker image built: ragtrial:local"
 
 docker-build-base:
@@ -354,17 +370,85 @@ docker-push-base:
 	@docker push sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)
 	@echo "✅ Base image pushed: sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)"
 
-docker-run:
-	@echo "🚀 Starting Docker Compose services..."
-	@docker-compose -f deployment/local/docker-compose.yml up -d
+docker-setup:
+	@echo "🔧 Setting up Docker environment for first-time use..."
 	@echo ""
-	@echo "✅ Services running:"
-	@echo "   📡 API:      http://localhost:8000"
-	@echo "   📊 API Docs: http://localhost:8000/docs"
-	@echo "   🔍 Health:   http://localhost:8000/api/v1/health"
-	@echo "   💾 ChromaDB: http://localhost:8001"
+	@echo "Step 1/3: Building base image with dependencies..."
+	@$(MAKE) docker-build-base
+	@echo ""
+	@echo "Step 2/3: Building application images..."
+	@docker-compose -f deployment/local/docker-compose.yml build
+	@echo ""
+	@echo "Step 3/3: Creating Docker volumes..."
+	@docker volume create local_mysql_data 2>/dev/null || true
+	@docker volume create local_chroma_data 2>/dev/null || true
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo "✅ Docker setup complete!"
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Run: make docker-up      # Start all services"
+	@echo "  2. Visit: http://localhost:8000/docs"
+	@echo ""
+
+docker-up:
+	@echo "🚀 Starting Docker stack (with automatic setup if needed)..."
+	@echo ""
+	@# Check if base image exists, if not, build it
+	@if ! docker images | grep -q "sanjibdevnath/ragtrial-base.*local"; then \
+		echo "⚠️  Base image not found. Building it first..."; \
+		echo ""; \
+		$(MAKE) docker-build-base; \
+		echo ""; \
+	fi
+	@# Build and start services
+	@echo "📦 Building and starting services..."
+	@docker-compose -f deployment/local/docker-compose.yml up -d --build
+	@echo ""
+	@echo "⏳ Waiting for services to be healthy..."
+	@sleep 5
+	@echo ""
+	@# Show migration logs
+	@echo "📋 Migration Status:"
+	@docker logs ragtrial-migration 2>&1 | tail -5 || echo "Migration container not found"
+	@echo ""
+	@# Check if API is healthy
+	@echo "🏥 Health Check:"
+	@for i in 1 2 3 4 5; do \
+		if curl -s http://localhost:8000/api/v1/health > /dev/null 2>&1; then \
+			echo "✅ API is healthy!"; \
+			break; \
+		else \
+			echo "⏳ Waiting for API... ($$i/5)"; \
+			sleep 2; \
+		fi; \
+	done
+	@echo ""
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo "✅ Docker stack is running!"
+	@echo "════════════════════════════════════════════════════════════════════════"
+	@echo ""
+	@echo "📡 Services:"
+	@echo "   API:      http://localhost:8000"
+	@echo "   API Docs: http://localhost:8000/docs"
+	@echo "   Health:   http://localhost:8000/api/v1/health"
+	@echo "   ChromaDB: http://localhost:8001"
+	@echo "   MySQL:    localhost:3306 (user: ragtrial, password: ragtrial)"
+	@echo ""
+	@echo "🛠️  Useful commands:"
+	@echo "   make docker-logs        # View API logs"
+	@echo "   make docker-logs-all    # View all logs"
+	@echo "   make docker-ingest      # Run ingestion for uploaded files"
+	@echo "   make docker-shell       # Enter API container"
+	@echo "   make docker-down        # Stop all services"
 	@echo ""
 	@docker-compose -f deployment/local/docker-compose.yml ps
+
+docker-down:
+	@echo "🛑 Stopping Docker Compose services..."
+	@docker-compose -f deployment/local/docker-compose.yml down
+	@echo "✅ Services stopped"
 
 docker-stop:
 	@echo "🛑 Stopping Docker Compose services..."
@@ -403,6 +487,57 @@ docker-clean:
 docker-shell:
 	@echo "🐚 Opening shell in API container..."
 	@docker-compose -f deployment/local/docker-compose.yml exec api /bin/bash
+
+docker-ingest:
+	@echo "📥 Running ingestion for uploaded files..."
+	@docker-compose -f deployment/local/docker-compose.yml exec api python -m ingestion.ingest
+	@echo ""
+	@echo "✅ Ingestion complete!"
+
+docker-logs-migration:
+	@echo "📋 Migration logs:"
+	@docker logs ragtrial-migration 2>&1 || echo "Migration container not found"
+
+docker-rebuild:
+	@echo "🔨 Forcing rebuild of all images..."
+	@echo ""
+	@echo "Step 1/3: Rebuilding base image..."
+	@$(MAKE) docker-build-base
+	@echo ""
+	@echo "Step 2/3: Rebuilding application images..."
+	@docker-compose -f deployment/local/docker-compose.yml build --no-cache
+	@echo ""
+	@echo "Step 3/3: Restarting services..."
+	@docker-compose -f deployment/local/docker-compose.yml down
+	@docker-compose -f deployment/local/docker-compose.yml up -d
+	@echo ""
+	@echo "✅ Rebuild complete!"
+
+docker-db-shell:
+	@echo "💾 Opening MySQL shell..."
+	@docker-compose -f deployment/local/docker-compose.yml exec db mysql -u ragtrial -pragtrial ragtrial
+
+docker-status:
+	@echo "📊 Docker Stack Status:"
+	@echo ""
+	@docker-compose -f deployment/local/docker-compose.yml ps
+	@echo ""
+	@echo "🏥 Health Checks:"
+	@if curl -s http://localhost:8000/api/v1/health > /dev/null 2>&1; then \
+		echo "✅ API: Healthy"; \
+	else \
+		echo "❌ API: Down"; \
+	fi
+	@if docker ps | grep -q ragtrial-db; then \
+		echo "✅ MySQL: Running"; \
+	else \
+		echo "❌ MySQL: Down"; \
+	fi
+	@if docker ps | grep -q ragtrial-chroma; then \
+		echo "✅ ChromaDB: Running"; \
+	else \
+		echo "❌ ChromaDB: Down"; \
+	fi
 
 # ==============================================================================
 # Pre-commit Hooks

@@ -1,4 +1,9 @@
+# IDE
 .cursor
+.vscode/
+.idea/
+
+# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -11,9 +16,12 @@ __pycache__/
 *.pyzwzw
 *.pyzwzwzw
 *.pyzwzwzwzw
-memory_bank/
+
+# Virtual Environment
 venv/
 .venv/
+
+# Environment Variables
 .env
 .env.local
 .env.development.local
@@ -22,10 +30,30 @@ venv/
 .env.development
 .env.test
 .env.production
+
+# Development Config (use default.toml instead)
 config/dev.toml
-storage/*
 environment/dev.toml
+
+# Storage
+storage/*
+
+# Logs
 *.log
+watch_*
+
+# Models (downloaded by embeddings)
 models/
+
+# Testing & Coverage
+.pytest_cache/
+.ruff_cache/
+.coverage
 coverage*
-*.coverage
+htmlcov/
+
+# macOS
+.DS_Store
+
+# Memory Bank (workspace-specific)
+memory_bank/

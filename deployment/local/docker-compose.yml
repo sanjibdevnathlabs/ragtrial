@@ -1,26 +1,43 @@
 version: '3.8'
 
 services:
+  migration:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.migration
+      args:
+        BASE_IMAGE_TAG: local
+    image: ragtrial-migration:dev
+    container_name: ragtrial-migration
+    environment:
+      - APP_ENV=docker
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ragtrial-network
+    restart: "no"
+  
   api:
     build:
       context: ../..
       dockerfile: docker/Dockerfile
+      args:
+        BASE_IMAGE_TAG: local
     image: ragtrial:dev
     container_name: ragtrial-api
     ports:
       - "8000:8000"
     environment:
-      - APP_ENV=${APP_ENV:-development}
-      - DATABASE_HOST=db
-      - DATABASE_PORT=3306
-      - DATABASE_NAME=ragtrial
-      - DATABASE_USER=root
-      - DATABASE_PASSWORD=root
+      - APP_ENV=docker
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       db:
         condition: service_healthy
       chromadb:
         condition: service_started
+      migration:
+        condition: service_completed_successfully
     volumes:
       - ../../storage:/app/storage
     networks:
@@ -39,7 +56,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./scripts:/docker-entrypoint-initdb.d
     networks:
       - ragtrial-network
     healthcheck:

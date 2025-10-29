@@ -27,6 +27,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Wait for base image
+        run: |
+          echo "⏳ Waiting for base image: sanjibdevnath/ragtrial-base:${{ github.sha }}"
+          echo "The base-image workflow should build this automatically"
+          
+          # Wait up to 10 minutes for base image to be available
+          for i in {1..60}; do
+            if docker manifest inspect sanjibdevnath/ragtrial-base:${{ github.sha }} > /dev/null 2>&1; then
+              echo "✅ Base image found!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "❌ Base image not found after 10 minutes"
+              echo "💡 The base-image workflow may still be building it"
+              exit 1
+            fi
+            echo "⏳ Attempt $i/60: Base image not ready yet, waiting 10s..."
+            sleep 10
+          done
+      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       
@@ -60,6 +80,9 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Pass base image tag (commit SHA) to Dockerfile
+          build-args: |
+            BASE_IMAGE_TAG=${{ github.sha }}
           cache-from: type=gha
           # For PRs: use min mode (faster, only cache final image)
           # For push: use max mode (cache all layers for better reuse)

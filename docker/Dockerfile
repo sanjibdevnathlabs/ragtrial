@@ -1,19 +1,9 @@
-# Multi-stage build for optimized production image
+# Production image built on top of base image with pre-installed dependencies
+# Base image (sanjibdevnath/ragtrial-base) already contains all Python packages
+# Use ARG to accept base image tag from build command (commit SHA for isolation)
 
-FROM python:3.13-slim as builder
-
-WORKDIR /build
-
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    default-libmysqlclient-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -r requirements.txt
-
-FROM python:3.13-slim
+ARG BASE_IMAGE_TAG=latest
+FROM sanjibdevnath/ragtrial-base:${BASE_IMAGE_TAG}
 
 LABEL maintainer="sanjib.devnath@example.com"
 LABEL org.opencontainers.image.source="https://github.com/username/ragtrial"
@@ -21,14 +11,7 @@ LABEL org.opencontainers.image.description="RAG Trial - Production-ready RAG app
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=builder /build/wheels /wheels
-RUN pip install --no-cache /wheels/*
-
+# Copy application code (dependencies already in base image)
 COPY . .
 
 RUN useradd -m -u 1000 appuser && \

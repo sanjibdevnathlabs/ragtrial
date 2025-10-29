@@ -1,3 +1,16 @@
+# ============================================================================
+# PyTorch CPU-Only Installation (RECOMMENDED)
+# ============================================================================
+# To install dependencies WITHOUT NVIDIA CUDA packages (saves ~1.9GB):
+#   pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+#
+# Or use the Makefile command:
+#   make install-cpu
+#
+# This installs torch from PyTorch's CPU-only repository, avoiding all
+# nvidia-cuda-* packages while maintaining full functionality for CPU inference.
+# ============================================================================
+
 aiofiles==25.1.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.1

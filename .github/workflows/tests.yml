@@ -20,7 +20,7 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    container: sanjibdevnath/ragtrial-base:${{ github.sha }}
+    container: sanjibdevnath/ragtrial-base:${{ github.event.workflow_run.head_sha }}
     
     steps:
       - name: Checkout code
@@ -57,7 +57,7 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    container: sanjibdevnath/ragtrial-base:${{ github.sha }}
+    container: sanjibdevnath/ragtrial-base:${{ github.event.workflow_run.head_sha }}
     
     services:
       mysql:

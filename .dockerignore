@@ -45,7 +45,7 @@ memory_bank/
 .github/
 
 # Development
-Makefile
+# Makefile - Needed for migration Dockerfile
 deployment/
 .dockerignore
 docker/

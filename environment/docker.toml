@@ -1,0 +1,129 @@
+# Docker Environment Configuration
+# Optimized for Docker Compose deployment with service discovery
+
+# Application metadata
+[app]
+    name = "ragtrial-app"
+    environment = "docker"
+    version = "1.0.0"
+
+# Logging configuration
+[logging]
+    level = "INFO"                    # INFO for Docker logs
+    format = "json"                   # JSON for structured logging
+    include_caller = false            # Set to true for debugging
+    include_process_info = false      # Set to true for concurrency debugging
+
+# Google API configuration
+[google]
+    api_key = "$GEMINI_API_KEY"
+
+# Vector Store Configuration
+[vectorstore]
+    provider = "chroma"               # Which vector DB: chroma, pinecone, qdrant, weaviate
+    collection_name = "rag_documents"
+
+# ChromaDB-specific settings (HTTP client for Docker service)
+[vectorstore.chroma]
+host = "chromadb"                     # Docker service name
+port = 8000                           # ChromaDB HTTP port
+distance_function = "cosine"          # cosine, l2, ip
+anonymized_telemetry = false
+
+# Pinecone-specific settings
+[vectorstore.pinecone]
+api_key = "$PINECONE_API_KEY"
+cloud = "aws"
+region = "us-east-1"
+index_name = "rag-documents"
+dimension = 768
+metric = "cosine"
+verify_ssl = true                     # Enable SSL in Docker
+
+# Qdrant-specific settings
+[vectorstore.qdrant]
+host = "qdrant"                       # Docker service name
+port = 6333
+grpc_port = 6334
+prefer_grpc = false
+api_key = "$QDRANT_API_KEY"
+distance = "Cosine"
+
+# Weaviate-specific settings
+[vectorstore.weaviate]
+url = "http://weaviate:8080"          # Docker service URL
+api_key = "$WEAVIATE_API_KEY"
+class_name = "RagDocument"
+distance = "cosine"
+grpc_port = 50051
+default_http_port = 8080
+default_https_port = 443
+
+# Embeddings Configuration
+[embeddings]
+provider = "google"                   # Which embeddings: google, openai, huggingface, anthropic
+dimension = 768
+
+# Google Embeddings settings
+[embeddings.google]
+model = "models/text-embedding-004"
+task_type = "retrieval_document"
+batch_size = 100
+title = ""
+
+# OpenAI Embeddings settings
+[embeddings.openai]
+api_key = "$OPENAI_API_KEY"
+model = "text-embedding-3-small"
+batch_size = 100
+dimensions = 1536
+verify_ssl = true                     # Enable SSL in Docker
+
+# HuggingFace Embeddings settings
+[embeddings.huggingface]
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+cache_folder = "models/huggingface"
+device = "cpu"                        # CPU-only in Docker
+
+# Anthropic (Voyage AI) Embeddings settings
+[embeddings.anthropic]
+api_key = "$VOYAGE_API_KEY"
+model = "voyage-2"
+input_type = "document"
+batch_size = 128
+verify_ssl = true                     # Enable SSL in Docker
+
+# Storage Backend Configuration
+[storage.s3]
+bucket_name = "ragtrial-documents"
+
+# ============================================================================
+# DATABASE CONFIGURATION (DOCKER)
+# ============================================================================
+
+[database]
+driver = "mysql"                      # Use MySQL in Docker
+
+# MySQL Configuration (Docker service discovery)
+[database.mysql.write]
+host = "db"                           # Docker service name (matches docker-compose service)
+port = 3306
+database = "ragtrial"
+username = "ragtrial"                 # Application user (matches MYSQL_USER in docker-compose)
+password = "ragtrial"                 # Application password (matches MYSQL_PASSWORD)
+charset = "utf8mb4"
+pool_size = 5
+max_overflow = 10
+debug = false
+
+[database.mysql.read]
+host = "db"                           # Docker service name (matches docker-compose service)
+port = 3306
+database = "ragtrial"
+username = "ragtrial"                 # Application user (matches MYSQL_USER in docker-compose)
+password = "ragtrial"                 # Application password (matches MYSQL_PASSWORD)
+charset = "utf8mb4"
+pool_size = 10
+max_overflow = 20
+debug = false
+

@@ -1,0 +1,27 @@
+# Migration-specific Dockerfile
+# Uses base image but only runs migrations, then exits
+
+ARG BASE_IMAGE_TAG=latest
+FROM sanjibdevnath/ragtrial-base:${BASE_IMAGE_TAG}
+
+LABEL maintainer="sanjib.devnath@example.com"
+LABEL description="RAG Trial - Database Migration Runner"
+
+WORKDIR /app
+
+# Copy necessary files for migrations
+COPY config/ ./config/
+COPY constants/ ./constants/
+COPY database/ ./database/
+COPY environment/ ./environment/
+COPY logger/ ./logger/
+COPY migration/ ./migration/
+COPY trace/ ./trace/
+COPY utils/ ./utils/
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Run migrations and exit
+CMD ["python", "-m", "migration", "up"]
+
