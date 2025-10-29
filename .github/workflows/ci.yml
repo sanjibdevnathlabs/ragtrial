@@ -189,21 +189,26 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-base-image
     container: sanjibdevnath/ragtrial-base:${{ github.event.pull_request.head.sha || github.sha }}
+    permissions:
+      contents: read
+      pull-requests: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
       - name: Run unit tests with coverage
-        run: APP_ENV=ci make test-ci
+        env:
+          APP_ENV: ci
+        run: make test-ci
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           flags: unittests
           name: codecov-unit-tests
-        continue-on-error: true
       
       - name: Generate coverage comment
         uses: py-cov-action/python-coverage-comment-action@v3
@@ -211,7 +216,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           MINIMUM_GREEN: 80
           MINIMUM_ORANGE: 60
-        continue-on-error: true
       
       - name: Upload coverage HTML report
         if: always()
@@ -246,10 +250,14 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run database migrations
-        run: APP_ENV=ci make migrate-up
+        env:
+          APP_ENV: ci
+        run: make migrate-up
       
       - name: Run integration tests
-        run: APP_ENV=ci make test-integration
+        env:
+          APP_ENV: ci
+        run: make test-integration
 
   # =============================================================================
   # STAGE 4: Docker Build (Depends on tests)
