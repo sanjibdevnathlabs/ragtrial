@@ -223,28 +223,34 @@ LINT_EXCLUDE := --exclude='/(venv|htmlcov|tests|scripts|examples)/'
 FLAKE8_EXCLUDE := --exclude=venv,htmlcov,tests,scripts,examples
 ISORT_SKIP := --skip-gitignore --skip tests --skip scripts --skip examples --skip venv --skip htmlcov
 
+# Python command (use venv if available, otherwise use system python)
+PYTHON := $(shell if [ -f ./venv/bin/python ]; then echo "./venv/bin/python"; else echo "python"; fi)
+BLACK := $(shell if [ -f ./venv/bin/black ]; then echo "./venv/bin/black"; else echo "black"; fi)
+ISORT := $(shell if [ -f ./venv/bin/isort ]; then echo "./venv/bin/isort"; else echo "isort"; fi)
+FLAKE8 := $(shell if [ -f ./venv/bin/flake8 ]; then echo "./venv/bin/flake8"; else echo "flake8"; fi)
+
 .PHONY: format lint-check lint lint-all black-check isort-check flake8-check
 
 # Format code with black and isort (production code only)
 format:
 	@echo "🎨 Formatting code with Black..."
-	@./venv/bin/black . $(LINT_EXCLUDE)
+	@$(BLACK) . $(LINT_EXCLUDE)
 	@echo "📦 Sorting imports with isort..."
-	@./venv/bin/isort . --profile=black $(ISORT_SKIP)
+	@$(ISORT) . --profile=black $(ISORT_SKIP)
 	@echo "✅ Code formatting complete!"
 
 # Check code formatting without making changes
 black-check:
 	@echo "🔍 Checking code formatting with Black..."
-	@./venv/bin/black --check --diff . $(LINT_EXCLUDE)
+	@$(BLACK) --check --diff . $(LINT_EXCLUDE)
 
 isort-check:
 	@echo "🔍 Checking import sorting with isort..."
-	@./venv/bin/isort --check-only --diff --profile=black . $(ISORT_SKIP)
+	@$(ISORT) --check-only --diff --profile=black . $(ISORT_SKIP)
 
 flake8-check:
 	@echo "🔍 Running Flake8 linter..."
-	@./venv/bin/flake8 . --max-line-length=88 --extend-ignore=E203,W503 \
+	@$(FLAKE8) . --max-line-length=88 --extend-ignore=E203,W503 \
 		--count --show-source --statistics $(FLAKE8_EXCLUDE)
 
 # Check formatting (for CI/CD and pre-push)

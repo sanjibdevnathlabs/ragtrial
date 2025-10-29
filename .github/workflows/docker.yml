@@ -11,9 +11,13 @@ on:
     branches:
       - master
 
+# Cancel in-progress runs when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DOCKER_IMAGE: sanjibdevnath/ragtrial
-  PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   docker:
@@ -50,12 +54,16 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          platforms: ${{ env.PLATFORMS }}
+          # For PRs: build only linux/amd64 (faster)
+          # For master/develop: build linux/amd64,linux/arm64 (multi-platform)
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # For PRs: use min mode (faster, only cache final image)
+          # For push: use max mode (cache all layers for better reuse)
+          cache-to: type=gha,mode=${{ github.event_name == 'pull_request' && 'min' || 'max' }}
       
       - name: Update Docker Hub description
         if: github.ref == 'refs/heads/master'
