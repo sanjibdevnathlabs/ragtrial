@@ -23,8 +23,9 @@ import pytest
 # ============================================================================
 from utils.singleton import SingletonMeta
 
-# Set test environment - this ensures test.toml is loaded
-os.environ["APP_ENV"] = "test"
+# Set test environment if not already set (allows CI to override with ci.toml)
+if "APP_ENV" not in os.environ:
+    os.environ["APP_ENV"] = "test"
 
 # Add project root to Python path so tests can import application modules
 project_root = Path(__file__).parent.parent

@@ -197,12 +197,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Identify PR Details
+        uses: jwalton/gh-find-current-pr@v1
+        id: findPr
+      
       - name: Run unit tests with coverage
         env:
           APP_ENV: ci
-        run: make test-ci
+        run: |
+          make test-ci
+          # Extract coverage percentage from pytest output
+          COVERAGE=$(python -m coverage report --format=total)
+          echo "COVERAGE=${COVERAGE}%" >> $GITHUB_ENV
       
       - name: Upload coverage to Codecov
+        id: codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -210,12 +219,29 @@ jobs:
           flags: unittests
           name: codecov-unit-tests
       
-      - name: Generate coverage comment
-        uses: py-cov-action/python-coverage-comment-action@v3
+      - name: Post Coverage as Comment
+        if: steps.findPr.outputs.pr != ''
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          GITHUB_TOKEN: ${{ github.token }}
-          MINIMUM_GREEN: 80
-          MINIMUM_ORANGE: 60
+          header: Code Coverage
+          number: ${{ steps.findPr.outputs.pr }}
+          recreate: true
+          message: |
+            ## 📊 Test Coverage Report
+            
+            | Metric | Value |
+            |--------|-------|
+            | **Total Coverage** | `${{ env.COVERAGE }}` |
+            | **PR Number** | [#${{ steps.findPr.outputs.pr }}](${{ github.event.pull_request.html_url || format('https://github.com/{0}/pull/{1}', github.repository, steps.findPr.outputs.pr) }}) |
+            | **Commit** | [`${{ github.event.pull_request.head.sha || github.sha }}`](https://github.com/${{ github.repository }}/commit/${{ github.event.pull_request.head.sha || github.sha }}) |
+            
+            ### 📈 Coverage Reports
+            
+            - 🔍 **[View on Codecov](${{ steps.codecov.outputs.url || format('https://app.codecov.io/github/{0}/commit/{1}', github.repository, github.event.pull_request.head.sha || github.sha) }})**
+            - 📄 **[Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
+            
+            ---
+            <sub>Updated automatically by CI pipeline</sub>
       
       - name: Upload coverage HTML report
         if: always()
