@@ -290,7 +290,8 @@ class BaseRepository(Generic[ModelType]):
             for field_name, field_value in filters.items():
                 if not hasattr(self.model_class, field_name):
                     raise ValueError(
-                        f"Field {field_name} does not exist on {self.model_class.__name__}"
+                        f"Field {field_name} does not exist on "
+                        f"{self.model_class.__name__}"
                     )
 
                 field_column = getattr(self.model_class, field_name)

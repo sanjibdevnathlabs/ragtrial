@@ -29,7 +29,10 @@ router = APIRouter(
     response_model=QueryResponse,
     status_code=status.HTTP_200_OK,
     summary="Query RAG System",
-    description="Ask a question and get an answer from the RAG system with source documents",
+    description=(
+        "Ask a question and get an answer from the RAG system "
+        "with source documents"
+    ),
 )
 async def query_rag(request: QueryRequest) -> QueryResponse:
     """

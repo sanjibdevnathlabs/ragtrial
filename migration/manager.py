@@ -125,7 +125,8 @@ class MigrationManager:
             with engine.connect() as connection:
                 result = connection.execute(
                     text(
-                        f"SELECT version FROM {self.migrations_table} ORDER BY version ASC"
+                        f"SELECT version FROM {self.migrations_table} "
+                        f"ORDER BY version ASC"
                     )
                 )
                 versions = [row[0] for row in result]

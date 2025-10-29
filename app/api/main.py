@@ -78,7 +78,8 @@ def log_registered_routes(app: FastAPI):
         path = route_data["path"]
         name = route_data["name"]
         print(
-            f"{methods_str:<{method_width}} | {path:<{path_width}} | {name:<{name_width}}"
+            f"{methods_str:<{method_width}} | {path:<{path_width}} | "
+            f"{name:<{name_width}}"
         )
 
     # Print footer

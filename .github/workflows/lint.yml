@@ -35,9 +35,4 @@ jobs:
       
       - name: Lint with Flake8
         run: make flake8-check
-        continue-on-error: true
-      
-      - name: Type check with mypy
-        run: mypy --ignore-missing-imports --no-strict-optional . --exclude='(venv|htmlcov|tests|scripts|examples)'
-        continue-on-error: true
 

@@ -155,7 +155,8 @@ class PromptInjectionDetector:
     """Detects potential prompt injection attempts."""
 
     INJECTION_PATTERNS = [
-        r"ignore\s+(?:all\s+)?(?:previous|above|prior)?\s*(?:instructions|prompts?|rules|context)",
+        r"ignore\s+(?:all\s+)?(?:previous|above|prior)?\s*"
+        r"(?:instructions|prompts?|rules|context)",
         r"disregard\s+(?:all\s+)?(?:previous|above|prior)",
         r"forget\s+(?:everything|all|previous)",
         r"show\s+(me\s+)?(your|the)\s+(system\s+)?(prompt|instructions)",

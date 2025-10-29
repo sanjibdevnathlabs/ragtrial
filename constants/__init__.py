@@ -323,7 +323,10 @@ DEMO_SWITCH_STEP_2 = "2. Change [vectorstore] provider = 'pinecone'"
 DEMO_SWITCH_STEP_3 = "3. Run this script again - NO CODE CHANGES!"
 
 # Sample demo data
-DEMO_DOC_RAG = "RAG stands for Retrieval-Augmented Generation, a technique for improving LLM responses."
+DEMO_DOC_RAG = (
+    "RAG stands for Retrieval-Augmented Generation, "
+    "a technique for improving LLM responses."
+)
 DEMO_DOC_VECTOR_DB = (
     "Vector databases store embeddings for efficient similarity search."
 )
@@ -504,7 +507,10 @@ TASK_TYPE_DOCUMENT = "retrieval_document"
 
 # Embeddings error messages
 ERROR_OPENAI_NOT_INSTALLED = "openai package not installed. Run: pip install openai"
-ERROR_SENTENCE_TRANSFORMERS_NOT_INSTALLED = "sentence-transformers package not installed. Run: pip install sentence-transformers"
+ERROR_SENTENCE_TRANSFORMERS_NOT_INSTALLED = (
+    "sentence-transformers package not installed. "
+    "Run: pip install sentence-transformers"
+)
 ERROR_VOYAGEAI_NOT_INSTALLED = (
     "voyageai package not installed. Run: pip install voyageai"
 )
@@ -942,7 +948,10 @@ ERROR_UPLOAD_BOTH_FIELDS = (
     "Cannot use both 'file' and 'files' fields. Use one or the other."
 )
 ERROR_UPLOAD_NO_FILES = "No files provided"
-ERROR_UPLOAD_NO_FILE_OR_FILES = "No file or files provided. Use 'file' for single upload or 'files' for batch upload."
+ERROR_UPLOAD_NO_FILE_OR_FILES = (
+    "No file or files provided. Use 'file' for single upload "
+    "or 'files' for batch upload."
+)
 ERROR_UPLOAD_FAILED = "Upload failed"
 ERROR_UPLOAD_READ_FAILED = "Failed to read uploaded file"
 

@@ -1,7 +1,8 @@
 """
 Embeddings configuration classes.
 
-Contains configuration for Google, OpenAI, HuggingFace, and Anthropic embeddings providers.
+Contains configuration for Google, OpenAI, HuggingFace, and Anthropic
+embeddings providers.
 """
 
 

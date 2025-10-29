@@ -66,7 +66,8 @@ class DocumentRetriever:
 
         if k < constants.MIN_RETRIEVAL_K or k > constants.MAX_RETRIEVAL_K:
             raise ValueError(
-                f"k must be between {constants.MIN_RETRIEVAL_K} and {constants.MAX_RETRIEVAL_K}"
+                f"k must be between {constants.MIN_RETRIEVAL_K} and "
+                f"{constants.MAX_RETRIEVAL_K}"
             )
 
         logger.info(codes.RAG_RETRIEVAL_STARTED, query=query, k=k)

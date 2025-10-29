@@ -182,7 +182,10 @@ class Config(metaclass=SingletonMeta):
         if not env_config_path.exists():
             logger.warning(
                 codes.CONFIG_LOADING,
-                message=f"APP_ENV set to '{self.AppEnv}' but {env_config_path.name} not found",
+                message=(
+                    f"APP_ENV set to '{self.AppEnv}' but "
+                    f"{env_config_path.name} not found"
+                ),
             )
             return self._interpolate(settings)
 
@@ -279,7 +282,10 @@ class Config(metaclass=SingletonMeta):
         logger.info(codes.CONFIG_LOADED, message=codes.MSG_CONFIG_LOADED)
 
     def _validate_config(self) -> None:
-        """Validate configuration values and log warnings for missing required fields."""
+        """
+        Validate configuration values and log warnings for missing required
+        fields.
+        """
         if not self.google.api_key:
             logger.warning(
                 codes.VALIDATION_ERROR, message=codes.MSG_GOOGLE_API_KEY_MISSING

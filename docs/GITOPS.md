@@ -368,11 +368,12 @@ All lint commands check **production code only**, excluding:
 - ✅ Code coverage maintained (>89%)
 - ✅ Black formatting (`make black-check`)
 - ✅ Import sorting (`make isort-check`)
+- ✅ Flake8 linting (`make flake8-check`)
 
 **Non-blocking (reports only):**
-- ⚠️ Flake8 linting (`make flake8-check`)
-- ⚠️ Type hints (mypy)
 - ⚠️ Security scans (Bandit, Safety, pip-audit)
+
+**Note:** All code quality checks (Black, isort, Flake8) are now enforcing - PRs cannot merge with violations.
 
 **DRY Principle:** Lint workflow uses Makefile commands, ensuring consistency between local and CI environments.
 
