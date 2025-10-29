@@ -8,4 +8,3 @@ This file exists for consistency and future extensibility.
 
 # No request models currently needed for file listing
 # File listing uses query parameters (handled by FastAPI)
-

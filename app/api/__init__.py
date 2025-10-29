@@ -8,7 +8,7 @@ Provides streaming file upload endpoints with support for:
 
 To run the API server:
     uvicorn app.api.main:app --reload
-    
+
 Or import directly:
     from app.api.main import app
 """

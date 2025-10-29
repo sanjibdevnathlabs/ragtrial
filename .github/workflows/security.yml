@@ -16,8 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Python environment
-        uses: ./.github/actions/setup-python-env
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
       
       - name: Install security tools
         run: pip install bandit safety pip-audit
@@ -36,7 +38,7 @@ jobs:
       
       - name: Run pip-audit
         run: |
-          pip-audit --format json > pip-audit-report.json
+          pip-audit -r requirements.txt --format json > pip-audit-report.json
         continue-on-error: true
       
       - name: Upload security reports

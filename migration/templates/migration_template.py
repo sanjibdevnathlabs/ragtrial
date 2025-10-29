@@ -16,10 +16,10 @@ Generated at: {{TIMESTAMP}}
 def up(connection):
     """
     Apply migration (forward).
-    
+
     Args:
         connection: SQLAlchemy connection object
-        
+
     Example:
         connection.execute("""
             CREATE TABLE users (
@@ -36,10 +36,10 @@ def up(connection):
 def down(connection):
     """
     Rollback migration (backward).
-    
+
     Args:
         connection: SQLAlchemy connection object
-        
+
     Example:
         connection.execute("DROP TABLE IF EXISTS users")
     """
@@ -51,4 +51,3 @@ def down(connection):
 def get_template() -> str:
     """Get migration template string."""
     return MIGRATION_TEMPLATE
-

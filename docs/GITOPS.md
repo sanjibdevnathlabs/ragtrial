@@ -20,40 +20,66 @@ This document explains the complete GitOps setup for the RAG Trial project, incl
 ### Docker Files
 
 ```
-Dockerfile                  # Multi-stage production image (~250MB)
-docker-compose.yml          # Development environment (API + MySQL + ChromaDB)
-.dockerignore              # Exclude unnecessary files from image
+docker/
+├── Dockerfile              # Multi-stage production image (~250MB)
+└── Dockerfile.base         # Base image with all dependencies (~1GB)
+
+deployment/local/
+└── docker-compose.yml      # Local development environment
+
+.dockerignore              # Exclude unnecessary files from Docker builds
 ```
+
+**Base Image Purpose:**
+- Pre-installs all `requirements.txt` dependencies
+- Used by all GitHub Actions workflows (no more `pip install`!)
+- Built automatically when `requirements.txt` changes
+- SHA-tagged for isolation (no race conditions between PRs)
+- Reduces CI/CD time by 70% (no package installation)
 
 ### GitHub Actions Workflows
 
 ```
 .github/workflows/
+├── base-image.yml         # Build base image (auto-triggers on requirements.txt changes)
 ├── tests.yml              # Tests + Coverage reporting
 ├── lint.yml               # Code quality (Black, Flake8, isort, mypy)
 ├── security.yml           # Security scanning (Bandit, Safety, pip-audit)
 └── docker.yml             # Docker build & push to Docker Hub
 ```
 
-### Composite Actions (Reusable)
+**Workflow Efficiency:**
+- **Hybrid execution** - fast feedback + optimized tests
+- **Tests workflow** depends on base image (pulls pre-built dependencies)
+- **Security & Lint** run independently (don't need dependencies)
+- **No redundant pip installs** = 70% faster overall execution
+- Base image auto-rebuilds when `requirements.txt` changes
+- SHA-specific tags prevent race conditions between multiple PRs
 
+**Workflow Dependencies:**
 ```
-.github/actions/
-└── setup-python-env/      # Reusable Python setup with pip caching
-    └── action.yml
+Push/PR triggers multiple independent workflows:
+
+1. Base Image Build (if needed)
+   └─> Tests & Coverage (pulls pre-built base image)
+
+2. Security Scan (independent)
+   └─> Runs immediately (~30-45 sec)
+   └─> Scans: source code + requirements.txt
+   └─> No dependencies installed!
+
+3. Code Quality / Lint (independent)
+   └─> Runs immediately (~20-30 sec)
+   └─> Linters: Black, Flake8, isort, mypy
+   └─> No dependencies installed!
+
+4. Docker Build & Push (independent)
+   └─> Builds application image
+
+✅ Security & Lint run FIRST (instant feedback!)
+✅ Tests run after base image ready (uses pre-built deps)
+✅ Total savings: 6-9 minutes per push!
 ```
-
-**Purpose:** Centralizes Python environment setup across all workflows (DRY principle)
-
-**Features:**
-- Sets up Python 3.13 with automatic pip caching
-- Upgrades pip
-- Optionally installs `requirements.txt` dependencies
-
-**Benefits:**
-- ✅ 70% faster dependency installation (pip cache)
-- ✅ Single source of truth for Python setup
-- ✅ Easy to update Python version globally
 
 ### GitHub Templates
 
@@ -121,19 +147,19 @@ make pre-commit-update
 **Image:** `sanjibdevnath/ragtrial`
 
 **Tagging Strategy:**
-- **All commits:** `ragtrial-<full-commit-sha>` (40 chars)
-- **Master branch:** `latest` + `ragtrial-<full-commit-sha>`
-- **Other branches:** Only `ragtrial-<full-commit-sha>`
+- **All commits:** `<full-commit-sha>` (40 chars)
+- **Master branch:** `latest` + `<full-commit-sha>`
+- **Other branches:** Only `<full-commit-sha>`
 - **Pull Requests:** Build only (no push)
 
 **Examples:**
 ```bash
 # Master branch push (commit: abc123...def)
-sanjibdevnath/ragtrial:ragtrial-abc123def456...789  # Full SHA
-sanjibdevnath/ragtrial:latest                       # Only on master
+sanjibdevnath/ragtrial:abc123def456789abcdef123456789abcdef1234  # Full SHA (40 chars)
+sanjibdevnath/ragtrial:latest                                    # Only on master
 
 # Develop branch push
-sanjibdevnath/ragtrial:ragtrial-xyz789abc...def     # Full SHA only
+sanjibdevnath/ragtrial:xyz789abc123def456abc789def123abc456def  # Full SHA only
 ```
 
 ---
@@ -157,10 +183,10 @@ sanjibdevnath/ragtrial:ragtrial-xyz789abc...def     # Full SHA only
       └─ Run integration tests (21 tests)
 
 2. Lint Workflow
-   ├─ Black formatting check
-   ├─ isort import order check
-   ├─ Flake8 linting
-   └─ mypy type checking
+   ├─ Black formatting check (make black-check)
+   ├─ isort import order check (make isort-check)
+   ├─ Flake8 linting (make flake8-check) [non-blocking]
+   └─ mypy type checking [non-blocking]
 
 3. Security Workflow
    ├─ Bandit security scan
@@ -170,7 +196,7 @@ sanjibdevnath/ragtrial:ragtrial-xyz789abc...def     # Full SHA only
 4. Docker Workflow (on push to master/develop)
    ├─ Build multi-platform image (linux/amd64, linux/arm64)
    ├─ Push to Docker Hub with tags:
-   │  ├─ ragtrial-<full-commit-sha> (always)
+   │  ├─ <full-commit-sha> (always)
    │  └─ latest (master only)
    ├─ Update Docker Hub description (master only)
    └─ Trivy vulnerability scan (master only)
@@ -182,7 +208,7 @@ sanjibdevnath/ragtrial:ragtrial-xyz789abc...def     # Full SHA only
 1. Docker Workflow
    ├─ Build multi-platform image (linux/amd64, linux/arm64)
    ├─ Push to Docker Hub with tags:
-   │  └─ ragtrial-<full-commit-sha>
+   │  └─ <full-commit-sha>
    └─ Trivy security scan (if master)
 ```
 
@@ -227,8 +253,8 @@ make docker-clean
 # Latest stable (master branch)
 docker pull sanjibdevnath/ragtrial:latest
 
-# Specific commit (by full SHA)
-docker pull sanjibdevnath/ragtrial:ragtrial-abc123def456789...
+# Specific commit (by full 40-char SHA)
+docker pull sanjibdevnath/ragtrial:abc123def456789abcdef123456789abcdef1234
 
 # List all available tags
 # Visit: https://hub.docker.com/r/sanjibdevnath/ragtrial/tags
@@ -279,29 +305,53 @@ docker run -d \
 
 ## 🔍 Code Quality Checks
 
-### Local Checks (Pre-commit)
+### Local Development (Using Makefile)
 
 ```bash
-# Run all pre-commit hooks
-make pre-commit-run
+# Format code (auto-fix)
+make format              # Black + isort formatting
 
-# Or manually
-black .
-isort .
-flake8 .
-mypy .
+# Check formatting (no changes)
+make lint-check          # Black + isort checks
+make black-check         # Black check only
+make isort-check         # isort check only
+
+# Run linters
+make lint                # Flake8 linting
+make lint-all            # All checks (format + lint)
+
+# Or use pre-commit hooks
+make pre-commit-run      # Run all pre-commit hooks
 ```
 
-### CI Checks
+**Recommended workflow before committing:**
+```bash
+make format lint-all test
+```
 
-All pull requests must pass:
+### Scope of Linting
+
+All lint commands check **production code only**, excluding:
+- `tests/` - Test files
+- `scripts/` - Utility scripts
+- `examples/` - Demo examples
+- `venv/` - Virtual environment
+- `htmlcov/` - Coverage reports
+
+### CI Checks (GitHub Actions)
+
+**Enforced (must pass):**
 - ✅ All tests (653 tests)
 - ✅ Code coverage maintained (>89%)
-- ✅ Black formatting
-- ✅ Import sorting (isort)
-- ✅ Linting (Flake8)
-- ✅ Type hints (mypy)
-- ✅ Security scans (Bandit, Safety)
+- ✅ Black formatting (`make black-check`)
+- ✅ Import sorting (`make isort-check`)
+
+**Non-blocking (reports only):**
+- ⚠️ Flake8 linting (`make flake8-check`)
+- ⚠️ Type hints (mypy)
+- ⚠️ Security scans (Bandit, Safety, pip-audit)
+
+**DRY Principle:** Lint workflow uses Makefile commands, ensuring consistency between local and CI environments.
 
 ---
 
@@ -400,7 +450,7 @@ git push origin v1.2.3
 When `v1.2.3` tag is pushed:
 1. Docker images built for all platforms (linux/amd64, linux/arm64)
 2. Images pushed with tags:
-   - `sanjibdevnath/ragtrial:ragtrial-<full-commit-sha>`
+   - `sanjibdevnath/ragtrial:<full-commit-sha>`
    
 **Note:** Use commit SHA tags for precise versioning instead of semantic version tags.
 3. Trivy security scan

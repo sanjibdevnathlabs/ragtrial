@@ -9,10 +9,10 @@ Public API:
     - DocumentLoader: Main facade for loading documents
     - LoaderFactory: Factory for creating loader strategies
     - LoaderProtocol: Interface for loader implementations
-    
+
 Usage:
     from loader import DocumentLoader
-    
+
     loader = DocumentLoader()
     documents = loader.load_document("path/to/file.pdf")
 """
@@ -26,4 +26,3 @@ __all__ = [
     "LoaderFactory",
     "LoaderProtocol",
 ]
-

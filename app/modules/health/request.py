@@ -8,4 +8,3 @@ This file exists for consistency and future extensibility.
 
 # No request models currently needed for health check
 # Health check uses GET with no body
-

@@ -15,12 +15,12 @@ Test Coverage:
 - Provider type verification
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 from config import Config
 from embeddings import create_embeddings
-
 
 # ============================================================================
 # FIXTURES
@@ -79,7 +79,7 @@ class TestEmbeddingsFactory:
         """Test creating Google embeddings provider (MOCKED)."""
         with patch("google.generativeai.configure"):
             embeddings = create_embeddings(config_google)
-            
+
             assert embeddings is not None
             # Protocol duck typing - check for required methods
             assert hasattr(embeddings, "embed_documents")
@@ -93,7 +93,7 @@ class TestEmbeddingsFactory:
         """Test creating OpenAI embeddings provider (MOCKED)."""
         with patch("openai.OpenAI"):
             embeddings = create_embeddings(config_openai)
-            
+
             assert embeddings is not None
             # Protocol duck typing - check for required methods
             assert hasattr(embeddings, "embed_documents")
@@ -110,9 +110,9 @@ class TestEmbeddingsFactory:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_st.return_value = mock_model
-            
+
             embeddings = create_embeddings(config_huggingface)
-            
+
             assert embeddings is not None
             # Protocol duck typing - check for required methods
             assert hasattr(embeddings, "embed_documents")
@@ -121,7 +121,7 @@ class TestEmbeddingsFactory:
             assert callable(embeddings.embed_documents)
             assert callable(embeddings.embed_query)
             assert callable(embeddings.get_dimension)
-            
+
             # Verify model was NOT actually downloaded
             mock_st.assert_called_once()
 
@@ -129,7 +129,7 @@ class TestEmbeddingsFactory:
         """Test creating Anthropic embeddings provider (MOCKED)."""
         with patch("voyageai.Client"):
             embeddings = create_embeddings(config_anthropic)
-            
+
             assert embeddings is not None
             # Protocol duck typing - check for required methods
             assert hasattr(embeddings, "embed_documents")
@@ -152,7 +152,7 @@ class TestErrorHandling:
         """Test factory raises error for unknown provider."""
         with pytest.raises(ValueError) as exc_info:
             create_embeddings(config_invalid)
-        
+
         assert "Unknown embeddings provider" in str(exc_info.value)
         assert "invalid_provider" in str(exc_info.value)
 
@@ -182,13 +182,13 @@ class TestConfiguration:
         with patch("google.generativeai.configure"):
             embeddings1 = create_embeddings(config_google)
             assert embeddings1 is not None
-        
+
         # Switch provider
         config_google.embeddings.provider = "openai"
         with patch("openai.OpenAI"):
             embeddings2 = create_embeddings(config_google)
             assert embeddings2 is not None
-        
+
         # Different provider instances
         assert type(embeddings1).__name__ != type(embeddings2).__name__
 
@@ -219,7 +219,7 @@ class TestProviderTypes:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_st.return_value = mock_model
-            
+
             embeddings = create_embeddings(config_huggingface)
             assert type(embeddings).__name__ == "HuggingFaceEmbeddings"
 
@@ -242,19 +242,19 @@ class TestFactoryIntegration:
         """Test factory can create all providers in sequence by switching providers."""
         config = Config()
         providers_created = []
-        
+
         # Google
         config.embeddings.provider = "google"
         with patch("google.generativeai.configure"):
             google_emb = create_embeddings(config)
             providers_created.append(type(google_emb).__name__)
-        
+
         # OpenAI
         config.embeddings.provider = "openai"
         with patch("openai.OpenAI"):
             openai_emb = create_embeddings(config)
             providers_created.append(type(openai_emb).__name__)
-        
+
         # HuggingFace
         config.embeddings.provider = "huggingface"
         with patch("sentence_transformers.SentenceTransformer") as mock_st:
@@ -263,13 +263,13 @@ class TestFactoryIntegration:
             mock_st.return_value = mock_model
             hf_emb = create_embeddings(config)
             providers_created.append(type(hf_emb).__name__)
-        
+
         # Anthropic
         config.embeddings.provider = "anthropic"
         with patch("voyageai.Client"):
             anthropic_emb = create_embeddings(config)
             providers_created.append(type(anthropic_emb).__name__)
-        
+
         # Verify all 4 providers were created
         assert len(providers_created) == 4
         assert "GoogleEmbeddings" in providers_created

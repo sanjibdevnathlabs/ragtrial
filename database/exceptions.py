@@ -25,7 +25,7 @@ import constants
 class DatabaseError(Exception):
     """
     Base exception for all database-related errors.
-    
+
     All custom database exceptions inherit from this class.
     """
 
@@ -33,11 +33,11 @@ class DatabaseError(Exception):
         self,
         message: str,
         details: Optional[Dict[str, Any]] = None,
-        original_error: Optional[Exception] = None
+        original_error: Optional[Exception] = None,
     ):
         """
         Initialize database error.
-        
+
         Args:
             message: Error message
             details: Additional error context
@@ -52,7 +52,7 @@ class DatabaseError(Exception):
 class DatabaseConnectionError(DatabaseError):
     """
     Exception raised when database connection fails.
-    
+
     Examples:
         - Connection refused
         - Authentication failed
@@ -64,11 +64,11 @@ class DatabaseConnectionError(DatabaseError):
         self,
         message: str = constants.ERROR_DB_CONNECTION_FAILED,
         details: Optional[Dict[str, Any]] = None,
-        original_error: Optional[Exception] = None
+        original_error: Optional[Exception] = None,
     ):
         """
         Initialize connection error.
-        
+
         Args:
             message: Error message
             details: Connection details (host, port, database, etc.)
@@ -80,7 +80,7 @@ class DatabaseConnectionError(DatabaseError):
 class DatabaseSessionError(DatabaseError):
     """
     Exception raised when database session operations fail.
-    
+
     Examples:
         - Session creation failed
         - Session already closed
@@ -92,11 +92,11 @@ class DatabaseSessionError(DatabaseError):
         self,
         message: str = constants.ERROR_DB_SESSION_CREATION_FAILED,
         details: Optional[Dict[str, Any]] = None,
-        original_error: Optional[Exception] = None
+        original_error: Optional[Exception] = None,
     ):
         """
         Initialize session error.
-        
+
         Args:
             message: Error message
             details: Session details (transaction ID, operation, etc.)
@@ -108,7 +108,7 @@ class DatabaseSessionError(DatabaseError):
 class DatabaseQueryError(DatabaseError):
     """
     Exception raised when database queries fail.
-    
+
     Examples:
         - Query syntax error
         - Constraint violation
@@ -122,11 +122,11 @@ class DatabaseQueryError(DatabaseError):
         message: str = constants.ERROR_DB_QUERY_FAILED,
         details: Optional[Dict[str, Any]] = None,
         original_error: Optional[Exception] = None,
-        query: Optional[str] = None
+        query: Optional[str] = None,
     ):
         """
         Initialize query error.
-        
+
         Args:
             message: Error message
             details: Query details (table, operation, etc.)
@@ -135,17 +135,17 @@ class DatabaseQueryError(DatabaseError):
         """
         if details is None:
             details = {}
-        
+
         if query:
             details["query"] = query
-        
+
         super().__init__(message, details, original_error)
 
 
 class DatabaseMigrationError(DatabaseError):
     """
     Exception raised when database migrations fail.
-    
+
     Examples:
         - Migration file not found
         - Migration already applied
@@ -160,11 +160,11 @@ class DatabaseMigrationError(DatabaseError):
         details: Optional[Dict[str, Any]] = None,
         original_error: Optional[Exception] = None,
         version: Optional[str] = None,
-        migration_name: Optional[str] = None
+        migration_name: Optional[str] = None,
     ):
         """
         Initialize migration error.
-        
+
         Args:
             message: Error message
             details: Migration details (direction, file, etc.)
@@ -174,12 +174,11 @@ class DatabaseMigrationError(DatabaseError):
         """
         if details is None:
             details = {}
-        
+
         if version:
             details["version"] = version
-        
+
         if migration_name:
             details["migration_name"] = migration_name
-        
-        super().__init__(message, details, original_error)
 
+        super().__init__(message, details, original_error)

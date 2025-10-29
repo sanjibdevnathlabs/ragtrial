@@ -7,12 +7,14 @@ Contains configuration for local and S3 storage backends.
 
 class LocalStorageConfig:
     """Local storage-specific configuration"""
+
     path: str = "source_docs"
     create_if_missing: bool = True
 
 
 class S3StorageConfig:
     """S3 storage-specific configuration"""
+
     bucket_name: str = "rag-documents"
     region: str = "us-east-1"
     use_explicit_credentials: bool = False
@@ -26,9 +28,9 @@ class S3StorageConfig:
 
 class StorageConfig:
     """Storage backend configuration"""
+
     backend: str = "local"
     max_file_size_mb: int = 100
     allowed_extensions: list = None
     local: LocalStorageConfig = None
     s3: S3StorageConfig = None
-

@@ -15,13 +15,13 @@ Test Coverage:
 - Embeddings integration
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 from config import Config
-from vectorstore import create_vectorstore
 from embeddings.base import EmbeddingsProtocol
-
+from vectorstore import create_vectorstore
 
 # ============================================================================
 # FIXTURES
@@ -90,7 +90,7 @@ class TestVectorStoreFactory:
         """Test creating Chroma vectorstore provider (MOCKED)."""
         with patch("chromadb.Client"):
             vectorstore = create_vectorstore(config_chroma, mock_embeddings)
-            
+
             assert vectorstore is not None
             # Protocol duck typing - check for required methods
             assert hasattr(vectorstore, "initialize")
@@ -107,7 +107,7 @@ class TestVectorStoreFactory:
         """Test creating Pinecone vectorstore provider (MOCKED)."""
         with patch("pinecone.Pinecone"):
             vectorstore = create_vectorstore(config_pinecone, mock_embeddings)
-            
+
             assert vectorstore is not None
             # Protocol duck typing - check for required methods
             assert hasattr(vectorstore, "initialize")
@@ -121,7 +121,7 @@ class TestVectorStoreFactory:
         """Test creating Qdrant vectorstore provider (MOCKED)."""
         with patch("qdrant_client.QdrantClient"):
             vectorstore = create_vectorstore(config_qdrant, mock_embeddings)
-            
+
             assert vectorstore is not None
             # Protocol duck typing - check for required methods
             assert hasattr(vectorstore, "initialize")
@@ -136,9 +136,9 @@ class TestVectorStoreFactory:
         with patch("weaviate.connect_to_custom") as mock_connect:
             mock_client = MagicMock()
             mock_connect.return_value = mock_client
-            
+
             vectorstore = create_vectorstore(config_weaviate, mock_embeddings)
-            
+
             assert vectorstore is not None
             # Protocol duck typing - check for required methods
             assert hasattr(vectorstore, "initialize")
@@ -161,7 +161,7 @@ class TestErrorHandling:
         """Test factory raises error for unknown provider."""
         with pytest.raises(ValueError) as exc_info:
             create_vectorstore(config_invalid, mock_embeddings)
-        
+
         assert "Unknown vectorstore provider" in str(exc_info.value)
         assert "invalid_provider" in str(exc_info.value)
 
@@ -191,13 +191,13 @@ class TestConfiguration:
         with patch("chromadb.Client"):
             vectorstore1 = create_vectorstore(config_chroma, mock_embeddings)
             assert vectorstore1 is not None
-        
+
         # Switch provider
         config_chroma.vectorstore.provider = "pinecone"
         with patch("pinecone.Pinecone"):
             vectorstore2 = create_vectorstore(config_chroma, mock_embeddings)
             assert vectorstore2 is not None
-        
+
         # Different provider instances
         assert type(vectorstore1).__name__ != type(vectorstore2).__name__
 
@@ -240,7 +240,7 @@ class TestProviderTypes:
         with patch("weaviate.connect_to_custom") as mock_connect:
             mock_client = MagicMock()
             mock_connect.return_value = mock_client
-            
+
             vectorstore = create_vectorstore(config_weaviate, mock_embeddings)
             assert type(vectorstore).__name__ == "WeaviateVectorStore"
 
@@ -257,25 +257,25 @@ class TestFactoryIntegration:
         """Test factory can create all providers in sequence by switching providers."""
         config = Config()
         providers_created = []
-        
+
         # Chroma
         config.vectorstore.provider = "chroma"
         with patch("chromadb.Client"):
             chroma_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(chroma_vs).__name__)
-        
+
         # Pinecone
         config.vectorstore.provider = "pinecone"
         with patch("pinecone.Pinecone"):
             pinecone_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(pinecone_vs).__name__)
-        
+
         # Qdrant
         config.vectorstore.provider = "qdrant"
         with patch("qdrant_client.QdrantClient"):
             qdrant_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(qdrant_vs).__name__)
-        
+
         # Weaviate
         config.vectorstore.provider = "weaviate"
         with patch("weaviate.connect_to_custom") as mock_connect:
@@ -283,7 +283,7 @@ class TestFactoryIntegration:
             mock_connect.return_value = mock_client
             weaviate_vs = create_vectorstore(config, mock_embeddings)
             providers_created.append(type(weaviate_vs).__name__)
-        
+
         # Verify all 4 providers were created
         assert len(providers_created) == 4
         assert "ChromaVectorStore" in providers_created
@@ -298,13 +298,12 @@ class TestFactoryIntegration:
         embeddings.embed_documents.return_value = [[0.1] * 768 for _ in range(3)]
         embeddings.embed_query.return_value = [0.2] * 768
         embeddings.get_dimension.return_value = 768
-        
+
         with patch("chromadb.Client"):
             vectorstore = create_vectorstore(config_chroma, embeddings)
-            
+
             assert vectorstore is not None
             assert hasattr(vectorstore, "embeddings")
             # Embeddings should work
             query_embedding = embeddings.embed_query("test")
             assert len(query_embedding) == 768
-

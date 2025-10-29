@@ -35,11 +35,12 @@ sys.path.insert(0, str(project_root))
 # SINGLETON RESET - Critical for Test Isolation
 # ============================================================================
 
+
 @pytest.fixture(autouse=True)
 def reset_singletons():
     """
     Reset singleton instances before each test.
-    
+
     This ensures test isolation when using singleton pattern.
     Each test gets fresh service instances with their own mocks.
     """
@@ -54,11 +55,12 @@ def reset_singletons():
 # MOCK FIXTURES - Database, Vector Store, Embeddings
 # ============================================================================
 
+
 @pytest.fixture
 def mock_db_engine():
     """
     Mock SQLAlchemy engine for database operations.
-    
+
     Use this fixture to avoid real database connections.
     Returns MagicMock that supports context manager protocol.
     """
@@ -73,7 +75,7 @@ def mock_db_engine():
 def mock_db_session():
     """
     Mock SQLAlchemy session for database operations.
-    
+
     Use this fixture to avoid real database connections.
     Returns MagicMock with common session methods.
     """
@@ -89,7 +91,7 @@ def mock_db_session():
 def mock_vectorstore():
     """
     Mock vector store client (ChromaDB, Qdrant, etc.).
-    
+
     Use this fixture to avoid real vector store connections.
     Returns MagicMock with common vector store methods.
     """
@@ -104,7 +106,7 @@ def mock_vectorstore():
 def mock_embeddings():
     """
     Mock embeddings provider (Google AI, OpenAI, etc.).
-    
+
     Use this fixture to avoid real API calls.
     Returns MagicMock with fake embedding vectors.
     """
@@ -120,7 +122,7 @@ def mock_embeddings():
 def mock_llm():
     """
     Mock LLM provider (Google Gemini, OpenAI, etc.).
-    
+
     Use this fixture to avoid real LLM API calls.
     Returns MagicMock with fake responses.
     """
@@ -134,6 +136,7 @@ def mock_llm():
 # UTILITY FIXTURES
 # ============================================================================
 
+
 @pytest.fixture
 def project_root_path():
     """Fixture providing the project root path"""
@@ -144,36 +147,37 @@ def project_root_path():
 # TEST CLEANUP - Remove test artifacts after test session
 # ============================================================================
 
+
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_test_artifacts():
     """
     Clean up test artifacts after all tests complete.
-    
+
     This fixture runs once at the end of the entire test session
     and removes test-related storage directories.
-    
+
     Note: Database cleanup is handled per-test in integration test fixtures.
     MySQL database tables are truncated, not deleted.
-    
+
     Cleaned up:
     - storage/chroma_test/ (ChromaDB test collection)
     - storage/test_documents/ (Test document storage)
     """
     # Yield to run tests first
     yield
-    
+
     # Cleanup after all tests complete
     import shutil
     from pathlib import Path
-    
+
     project_root = Path(__file__).parent.parent
     storage_dir = project_root / "storage"
-    
+
     cleanup_paths = [
         storage_dir / "chroma_test",
         storage_dir / "test_documents",
     ]
-    
+
     for path in cleanup_paths:
         try:
             if path.exists() and path.is_dir():
@@ -181,4 +185,3 @@ def cleanup_test_artifacts():
                 print(f"✓ Cleaned up: {path}")
         except Exception as e:
             print(f"⚠ Failed to clean up {path}: {e}")
-

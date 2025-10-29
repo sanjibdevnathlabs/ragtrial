@@ -7,6 +7,7 @@ Contains configuration for Chroma, Pinecone, Qdrant, and Weaviate vector stores.
 
 class ChromaConfig:
     """ChromaDB-specific configuration"""
+
     persist_directory: str = "storage/chroma"
     distance_function: str = "cosine"
     anonymized_telemetry: bool = False
@@ -14,17 +15,21 @@ class ChromaConfig:
 
 class PineconeConfig:
     """Pinecone-specific configuration"""
+
     api_key: str = None
-    cloud: str = "aws"           # Cloud provider: aws, gcp, azure
-    region: str = "us-east-1"    # Cloud region (AWS: us-east-1, GCP: us-central1, Azure: eastus)
+    cloud: str = "aws"  # Cloud provider: aws, gcp, azure
+    region: str = (
+        "us-east-1"  # Cloud region (AWS: us-east-1, GCP: us-central1, Azure: eastus)
+    )
     index_name: str = "rag-documents"
     dimension: int = 768
-    metric: str = "cosine"       # Similarity metric: cosine, euclidean, dotproduct
-    verify_ssl: bool = True      # SSL certificate verification (disable for dev if needed)
+    metric: str = "cosine"  # Similarity metric: cosine, euclidean, dotproduct
+    verify_ssl: bool = True  # SSL certificate verification (disable for dev if needed)
 
 
 class QdrantConfig:
     """Qdrant-specific configuration"""
+
     host: str = "localhost"
     port: int = 6333
     grpc_port: int = 6334
@@ -35,6 +40,7 @@ class QdrantConfig:
 
 class WeaviateConfig:
     """Weaviate-specific configuration"""
+
     url: str = "http://localhost:8080"
     api_key: str = ""
     class_name: str = "RagDocument"
@@ -46,10 +52,10 @@ class WeaviateConfig:
 
 class VectorStoreConfig:
     """Vector store configuration"""
+
     provider: str = "chroma"
     collection_name: str = "rag_documents"
     chroma: ChromaConfig = None
     pinecone: PineconeConfig = None
     qdrant: QdrantConfig = None
     weaviate: WeaviateConfig = None
-

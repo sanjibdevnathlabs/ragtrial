@@ -11,16 +11,16 @@ This module acts as the orchestrator for the complete ingestion workflow.
 Use the individual modules directly for granular control:
     - loader.DocumentLoader for loading documents
     - splitter.DocumentSplitter for splitting text
-    
+
 Usage:
     # Import from source modules directly
     from loader import DocumentLoader
     from splitter import DocumentSplitter
-    
+
     # Load documents
     loader = DocumentLoader()
     documents = loader.load_document("path/to/file.pdf")
-    
+
     # Split into chunks
     splitter = DocumentSplitter(chunk_size=512, chunk_overlap=100)
     chunks = splitter.split_documents(documents)

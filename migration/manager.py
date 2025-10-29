@@ -11,11 +11,11 @@ Handles:
 
 import glob
 import importlib.util
-import os
 import time
+import trace.codes as codes
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from sqlalchemy import text
 
@@ -23,7 +23,6 @@ import constants
 from database.exceptions import DatabaseMigrationError
 from database.session import SessionFactory
 from logger import get_logger
-import trace.codes as codes
 
 logger = get_logger(__name__)
 
@@ -31,14 +30,14 @@ logger = get_logger(__name__)
 class MigrationManager:
     """
     Manages database migrations with version tracking.
-    
+
     Features:
     - Auto-creates migrations table on first run
     - Tracks applied migrations
     - Applies pending migrations
     - Rolls back migrations
     - Generates migration versions
-    
+
     Similar to Laravel Artisan and Goose migration systems.
     """
 
@@ -54,7 +53,7 @@ class MigrationManager:
     def _ensure_migrations_table_exists(self) -> None:
         """
         Auto-create migrations table if it doesn't exist.
-        
+
         This is called before any migration operation.
         The migrations table tracks which migrations have been applied.
         """
@@ -63,8 +62,10 @@ class MigrationManager:
         try:
             # Try to query the table
             with engine.connect() as connection:
-                connection.execute(text(f"SELECT 1 FROM {self.migrations_table} LIMIT 1"))
-            
+                connection.execute(
+                    text(f"SELECT 1 FROM {self.migrations_table} LIMIT 1")
+                )
+
             logger.info(codes.DB_MIGRATION_TABLE_EXISTS, table=self.migrations_table)
 
         except Exception:
@@ -72,7 +73,7 @@ class MigrationManager:
             logger.info(
                 codes.DB_CREATING_TABLES,
                 table=self.migrations_table,
-                msg=constants.MSG_DB_CREATING_TABLES
+                msg=constants.MSG_DB_CREATING_TABLES,
             )
 
             create_table_sql = f"""
@@ -91,48 +92,48 @@ class MigrationManager:
                 logger.info(
                     codes.DB_TABLES_CREATED,
                     table=self.migrations_table,
-                    msg=constants.MSG_DB_TABLES_CREATED
+                    msg=constants.MSG_DB_TABLES_CREATED,
                 )
 
             except Exception as e:
-                logger.error(
-                    codes.DB_MIGRATION_FAILED,
-                    error=str(e),
-                    exc_info=True
-                )
+                logger.error(codes.DB_MIGRATION_FAILED, error=str(e), exc_info=True)
                 raise DatabaseMigrationError(
                     message=constants.ERROR_DB_MIGRATION_TABLE_CREATION_FAILED,
                     details={"table": self.migrations_table},
-                    original_error=e
+                    original_error=e,
                 ) from e
 
     def get_applied_migrations(self) -> List[str]:
         """
         Get list of applied migration versions.
-        
+
         Returns:
             List of migration versions (e.g., ["20250128_000001", "20250128_000002"])
-            
+
         Raises:
             DatabaseMigrationError: If query fails
         """
         self._ensure_migrations_table_exists()
 
-        logger.info(codes.DB_MIGRATION_STATUS_CHECK, msg=constants.MSG_DB_MIGRATION_STATUS_CHECK)
+        logger.info(
+            codes.DB_MIGRATION_STATUS_CHECK, msg=constants.MSG_DB_MIGRATION_STATUS_CHECK
+        )
 
         try:
             engine = self.session_factory.get_write_engine()
 
             with engine.connect() as connection:
                 result = connection.execute(
-                    text(f"SELECT version FROM {self.migrations_table} ORDER BY version ASC")
+                    text(
+                        f"SELECT version FROM {self.migrations_table} ORDER BY version ASC"
+                    )
                 )
                 versions = [row[0] for row in result]
 
             logger.info(
                 codes.DB_MIGRATION_STATUS,
                 applied_count=len(versions),
-                msg=constants.MSG_DB_MIGRATION_STATUS
+                msg=constants.MSG_DB_MIGRATION_STATUS,
             )
 
             return versions
@@ -142,21 +143,21 @@ class MigrationManager:
                 codes.DB_MIGRATION_FAILED,
                 operation="get_applied_migrations",
                 error=str(e),
-                exc_info=True
+                exc_info=True,
             )
             raise DatabaseMigrationError(
                 message=constants.ERROR_DB_MIGRATION_STATUS_CHECK_FAILED,
                 details={"operation": "get_applied_migrations"},
-                original_error=e
+                original_error=e,
             ) from e
 
     def get_pending_migrations(self) -> List[Tuple[str, Path]]:
         """
         Get list of pending (not yet applied) migrations.
-        
+
         Returns:
             List of tuples: [(version, file_path), ...]
-            
+
         Raises:
             DatabaseMigrationError: If scanning fails
         """
@@ -176,7 +177,7 @@ class MigrationManager:
         logger.info(
             codes.DB_MIGRATION_PENDING,
             pending_count=len(pending),
-            msg=constants.MSG_DB_MIGRATION_PENDING
+            msg=constants.MSG_DB_MIGRATION_PENDING,
         )
 
         return pending
@@ -184,7 +185,7 @@ class MigrationManager:
     def get_all_migrations(self) -> List[Tuple[str, Path, bool]]:
         """
         Get all migrations with their applied status.
-        
+
         Returns:
             List of tuples: [(version, file_path, is_applied), ...]
         """
@@ -205,18 +206,18 @@ class MigrationManager:
     def apply_migration(self, version: str, file_path: Path) -> None:
         """
         Apply a single migration (run the 'up' function).
-        
+
         Args:
             version: Migration version identifier
             file_path: Path to migration file
-            
+
         Raises:
             DatabaseMigrationError: If migration fails
         """
         logger.info(
             codes.DB_MIGRATION_UP_STARTED,
             version=version,
-            msg=constants.MSG_DB_MIGRATION_UP_STARTED
+            msg=constants.MSG_DB_MIGRATION_UP_STARTED,
         )
 
         try:
@@ -234,29 +235,35 @@ class MigrationManager:
 
             # Execute migration
             engine = self.session_factory.get_write_engine()
-            
+
             with engine.connect() as connection:
                 # Run the up() function
                 migration_module.up(connection)
-                
+
                 # Record migration
                 current_time = int(time.time() * 1000)
                 migration_name = version.split("_", 2)[2] if "_" in version else version
-                
+
                 connection.execute(
-                    text(f"""
+                    text(
+                        f"""
                         INSERT INTO {self.migrations_table} (version, name, applied_at)
                         VALUES (:version, :name, :applied_at)
-                    """),
-                    {"version": version, "name": migration_name, "applied_at": current_time}
+                    """
+                    ),
+                    {
+                        "version": version,
+                        "name": migration_name,
+                        "applied_at": current_time,
+                    },
                 )
-                
+
                 connection.commit()
 
             logger.info(
                 codes.DB_MIGRATION_UP_COMPLETED,
                 version=version,
-                msg=constants.MSG_DB_MIGRATION_UP_COMPLETED
+                msg=constants.MSG_DB_MIGRATION_UP_COMPLETED,
             )
 
         except Exception as e:
@@ -265,29 +272,29 @@ class MigrationManager:
                 version=version,
                 operation="apply_migration",
                 error=str(e),
-                exc_info=True
+                exc_info=True,
             )
             raise DatabaseMigrationError(
                 message=constants.ERROR_DB_MIGRATION_UP_FAILED,
                 details={"version": version},
-                original_error=e
+                original_error=e,
             ) from e
 
     def rollback_migration(self, version: str, file_path: Path) -> None:
         """
         Rollback a single migration (run the 'down' function).
-        
+
         Args:
             version: Migration version identifier
             file_path: Path to migration file
-            
+
         Raises:
             DatabaseMigrationError: If rollback fails
         """
         logger.info(
             codes.DB_MIGRATION_DOWN_STARTED,
             version=version,
-            msg=constants.MSG_DB_MIGRATION_DOWN_STARTED
+            msg=constants.MSG_DB_MIGRATION_DOWN_STARTED,
         )
 
         try:
@@ -301,27 +308,31 @@ class MigrationManager:
 
             # Check for 'down' function
             if not hasattr(migration_module, "down"):
-                raise AttributeError(f"Migration {version} does not have 'down' function")
+                raise AttributeError(
+                    f"Migration {version} does not have 'down' function"
+                )
 
             # Execute rollback
             engine = self.session_factory.get_write_engine()
-            
+
             with engine.connect() as connection:
                 # Run the down() function
                 migration_module.down(connection)
-                
+
                 # Remove migration record
                 connection.execute(
-                    text(f"DELETE FROM {self.migrations_table} WHERE version = :version"),
-                    {"version": version}
+                    text(
+                        f"DELETE FROM {self.migrations_table} WHERE version = :version"
+                    ),
+                    {"version": version},
                 )
-                
+
                 connection.commit()
 
             logger.info(
                 codes.DB_MIGRATION_DOWN_COMPLETED,
                 version=version,
-                msg=constants.MSG_DB_MIGRATION_DOWN_COMPLETED
+                msg=constants.MSG_DB_MIGRATION_DOWN_COMPLETED,
             )
 
         except Exception as e:
@@ -330,24 +341,24 @@ class MigrationManager:
                 version=version,
                 operation="rollback_migration",
                 error=str(e),
-                exc_info=True
+                exc_info=True,
             )
             raise DatabaseMigrationError(
                 message=constants.ERROR_DB_MIGRATION_DOWN_FAILED,
                 details={"version": version},
-                original_error=e
+                original_error=e,
             ) from e
 
     def generate_version(self, description: str) -> str:
         """
         Generate migration version identifier.
-        
+
         Format: YYYYMMDD_HHMMSS_description
         Example: 20250128_143022_create_files_table
-        
+
         Args:
             description: Human-readable migration description
-            
+
         Returns:
             Migration version string
         """
@@ -355,28 +366,29 @@ class MigrationManager:
         # Sanitize description
         safe_description = description.lower().replace(" ", "_").replace("-", "_")
         # Remove non-alphanumeric characters (except underscores)
-        safe_description = "".join(c for c in safe_description if c.isalnum() or c == "_")
-        
+        safe_description = "".join(
+            c for c in safe_description if c.isalnum() or c == "_"
+        )
+
         version = f"{timestamp}_{safe_description}"
-        
+
         logger.info(
             codes.DB_MIGRATION_GENERATE,
             version=version,
-            msg=constants.MSG_MIGRATION_GENERATED
+            msg=constants.MSG_MIGRATION_GENERATED,
         )
-        
+
         return version
 
     def get_migration_file_path(self, version: str) -> Optional[Path]:
         """
         Get file path for a migration version.
-        
+
         Args:
             version: Migration version identifier
-            
+
         Returns:
             Path to migration file, or None if not found
         """
         file_path = self.migrations_dir / f"{version}.py"
         return file_path if file_path.exists() else None
-

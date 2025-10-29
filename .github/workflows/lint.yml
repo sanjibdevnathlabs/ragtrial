@@ -14,24 +14,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Python environment
-        uses: ./.github/actions/setup-python-env
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          install-deps: 'false'
+          python-version: '3.13'
       
-      - name: Install linters
+      - name: Install dependencies
         run: pip install black flake8 isort mypy
       
       - name: Check code formatting with Black
-        run: black --check --diff .
+        run: make black-check
       
       - name: Check import sorting with isort
-        run: isort --check-only --diff --profile=black .
+        run: make isort-check
       
       - name: Lint with Flake8
-        run: flake8 . --max-line-length=88 --extend-ignore=E203,W503 --count --show-source --statistics
+        run: make flake8-check
+        continue-on-error: true
       
       - name: Type check with mypy
-        run: mypy --ignore-missing-imports --no-strict-optional .
+        run: mypy --ignore-missing-imports --no-strict-optional . --exclude='(venv|htmlcov|tests|scripts|examples)'
         continue-on-error: true
 

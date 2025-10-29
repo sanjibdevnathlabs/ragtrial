@@ -7,16 +7,16 @@ Represents file metadata stored in database.
 import uuid
 from typing import Optional
 
-from sqlalchemy import Column, String, BigInteger, Boolean
+from sqlalchemy import BigInteger, Boolean, Column, String
 
-from database.base_model import BaseModel
 import constants
+from database.base_model import BaseModel
 
 
 class File(BaseModel):
     """
     File metadata entity.
-    
+
     Fields:
         id: UUID primary key
         filename: Original filename
@@ -51,7 +51,7 @@ class File(BaseModel):
     def generate_id() -> str:
         """
         Generate a new UUID for file ID.
-        
+
         Returns:
             UUID string
         """
@@ -61,10 +61,10 @@ class File(BaseModel):
     def get_file_type_from_filename(filename: str) -> str:
         """
         Extract file type from filename (without dot).
-        
+
         Args:
             filename: Original filename with extension
-            
+
         Returns:
             File type without dot (e.g., 'pdf', 'txt')
         """
@@ -76,7 +76,7 @@ class File(BaseModel):
     def mark_as_indexed(self) -> None:
         """
         Mark file as indexed in vector store.
-        
+
         Updates indexed flag and sets indexed_at timestamp.
         """
         self.indexed = True
@@ -86,19 +86,19 @@ class File(BaseModel):
     def to_dict(self, exclude: Optional[list] = None) -> dict:
         """
         Convert to dictionary with additional computed fields.
-        
+
         Args:
             exclude: Fields to exclude
-            
+
         Returns:
             Dictionary representation
         """
         data = super().to_dict(exclude=exclude)
-        
+
         # Add computed fields
         data["is_indexed"] = self.indexed
         data["is_deleted"] = self.is_deleted()
-        
+
         return data
 
     def __repr__(self) -> str:
@@ -106,4 +106,3 @@ class File(BaseModel):
         deleted = " (DELETED)" if self.is_deleted() else ""
         indexed = " (INDEXED)" if self.indexed else ""
         return f"<File(id={self.id!r}, filename={self.filename!r}){deleted}{indexed}>"
-

@@ -46,8 +46,9 @@ memory_bank/
 
 # Development
 Makefile
-docker-compose.yml
+deployment/
 .dockerignore
+docker/
 scripts/
 examples/
 source_docs/

@@ -8,7 +8,7 @@ All constants use UPPER_SNAKE_CASE naming convention.
 
 Usage:
     import constants
-    
+
     logger.info(codes.SCRIPT_STARTED, header=constants.SETUP_HEADER)
 """
 
@@ -324,8 +324,12 @@ DEMO_SWITCH_STEP_3 = "3. Run this script again - NO CODE CHANGES!"
 
 # Sample demo data
 DEMO_DOC_RAG = "RAG stands for Retrieval-Augmented Generation, a technique for improving LLM responses."
-DEMO_DOC_VECTOR_DB = "Vector databases store embeddings for efficient similarity search."
-DEMO_DOC_CHROMA = "ChromaDB is a popular open-source vector database for AI applications."
+DEMO_DOC_VECTOR_DB = (
+    "Vector databases store embeddings for efficient similarity search."
+)
+DEMO_DOC_CHROMA = (
+    "ChromaDB is a popular open-source vector database for AI applications."
+)
 DEMO_DOC_LANGCHAIN = "LangChain provides abstractions for building LLM applications."
 DEMO_DOC_PYTHON = "Python is a great language for data science and machine learning."
 
@@ -363,7 +367,9 @@ CLEANUP_RETRIEVING_NAMESPACES = "  📋 Retrieving all namespaces from Pinecone.
 CLEANUP_FOUND_NAMESPACES = "  📁 Found {} namespace(s): {}"
 CLEANUP_DELETING_NAMESPACE = "  🗑️  Deleting all vectors from namespace '{}'..."
 CLEANUP_DELETING_DEFAULT = "  🗑️  Deleting all vectors from default namespace..."
-CLEANUP_WAITING_PROPAGATION = "  ⏳ Waiting 3 seconds for Pinecone deletion to propagate..."
+CLEANUP_WAITING_PROPAGATION = (
+    "  ⏳ Waiting 3 seconds for Pinecone deletion to propagate..."
+)
 
 # Cleanup provider list
 CLEANUP_PROVIDERS = ["chroma", "qdrant", "weaviate", "pinecone"]
@@ -499,18 +505,32 @@ TASK_TYPE_DOCUMENT = "retrieval_document"
 # Embeddings error messages
 ERROR_OPENAI_NOT_INSTALLED = "openai package not installed. Run: pip install openai"
 ERROR_SENTENCE_TRANSFORMERS_NOT_INSTALLED = "sentence-transformers package not installed. Run: pip install sentence-transformers"
-ERROR_VOYAGEAI_NOT_INSTALLED = "voyageai package not installed. Run: pip install voyageai"
+ERROR_VOYAGEAI_NOT_INSTALLED = (
+    "voyageai package not installed. Run: pip install voyageai"
+)
 MSG_SSL_CERTIFI_BUNDLE = "Using certifi certificate bundle for SSL verification"
 MSG_SSL_DISABLED_DEV = "SSL verification disabled for OpenAI API (development only)"
-MSG_SSL_DISABLED_VOYAGEAI_DEV = "SSL verification disabled for Voyage AI API (development only)"
+MSG_SSL_DISABLED_VOYAGEAI_DEV = (
+    "SSL verification disabled for Voyage AI API (development only)"
+)
 
 # Vectorstore error messages
-ERROR_COLLECTION_NOT_INITIALIZED = "Collection not initialized. Call initialize() first."
+ERROR_COLLECTION_NOT_INITIALIZED = (
+    "Collection not initialized. Call initialize() first."
+)
 ERROR_INDEX_NOT_INITIALIZED = "Index not initialized. Call initialize() first."
-ERROR_PINECONE_NOT_INSTALLED = "pinecone package not installed. Run: pip install pinecone"
-ERROR_QDRANT_NOT_INSTALLED = "qdrant-client package not installed. Run: pip install qdrant-client"
-ERROR_WEAVIATE_NOT_INSTALLED = "weaviate-client package not installed. Run: pip install weaviate-client"
-MSG_SSL_DISABLED_PINECONE_DEV = "⚠️  SSL verification disabled - DEVELOPMENT ONLY, NOT FOR PRODUCTION"
+ERROR_PINECONE_NOT_INSTALLED = (
+    "pinecone package not installed. Run: pip install pinecone"
+)
+ERROR_QDRANT_NOT_INSTALLED = (
+    "qdrant-client package not installed. Run: pip install qdrant-client"
+)
+ERROR_WEAVIATE_NOT_INSTALLED = (
+    "weaviate-client package not installed. Run: pip install weaviate-client"
+)
+MSG_SSL_DISABLED_PINECONE_DEV = (
+    "⚠️  SSL verification disabled - DEVELOPMENT ONLY, NOT FOR PRODUCTION"
+)
 
 # Vectorstore operation names
 OPERATION_ADD_DOCUMENTS = "add_documents"
@@ -918,7 +938,9 @@ DB_CONNECT_TIMEOUT_DEFAULT = 10
 # ============================================================================
 
 # Upload error messages
-ERROR_UPLOAD_BOTH_FIELDS = "Cannot use both 'file' and 'files' fields. Use one or the other."
+ERROR_UPLOAD_BOTH_FIELDS = (
+    "Cannot use both 'file' and 'files' fields. Use one or the other."
+)
 ERROR_UPLOAD_NO_FILES = "No files provided"
 ERROR_UPLOAD_NO_FILE_OR_FILES = "No file or files provided. Use 'file' for single upload or 'files' for batch upload."
 ERROR_UPLOAD_FAILED = "Upload failed"
@@ -930,4 +952,3 @@ ERROR_CODE_NO_FILES = "NO_FILES"
 ERROR_CODE_VALIDATION_ERROR = "VALIDATION_ERROR"
 ERROR_CODE_UPLOAD_ERROR = "UPLOAD_ERROR"
 ERROR_CODE_READ_ERROR = "READ_ERROR"
-

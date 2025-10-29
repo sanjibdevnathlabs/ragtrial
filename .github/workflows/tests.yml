@@ -1,22 +1,25 @@
 name: Tests & Coverage
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build Base Image"]
+    types:
+      - completed
     branches: [ master, develop ]
-  pull_request:
-    branches: [ master, develop ]
+
+env:
+  BASE_IMAGE: sanjibdevnath/ragtrial-base
 
 jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    container: sanjibdevnath/ragtrial-base:${{ github.sha }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Setup Python environment
-        uses: ./.github/actions/setup-python-env
       
       - name: Run unit tests with coverage
         run: make test-ci
@@ -48,6 +51,8 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    container: sanjibdevnath/ragtrial-base:${{ github.sha }}
     
     services:
       mysql:
@@ -57,8 +62,6 @@ jobs:
           MYSQL_DATABASE: test_ragtrial
           MYSQL_USER: test_ragtrial
           MYSQL_PASSWORD: test_ragtrial
-        ports:
-          - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping"
           --health-interval=10s
@@ -69,12 +72,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Python environment
-        uses: ./.github/actions/setup-python-env
-      
       - name: Setup test database
         run: |
-          mysql -h 127.0.0.1 -u root -proot < scripts/setup_test_mysql.sql
+          mysql -h mysql -u root -proot < scripts/setup_test_mysql.sql
           APP_ENV=test make migrate-up
       
       - name: Run integration tests

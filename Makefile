@@ -34,9 +34,10 @@ help:
 	@echo "  make migrate-reset    Reset database (rollback all & reapply)"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  make lint             Run linter (ruff)"
-	@echo "  make format           Format code (black)"
-	@echo "  make check            Run lint + format check"
+	@echo "  make format           Format code (black + isort)"
+	@echo "  make lint-check       Check code formatting (no changes)"
+	@echo "  make lint             Run flake8 linter (reports issues)"
+	@echo "  make lint-all         Run all linting checks (format + lint)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make run-api          Start FastAPI server (with auto-reload)"
@@ -51,16 +52,18 @@ help:
 	@echo "  make clean-all        Clean everything (including storage)"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make docker-build     Build Docker image"
-	@echo "  make docker-run       Start all services (API, MySQL, ChromaDB)"
-	@echo "  make docker-stop      Stop all services"
-	@echo "  make docker-restart   Restart all services"
-	@echo "  make docker-logs      View API logs"
-	@echo "  make docker-logs-all  View all service logs"
-	@echo "  make docker-test      Run tests in Docker"
-	@echo "  make docker-push      Push image to Docker Hub"
-	@echo "  make docker-shell     Open shell in API container"
-	@echo "  make docker-clean     Clean Docker resources"
+	@echo "  make docker-build        Build Docker image"
+	@echo "  make docker-build-base   Build base image (with all dependencies)"
+	@echo "  make docker-push-base    Push base image to Docker Hub"
+	@echo "  make docker-run          Start all services (API, MySQL, ChromaDB)"
+	@echo "  make docker-stop         Stop all services"
+	@echo "  make docker-restart      Restart all services"
+	@echo "  make docker-logs         View API logs"
+	@echo "  make docker-logs-all     View all service logs"
+	@echo "  make docker-test         Run tests in Docker"
+	@echo "  make docker-push         Push image to Docker Hub"
+	@echo "  make docker-shell        Open shell in API container"
+	@echo "  make docker-clean        Clean Docker resources"
 	@echo ""
 	@echo "Pre-commit Hooks:"
 	@echo "  make pre-commit-install   Install pre-commit hooks"
@@ -211,19 +214,49 @@ migrate-reset:
 setup-database: migrate-up
 	@echo "✅ Database setup complete!"
 
-# Code Quality
-lint:
-	@echo "Running linter..."
-	@which ruff > /dev/null 2>&1 || (echo "ruff not installed. Run: make install-dev" && exit 1)
-	@./venv/bin/ruff check . --fix
+# ==============================================================================
+# Code Quality Commands
+# ==============================================================================
 
+# Variables for code quality tools
+LINT_EXCLUDE := --exclude='/(venv|htmlcov|tests|scripts|examples)/'
+FLAKE8_EXCLUDE := --exclude=venv,htmlcov,tests,scripts,examples
+ISORT_SKIP := --skip-gitignore --skip tests --skip scripts --skip examples --skip venv --skip htmlcov
+
+.PHONY: format lint-check lint lint-all black-check isort-check flake8-check
+
+# Format code with black and isort (production code only)
 format:
-	@echo "Formatting code..."
-	@which black > /dev/null 2>&1 || (echo "black not installed. Run: make install-dev" && exit 1)
-	@./venv/bin/black .
+	@echo "🎨 Formatting code with Black..."
+	@./venv/bin/black . $(LINT_EXCLUDE)
+	@echo "📦 Sorting imports with isort..."
+	@./venv/bin/isort . --profile=black $(ISORT_SKIP)
+	@echo "✅ Code formatting complete!"
 
-check: lint format
-	@echo "Code quality check complete!"
+# Check code formatting without making changes
+black-check:
+	@echo "🔍 Checking code formatting with Black..."
+	@./venv/bin/black --check --diff . $(LINT_EXCLUDE)
+
+isort-check:
+	@echo "🔍 Checking import sorting with isort..."
+	@./venv/bin/isort --check-only --diff --profile=black . $(ISORT_SKIP)
+
+flake8-check:
+	@echo "🔍 Running Flake8 linter..."
+	@./venv/bin/flake8 . --max-line-length=88 --extend-ignore=E203,W503 \
+		--count --show-source --statistics $(FLAKE8_EXCLUDE)
+
+# Check formatting (for CI/CD and pre-push)
+lint-check: black-check isort-check
+	@echo "✅ All formatting checks passed!"
+
+# Run flake8 linter (reports issues, doesn't block)
+lint: flake8-check
+
+# Run all linting checks
+lint-all: lint-check lint
+	@echo "✅ All code quality checks complete!"
 
 # Development
 run-api:
@@ -298,12 +331,26 @@ check-python:
 
 docker-build:
 	@echo "🐳 Building Docker image..."
-	@docker build -t ragtrial:local .
+	@docker build -f docker/Dockerfile -t ragtrial:local .
 	@echo "✅ Docker image built: ragtrial:local"
+
+docker-build-base:
+	@echo "🐳 Building base image with all dependencies..."
+	@docker build -f docker/Dockerfile.base -t sanjibdevnath/ragtrial-base:local .
+	@echo "✅ Base image built: sanjibdevnath/ragtrial-base:local"
+	@echo ""
+	@echo "💡 To push to Docker Hub:"
+	@echo "   make docker-push-base"
+
+docker-push-base:
+	@echo "📤 Pushing base image to Docker Hub..."
+	@docker tag sanjibdevnath/ragtrial-base:local sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)
+	@docker push sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)
+	@echo "✅ Base image pushed: sanjibdevnath/ragtrial-base:$$(git rev-parse HEAD)"
 
 docker-run:
 	@echo "🚀 Starting Docker Compose services..."
-	@docker-compose up -d
+	@docker-compose -f deployment/local/docker-compose.yml up -d
 	@echo ""
 	@echo "✅ Services running:"
 	@echo "   📡 API:      http://localhost:8000"
@@ -311,29 +358,29 @@ docker-run:
 	@echo "   🔍 Health:   http://localhost:8000/api/v1/health"
 	@echo "   💾 ChromaDB: http://localhost:8001"
 	@echo ""
-	@docker-compose ps
+	@docker-compose -f deployment/local/docker-compose.yml ps
 
 docker-stop:
 	@echo "🛑 Stopping Docker Compose services..."
-	@docker-compose down
+	@docker-compose -f deployment/local/docker-compose.yml down
 	@echo "✅ Services stopped"
 
 docker-restart:
 	@echo "🔄 Restarting Docker Compose services..."
-	@docker-compose restart
+	@docker-compose -f deployment/local/docker-compose.yml restart
 	@echo "✅ Services restarted"
 
 docker-logs:
 	@echo "📋 Following API logs (Ctrl+C to exit)..."
-	@docker-compose logs -f api
+	@docker-compose -f deployment/local/docker-compose.yml logs -f api
 
 docker-logs-all:
 	@echo "📋 Following all service logs (Ctrl+C to exit)..."
-	@docker-compose logs -f
+	@docker-compose -f deployment/local/docker-compose.yml logs -f
 
 docker-test:
 	@echo "🧪 Running tests in Docker..."
-	@docker-compose exec api pytest -v
+	@docker-compose -f deployment/local/docker-compose.yml exec api pytest -v
 
 docker-push:
 	@echo "📤 Pushing to Docker Hub..."
@@ -343,13 +390,13 @@ docker-push:
 
 docker-clean:
 	@echo "🧹 Cleaning Docker resources..."
-	@docker-compose down -v
+	@docker-compose -f deployment/local/docker-compose.yml down -v
 	@docker system prune -f
 	@echo "✅ Docker cleaned"
 
 docker-shell:
 	@echo "🐚 Opening shell in API container..."
-	@docker-compose exec api /bin/bash
+	@docker-compose -f deployment/local/docker-compose.yml exec api /bin/bash
 
 # ==============================================================================
 # Pre-commit Hooks

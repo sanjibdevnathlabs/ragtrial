@@ -18,14 +18,13 @@ Test Coverage:
 - Error handling
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock, call
-from pathlib import Path
 
 from config import Config
-from vectorstore.implementations.chroma import ChromaVectorStore
 from embeddings.base import EmbeddingsProtocol
-
+from vectorstore.implementations.chroma import ChromaVectorStore
 
 # ============================================================================
 # FIXTURES
@@ -62,7 +61,7 @@ def mock_chroma_client():
         "ids": [["doc_1", "doc_2"]],
         "documents": [["Document 1 text", "Document 2 text"]],
         "metadatas": [[{"source": "a.pdf"}, {"source": "b.pdf"}]],
-        "distances": [[0.1, 0.2]]
+        "distances": [[0.1, 0.2]],
     }
     collection.delete.return_value = None
     client.get_collection.return_value = collection
@@ -87,32 +86,38 @@ def chroma_vectorstore(mock_config, mock_embeddings, mock_chroma_client):
 class TestInitialization:
     """Test ChromaVectorStore initialization."""
 
-    def test_initialization_success(self, mock_config, mock_embeddings, mock_chroma_client):
+    def test_initialization_success(
+        self, mock_config, mock_embeddings, mock_chroma_client
+    ):
         """Test successful initialization."""
         with patch("chromadb.Client", return_value=mock_chroma_client):
             with patch("pathlib.Path.mkdir"):
                 vectorstore = ChromaVectorStore(mock_config, mock_embeddings)
-                
+
                 assert vectorstore is not None
                 assert vectorstore.embeddings == mock_embeddings
                 assert vectorstore.config == mock_config
                 assert vectorstore.collection_name == "test_collection"
 
-    def test_creates_persist_directory(self, mock_config, mock_embeddings, mock_chroma_client):
+    def test_creates_persist_directory(
+        self, mock_config, mock_embeddings, mock_chroma_client
+    ):
         """Test that persist directory is created."""
         with patch("chromadb.Client", return_value=mock_chroma_client):
             with patch("pathlib.Path.mkdir") as mock_mkdir:
                 vectorstore = ChromaVectorStore(mock_config, mock_embeddings)
-                
+
                 assert vectorstore is not None
                 mock_mkdir.assert_called_once()
 
-    def test_stores_configuration(self, mock_config, mock_embeddings, mock_chroma_client):
+    def test_stores_configuration(
+        self, mock_config, mock_embeddings, mock_chroma_client
+    ):
         """Test configuration is stored correctly."""
         with patch("chromadb.Client", return_value=mock_chroma_client):
             with patch("pathlib.Path.mkdir"):
                 vectorstore = ChromaVectorStore(mock_config, mock_embeddings)
-                
+
                 assert vectorstore.collection_name == "test_collection"
                 assert "test" in vectorstore.persist_directory.lower()
 
@@ -132,9 +137,9 @@ class TestCollectionInitialization:
         mock_collection = MagicMock()
         mock_collection.count.return_value = 10
         mock_chroma_client.get_collection.return_value = mock_collection
-        
+
         chroma_vectorstore.initialize()
-        
+
         assert chroma_vectorstore.collection is not None
         mock_chroma_client.get_collection.assert_called_once_with(
             name="test_collection"
@@ -148,9 +153,9 @@ class TestCollectionInitialization:
         mock_chroma_client.get_collection.side_effect = Exception("Not found")
         mock_collection = MagicMock()
         mock_chroma_client.create_collection.return_value = mock_collection
-        
+
         chroma_vectorstore.initialize()
-        
+
         assert chroma_vectorstore.collection is not None
         mock_chroma_client.create_collection.assert_called_once()
 
@@ -167,15 +172,15 @@ class TestAddDocuments:
         """Test successful document addition."""
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         texts = ["Document 1", "Document 2"]
         metadatas = [{"source": "a.pdf"}, {"source": "b.pdf"}]
-        
+
         chroma_vectorstore.add_documents(texts, metadatas)
-        
+
         # Verify embeddings were generated
         mock_embeddings.embed_documents.assert_called_once_with(texts)
-        
+
         # Verify collection.add was called
         mock_collection.add.assert_called_once()
 
@@ -185,29 +190,27 @@ class TestAddDocuments:
         """Test IDs are auto-generated if not provided."""
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         texts = ["Document 1", "Document 2"]
-        
+
         chroma_vectorstore.add_documents(texts)
-        
+
         # Check that IDs were generated (UUID format)
         call_args = mock_collection.add.call_args
         ids = call_args.kwargs.get("ids")
         assert ids is not None
         assert len(ids) == 2
 
-    def test_add_documents_uses_provided_ids(
-        self, chroma_vectorstore, mock_embeddings
-    ):
+    def test_add_documents_uses_provided_ids(self, chroma_vectorstore, mock_embeddings):
         """Test provided IDs are used."""
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         texts = ["Document 1"]
         ids = ["custom_id_1"]
-        
+
         chroma_vectorstore.add_documents(texts, ids=ids)
-        
+
         call_args = mock_collection.add.call_args
         used_ids = call_args.kwargs.get("ids")
         assert used_ids == ids
@@ -218,11 +221,11 @@ class TestAddDocuments:
         """Test adding documents without metadata."""
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         texts = ["Document 1"]
-        
+
         chroma_vectorstore.add_documents(texts)
-        
+
         mock_collection.add.assert_called_once()
 
 
@@ -241,18 +244,18 @@ class TestQuery:
             "ids": [["doc_1", "doc_2"]],
             "documents": [["Text 1", "Text 2"]],
             "metadatas": [[{"source": "a.pdf"}, {"source": "b.pdf"}]],
-            "distances": [[0.1, 0.2]]
+            "distances": [[0.1, 0.2]],
         }
         chroma_vectorstore.collection = mock_collection
-        
+
         results = chroma_vectorstore.query("test query", n_results=2)
-        
+
         # Verify query embedding was generated
         mock_embeddings.embed_query.assert_called_once_with("test query")
-        
+
         # Verify collection was queried
         mock_collection.query.assert_called_once()
-        
+
         # Verify results format
         assert len(results) == 2
         assert results[0]["id"] == "doc_1"
@@ -267,13 +270,13 @@ class TestQuery:
             "ids": [["doc_1"]],
             "documents": [["Text 1"]],
             "metadatas": [[{"source": "a.pdf"}]],
-            "distances": [[0.1]]
+            "distances": [[0.1]],
         }
         chroma_vectorstore.collection = mock_collection
-        
+
         where_filter = {"source": "a.pdf"}
-        results = chroma_vectorstore.query("test query", where=where_filter)
-        
+        _ = chroma_vectorstore.query("test query", where=where_filter)
+
         # Verify where filter was passed
         call_args = mock_collection.query.call_args
         assert call_args.kwargs.get("where") == where_filter
@@ -285,12 +288,12 @@ class TestQuery:
             "ids": [["doc_1", "doc_2", "doc_3"]],
             "documents": [["Text 1", "Text 2", "Text 3"]],
             "metadatas": [[{}, {}, {}]],
-            "distances": [[0.1, 0.2, 0.3]]
+            "distances": [[0.1, 0.2, 0.3]],
         }
         chroma_vectorstore.collection = mock_collection
-        
-        results = chroma_vectorstore.query("test query", n_results=10)
-        
+
+        _ = chroma_vectorstore.query("test query", n_results=10)
+
         call_args = mock_collection.query.call_args
         assert call_args.kwargs.get("n_results") == 10
 
@@ -307,19 +310,19 @@ class TestDelete:
         """Test deleting documents by IDs."""
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         ids_to_delete = ["doc_1", "doc_2", "doc_3"]
         chroma_vectorstore.delete(ids_to_delete)
-        
+
         mock_collection.delete.assert_called_once_with(ids=ids_to_delete)
 
     def test_delete_single_document(self, chroma_vectorstore):
         """Test deleting a single document."""
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         chroma_vectorstore.delete(["doc_1"])
-        
+
         mock_collection.delete.assert_called_once_with(ids=["doc_1"])
 
 
@@ -336,9 +339,9 @@ class TestStatistics:
         mock_collection = MagicMock()
         mock_collection.count.return_value = 42
         chroma_vectorstore.collection = mock_collection
-        
+
         stats = chroma_vectorstore.get_stats()
-        
+
         assert stats["count"] == 42
         assert stats["collection_name"] == "test_collection"
 
@@ -347,9 +350,9 @@ class TestStatistics:
         mock_collection = MagicMock()
         mock_collection.count.return_value = 10
         chroma_vectorstore.collection = mock_collection
-        
+
         stats = chroma_vectorstore.get_stats()
-        
+
         assert "count" in stats
         assert "collection_name" in stats
         assert "persist_directory" in stats
@@ -372,12 +375,12 @@ class TestClear:
         mock_collection.count.return_value = 10
         mock_collection.get.return_value = {"ids": ["doc_1", "doc_2", "doc_3"]}
         chroma_vectorstore.collection = mock_collection
-        
+
         chroma_vectorstore.clear()
-        
+
         # Verify get was called to retrieve all IDs
         mock_collection.get.assert_called_once()
-        
+
         # Verify delete was called with all IDs
         mock_collection.delete.assert_called_once()
 
@@ -387,9 +390,9 @@ class TestClear:
         mock_collection.count.return_value = 0
         mock_collection.get.return_value = {"ids": []}
         chroma_vectorstore.collection = mock_collection
-        
+
         chroma_vectorstore.clear()
-        
+
         # Should still call get, but might not call delete
         mock_collection.get.assert_called_once()
 
@@ -409,29 +412,27 @@ class TestErrorHandling:
         # Initialize collection first
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         # Make embeddings fail
         mock_embeddings.embed_documents.side_effect = Exception("API Error")
-        
+
         with pytest.raises(Exception) as exc_info:
             chroma_vectorstore.add_documents(["Document 1"])
-        
+
         assert "API Error" in str(exc_info.value)
 
-    def test_query_handles_embedding_error(
-        self, chroma_vectorstore, mock_embeddings
-    ):
+    def test_query_handles_embedding_error(self, chroma_vectorstore, mock_embeddings):
         """Test error handling when query embedding fails."""
         # Initialize collection first
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         # Make embeddings fail
         mock_embeddings.embed_query.side_effect = Exception("API Error")
-        
+
         with pytest.raises(Exception) as exc_info:
             chroma_vectorstore.query("test query")
-        
+
         assert "API Error" in str(exc_info.value)
 
 
@@ -443,9 +444,7 @@ class TestErrorHandling:
 class TestIntegration:
     """Test realistic workflows (still fully mocked)."""
 
-    def test_full_workflow_add_query_delete(
-        self, chroma_vectorstore, mock_embeddings
-    ):
+    def test_full_workflow_add_query_delete(self, chroma_vectorstore, mock_embeddings):
         """Test complete workflow: initialize, add, query, delete."""
         # Setup mock collection
         mock_collection = MagicMock()
@@ -454,24 +453,24 @@ class TestIntegration:
             "ids": [["doc_1"]],
             "documents": [["Document 1 text"]],
             "metadatas": [[{"source": "a.pdf"}]],
-            "distances": [[0.1]]
+            "distances": [[0.1]],
         }
         chroma_vectorstore.collection = mock_collection
-        
+
         # 1. Add documents
         texts = ["Document 1", "Document 2"]
         chroma_vectorstore.add_documents(texts)
         assert mock_collection.add.called
-        
+
         # 2. Query
         results = chroma_vectorstore.query("test query", n_results=5)
         assert len(results) == 1
         assert results[0]["id"] == "doc_1"
-        
+
         # 3. Get stats
         stats = chroma_vectorstore.get_stats()
         assert stats["count"] == 2
-        
+
         # 4. Delete
         chroma_vectorstore.delete(["doc_1"])
         mock_collection.delete.assert_called_with(ids=["doc_1"])
@@ -480,16 +479,15 @@ class TestIntegration:
         """Test batch document operations."""
         mock_collection = MagicMock()
         chroma_vectorstore.collection = mock_collection
-        
+
         # Add batch of documents
         texts = [f"Document {i}" for i in range(100)]
         metadatas = [{"source": f"file_{i}.pdf"} for i in range(100)]
-        
+
         chroma_vectorstore.add_documents(texts, metadatas)
-        
+
         # Verify embeddings were called with full batch
         mock_embeddings.embed_documents.assert_called_once_with(texts)
-        
+
         # Verify collection.add was called
         mock_collection.add.assert_called_once()
-

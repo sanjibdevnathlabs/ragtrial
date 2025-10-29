@@ -5,12 +5,13 @@ Contains Pydantic models for file listing and metadata responses.
 """
 
 from typing import Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class FileMetadataResponse(BaseModel):
     """Response model for file metadata."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -23,11 +24,11 @@ class FileMetadataResponse(BaseModel):
                 "storage_backend": "local",
                 "indexed": False,
                 "created_at": 1700000000000,
-                "updated_at": 1700000000000
+                "updated_at": 1700000000000,
             }
         }
     )
-    
+
     file_id: str = Field(..., description="Unique file ID (UUID)")
     filename: str = Field(..., description="Original filename")
     file_path: str = Field(..., description="Storage path (UUID-based)")
@@ -43,7 +44,7 @@ class FileMetadataResponse(BaseModel):
 
 class FileListResponse(BaseModel):
     """Response model for file listing."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -52,16 +53,15 @@ class FileListResponse(BaseModel):
                         "file_id": "550e8400-e29b-41d4-a716-446655440000",
                         "filename": "doc1.pdf",
                         "file_size": 1048576,
-                        "indexed": False
+                        "indexed": False,
                     }
                 ],
                 "count": 2,
-                "backend": "local"
+                "backend": "local",
             }
         }
     )
-    
+
     files: list[dict] = Field(..., description="List of files with metadata")
     count: int = Field(..., description="Total file count")
     backend: str = Field(..., description="Storage backend")
-

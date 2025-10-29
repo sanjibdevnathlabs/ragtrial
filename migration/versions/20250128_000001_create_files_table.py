@@ -34,12 +34,14 @@ from sqlalchemy import text
 def up(connection):
     """
     Apply migration - Create files table.
-    
+
     Args:
         connection: SQLAlchemy connection object
     """
     # Create files table
-    connection.execute(text("""
+    connection.execute(
+        text(
+            """
         CREATE TABLE files (
             id VARCHAR(36) PRIMARY KEY,
             filename VARCHAR(255) NOT NULL,
@@ -55,9 +57,11 @@ def up(connection):
             deleted_at BIGINT NULL,
             CONSTRAINT unique_checksum UNIQUE (checksum)
         )
-    """))
+    """
+        )
+    )
     connection.commit()
-    
+
     # Create strategic indexes
     connection.execute(text("CREATE INDEX idx_files_checksum ON files(checksum)"))
     connection.execute(text("CREATE INDEX idx_files_deleted_at ON files(deleted_at)"))
@@ -69,10 +73,9 @@ def up(connection):
 def down(connection):
     """
     Rollback migration - Drop files table.
-    
+
     Args:
         connection: SQLAlchemy connection object
     """
     connection.execute(text("DROP TABLE IF EXISTS files"))
     connection.commit()
-

@@ -8,24 +8,28 @@ with master-slave architecture support.
 
 class SQLiteWriteConfig:
     """SQLite write (master) database configuration"""
+
     path: str = "storage/metadata.db"
     debug: bool = False
 
 
 class SQLiteReadConfig:
     """SQLite read (slave) database configuration"""
+
     path: str = "storage/metadata.db"
     debug: bool = False
 
 
 class SQLiteConfig:
     """SQLite database configuration with read-write split"""
+
     write: SQLiteWriteConfig = None
     read: SQLiteReadConfig = None
 
 
 class MySQLWriteConfig:
     """MySQL write (master) database configuration"""
+
     host: str = "localhost"
     port: int = 3306
     database: str = "ragtrial"
@@ -39,6 +43,7 @@ class MySQLWriteConfig:
 
 class MySQLReadConfig:
     """MySQL read (slave) database configuration"""
+
     host: str = "localhost"
     port: int = 3306
     database: str = "ragtrial"
@@ -52,12 +57,14 @@ class MySQLReadConfig:
 
 class MySQLConfig:
     """MySQL database configuration with read-write split"""
+
     write: MySQLWriteConfig = None
     read: MySQLReadConfig = None
 
 
 class PostgreSQLWriteConfig:
     """PostgreSQL write (master) database configuration"""
+
     host: str = "localhost"
     port: int = 5432
     database: str = "ragtrial"
@@ -71,6 +78,7 @@ class PostgreSQLWriteConfig:
 
 class PostgreSQLReadConfig:
     """PostgreSQL read (slave) database configuration"""
+
     host: str = "localhost"
     port: int = 5432
     database: str = "ragtrial"
@@ -84,6 +92,7 @@ class PostgreSQLReadConfig:
 
 class PostgreSQLConfig:
     """PostgreSQL database configuration with read-write split"""
+
     write: PostgreSQLWriteConfig = None
     read: PostgreSQLReadConfig = None
 
@@ -91,10 +100,11 @@ class PostgreSQLConfig:
 class DatabaseConfig:
     """
     Database configuration with master-slave architecture support.
-    
+
     Supports three database drivers: sqlite, mysql, postgresql.
     Each driver has separate read (slave) and write (master) configurations.
     """
+
     driver: str = "sqlite"
     pool_pre_ping: bool = True
     pool_recycle: int = 3600
@@ -102,4 +112,3 @@ class DatabaseConfig:
     sqlite: SQLiteConfig = None
     mysql: MySQLConfig = None
     postgresql: PostgreSQLConfig = None
-

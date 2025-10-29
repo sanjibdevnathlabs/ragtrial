@@ -8,4 +8,3 @@ This file exists for consistency and future extensibility.
 
 # No request models currently needed for upload
 # Upload uses multipart/form-data (handled by FastAPI's UploadFile)
-

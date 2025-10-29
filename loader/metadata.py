@@ -15,7 +15,7 @@ import constants
 
 class DocumentMetadataEnricher:
     """Enriches documents with file metadata.
-    
+
     Adds file-level information to document metadata including
     source path, file type, and file size.
     """
@@ -23,14 +23,14 @@ class DocumentMetadataEnricher:
     @staticmethod
     def enrich(documents: List[Document], file_path: Path) -> List[Document]:
         """Enrich documents with file metadata.
-        
+
         Adds source, file_type, and file_size_bytes to each document's
         metadata dictionary. Creates metadata dict if it doesn't exist.
-        
+
         Args:
             documents: List of documents to enrich
             file_path: Path to source file
-            
+
         Returns:
             List of documents with enriched metadata (same objects, modified in place)
         """
@@ -50,7 +50,7 @@ class DocumentMetadataEnricher:
 
 class FileTypeMapper:
     """Maps file extensions to human-readable file types.
-    
+
     Provides consistent type identifiers for different file formats.
     """
 
@@ -66,13 +66,12 @@ class FileTypeMapper:
     @classmethod
     def get_type(cls, file_path: Path) -> str:
         """Get human-readable file type from extension.
-        
+
         Args:
             file_path: Path to file
-            
+
         Returns:
             File type identifier (e.g., 'pdf', 'text', 'markdown')
         """
         extension = file_path.suffix.lower()
         return cls._TYPE_MAP.get(extension, constants.FILE_TYPE_UNKNOWN)
-

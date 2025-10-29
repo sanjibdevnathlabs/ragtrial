@@ -5,16 +5,14 @@ Coordinates between file repository and external systems.
 """
 
 import hashlib
-from pathlib import Path
+import trace.codes as codes
 from typing import Dict, List, Optional
 
+import constants
 from app.modules.file.entity import File
 from app.modules.file.repository import FileRepository
-from database.exceptions import DatabaseQueryError
 from database.session import SessionFactory
 from logger import get_logger
-import trace.codes as codes
-import constants
 
 logger = get_logger(__name__)
 
@@ -22,7 +20,7 @@ logger = get_logger(__name__)
 class FileService:
     """
     File service for business logic.
-    
+
     Handles:
     - File record creation with UUID and checksum
     - Duplicate detection
@@ -40,28 +38,28 @@ class FileService:
     def calculate_checksum(file_path: str) -> str:
         """
         Calculate SHA-256 checksum of file.
-        
+
         Args:
             file_path: Path to file
-            
+
         Returns:
             Hex digest checksum
         """
         sha256 = hashlib.sha256()
-        
+
         with open(file_path, "rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
                 sha256.update(chunk)
-        
+
         return sha256.hexdigest()
 
     def check_duplicate(self, checksum: str) -> Optional[Dict]:
         """
         Check if file with checksum already exists.
-        
+
         Args:
             checksum: SHA-256 checksum
-            
+
         Returns:
             File dict if duplicate exists, None otherwise
         """
@@ -75,42 +73,42 @@ class FileService:
         file_path: str,
         file_size: int,
         checksum: str,
-        storage_backend: str = "local"
+        storage_backend: str = "local",
     ) -> Dict:
         """
         Create file metadata record with atomic duplicate detection.
-        
+
         Strategy: Rely on UNIQUE constraint on checksum column for atomic duplicate
         prevention. MySQL's UNIQUE index naturally prevents duplicate inserts at
         the database level without requiring SELECT ... FOR UPDATE which can cause
         gap lock deadlocks.
-        
+
         Args:
             filename: Original filename
             file_path: Path where file is stored (UUID-based)
             file_size: File size in bytes
             checksum: SHA-256 checksum
             storage_backend: Storage backend identifier
-            
+
         Returns:
             Created file as dictionary
-            
+
         Raises:
             DatabaseQueryError: If creation fails
             ValueError: If duplicate checksum exists
         """
         from sqlalchemy.exc import IntegrityError
-        
+
         logger.info(
             codes.DB_REPOSITORY_STARTED,
             operation="create_file_record",
-            filename=filename
+            filename=filename,
         )
 
         try:
             file_id = File.generate_id()
             file_type = File.get_file_type_from_filename(filename)
-            
+
             file = File(
                 id=file_id,
                 filename=filename,
@@ -119,51 +117,51 @@ class FileService:
                 file_size=file_size,
                 checksum=checksum,
                 storage_backend=storage_backend,
-                indexed=False
+                indexed=False,
             )
 
             with self.session_factory.get_write_session() as session:
                 created_file = self.repository.create(session, file)
-                
+
                 logger.info(
                     codes.DB_REPOSITORY_COMPLETED,
                     operation="create_file_record",
                     file_id=created_file.id,
-                    msg=constants.MSG_DB_ENTITY_CREATED
+                    msg=constants.MSG_DB_ENTITY_CREATED,
                 )
-                
+
                 return created_file.to_dict()
 
         except IntegrityError as e:
             with self.session_factory.get_read_session() as session:
                 existing = self.repository.find_by_checksum(session, checksum)
                 existing_filename = existing.filename if existing else "unknown"
-            
+
             logger.warning(
                 codes.DB_REPOSITORY_FAILED,
                 operation="create_file_record",
-                error=f"Duplicate checksum detected: {existing_filename}"
+                error=f"Duplicate checksum detected: {existing_filename}",
             )
             raise ValueError(
                 f"{constants.ERROR_FILE_DUPLICATE}: {existing_filename}"
             ) from e
-            
+
         except Exception as e:
             logger.error(
                 codes.DB_REPOSITORY_FAILED,
                 operation="create_file_record",
                 error=str(e),
-                exc_info=True
+                exc_info=True,
             )
             raise
 
     def get_file_by_id(self, file_id: str) -> Optional[Dict]:
         """
         Get file by ID.
-        
+
         Args:
             file_id: File ID
-            
+
         Returns:
             File dictionary if found, None otherwise
         """
@@ -174,10 +172,10 @@ class FileService:
     def get_file_by_filename(self, filename: str) -> Optional[Dict]:
         """
         Get file by filename.
-        
+
         Args:
             filename: Filename to search for
-            
+
         Returns:
             File dictionary if found, None otherwise
         """
@@ -186,17 +184,15 @@ class FileService:
             return file.to_dict() if file else None
 
     def list_all_files(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[Dict]:
         """
         List all active files.
-        
+
         Args:
             limit: Maximum number of files
             offset: Number of files to skip
-            
+
         Returns:
             List of file dictionaries
         """
@@ -207,46 +203,44 @@ class FileService:
                 limit=limit,
                 offset=offset,
                 order_by="created_at",
-                order_desc=True
+                order_desc=True,
             )
             return [f.to_dict() for f in files]
 
     def delete_file(self, file_id: str) -> bool:
         """
         Soft delete file by ID.
-        
+
         Args:
             file_id: File ID
-            
+
         Returns:
             True if deleted, False if not found
         """
         logger.info(
-            codes.DB_REPOSITORY_STARTED,
-            operation="delete_file",
-            file_id=file_id
+            codes.DB_REPOSITORY_STARTED, operation="delete_file", file_id=file_id
         )
 
         with self.session_factory.get_write_session() as session:
             deleted = self.repository.delete(session, file_id)
-            
+
             if deleted:
                 logger.info(
                     codes.DB_REPOSITORY_COMPLETED,
                     operation="delete_file",
                     file_id=file_id,
-                    msg=constants.MSG_DB_ENTITY_DELETED
+                    msg=constants.MSG_DB_ENTITY_DELETED,
                 )
-            
+
             return deleted
 
     def mark_as_indexed(self, file_id: str) -> bool:
         """
         Mark file as indexed in vector store.
-        
+
         Args:
             file_id: File ID
-            
+
         Returns:
             True if marked, False if not found
         """
@@ -256,10 +250,10 @@ class FileService:
     def get_unindexed_files(self, limit: Optional[int] = None) -> List[Dict]:
         """
         Get files that haven't been indexed yet.
-        
+
         Args:
             limit: Maximum number of files
-            
+
         Returns:
             List of file dictionaries
         """
@@ -270,10 +264,10 @@ class FileService:
     def get_indexed_files(self, limit: Optional[int] = None) -> List[Dict]:
         """
         Get files that have been indexed.
-        
+
         Args:
             limit: Maximum number of files
-            
+
         Returns:
             List of file dictionaries
         """
@@ -284,7 +278,7 @@ class FileService:
     def get_total_size(self) -> int:
         """
         Get total size of all files in bytes.
-        
+
         Returns:
             Total size in bytes
         """
@@ -294,7 +288,7 @@ class FileService:
     def get_statistics(self) -> Dict:
         """
         Get file statistics.
-        
+
         Returns:
             Dictionary with counts and sizes
         """
@@ -302,12 +296,11 @@ class FileService:
             total_count = self.repository.count(session, include_deleted=False)
             indexed_count = len(self.repository.find_indexed_files(session))
             total_size = self.repository.get_total_size(session)
-            
+
             return {
                 "total_files": total_count,
                 "indexed_files": indexed_count,
                 "unindexed_files": total_count - indexed_count,
                 "total_size_bytes": total_size,
-                "total_size_mb": round(total_size / (1024 * 1024), 2)
+                "total_size_mb": round(total_size / (1024 * 1024), 2),
             }
-

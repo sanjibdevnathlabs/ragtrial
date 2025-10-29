@@ -21,7 +21,6 @@ import constants
 from splitter import DocumentSplitter, SplitterFactory
 from splitter.strategies import TokenSplitterStrategy
 
-
 # ============================================================================
 # FIXTURES
 # ============================================================================
@@ -32,8 +31,7 @@ def sample_document():
     """Return a sample document with enough text to split."""
     text = " ".join([f"This is sentence {i}." for i in range(100)])
     return Document(
-        page_content=text,
-        metadata={"source": "test.txt", "file_type": "text"}
+        page_content=text, metadata={"source": "test.txt", "file_type": "text"}
     )
 
 
@@ -43,10 +41,12 @@ def sample_documents():
     docs = []
     for i in range(3):
         text = " ".join([f"Document {i} sentence {j}." for j in range(50)])
-        docs.append(Document(
-            page_content=text,
-            metadata={"source": f"test{i}.txt", "file_type": "text"}
-        ))
+        docs.append(
+            Document(
+                page_content=text,
+                metadata={"source": f"test{i}.txt", "file_type": "text"},
+            )
+        )
     return docs
 
 
@@ -54,8 +54,7 @@ def sample_documents():
 def short_document():
     """Return a short document that won't be split."""
     return Document(
-        page_content="This is a short text.",
-        metadata={"source": "short.txt"}
+        page_content="This is a short text.", metadata={"source": "short.txt"}
     )
 
 
@@ -156,10 +155,7 @@ class TestSplitterFactory:
 
     def test_create_token_splitter_custom_params(self):
         """Test creating token splitter with custom parameters."""
-        splitter = SplitterFactory.create(
-            chunk_size=1000,
-            chunk_overlap=200
-        )
+        splitter = SplitterFactory.create(chunk_size=1000, chunk_overlap=200)
 
         assert isinstance(splitter, TokenSplitterStrategy)
         assert splitter.chunk_size == 1000
@@ -222,7 +218,7 @@ class TestDocumentSplitter:
         splitter = DocumentSplitter(
             chunk_size=1000,
             chunk_overlap=200,
-            splitter_type=constants.SPLITTER_TYPE_TOKEN
+            splitter_type=constants.SPLITTER_TYPE_TOKEN,
         )
 
         assert splitter.chunk_size == 1000
@@ -333,10 +329,7 @@ class TestEdgeCases:
     def test_split_with_maximum_overlap(self):
         """Test splitting with maximum valid overlap (chunk_size - 1)."""
         chunk_size = 100
-        splitter = DocumentSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_size - 1
-        )
+        splitter = DocumentSplitter(chunk_size=chunk_size, chunk_overlap=chunk_size - 1)
         doc = Document(page_content=" ".join([f"Word{i}" for i in range(200)]))
 
         chunks = splitter.split_documents([doc])
@@ -388,4 +381,3 @@ class TestIntegration:
 
         # Smaller chunks = more pieces
         assert len(chunks1) > len(chunks2)
-

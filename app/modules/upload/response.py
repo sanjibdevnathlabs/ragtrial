@@ -4,13 +4,14 @@ Upload module response models.
 Contains Pydantic models for upload API responses.
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class UploadResponse(BaseModel):
     """Response model for successful file upload."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -22,11 +23,11 @@ class UploadResponse(BaseModel):
                 "file_type": "pdf",
                 "checksum": "abc123...",
                 "backend": "local",
-                "indexed": False
+                "indexed": False,
             }
         }
     )
-    
+
     success: bool = Field(..., description="Upload success status")
     file_id: str = Field(..., description="Unique file ID (UUID)")
     filename: str = Field(..., description="Original filename")
@@ -40,7 +41,7 @@ class UploadResponse(BaseModel):
 
 class FileUploadResult(BaseModel):
     """Result for a single file upload in batch."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -52,11 +53,11 @@ class FileUploadResult(BaseModel):
                 "file_type": "pdf",
                 "checksum": "abc123...",
                 "backend": "local",
-                "indexed": False
+                "indexed": False,
             }
         }
     )
-    
+
     filename: str = Field(..., description="Original filename")
     success: bool = Field(..., description="Upload success status")
     file_id: Optional[str] = Field(None, description="Unique file ID (UUID)")
@@ -72,7 +73,7 @@ class FileUploadResult(BaseModel):
 
 class BatchUploadResponse(BaseModel):
     """Response model for batch file upload."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -89,21 +90,22 @@ class BatchUploadResponse(BaseModel):
                         "file_type": "pdf",
                         "checksum": "abc123...",
                         "backend": "local",
-                        "indexed": False
+                        "indexed": False,
                     },
                     {
                         "filename": "doc2.pdf",
                         "success": False,
                         "error": "File too large",
-                        "error_code": "FILE_TOO_LARGE"
-                    }
-                ]
+                        "error_code": "FILE_TOO_LARGE",
+                    },
+                ],
             }
         }
     )
-    
+
     total: int = Field(..., description="Total files attempted")
     successful: int = Field(..., description="Number of successful uploads")
     failed: int = Field(..., description="Number of failed uploads")
-    results: List[FileUploadResult] = Field(..., description="Individual upload results")
-
+    results: List[FileUploadResult] = Field(
+        ..., description="Individual upload results"
+    )

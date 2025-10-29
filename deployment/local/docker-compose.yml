@@ -3,8 +3,8 @@ version: '3.8'
 services:
   api:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/Dockerfile
     image: ragtrial:dev
     container_name: ragtrial-api
     ports:
@@ -22,7 +22,7 @@ services:
       chromadb:
         condition: service_started
     volumes:
-      - ./storage:/app/storage
+      - ../../storage:/app/storage
     networks:
       - ragtrial-network
     restart: unless-stopped
