@@ -17,13 +17,13 @@ def test_config_loading():
 
 
 def test_app_config_section():
-    """Test that [app] section loads correctly (using test.toml)"""
+    """Test that [app] section loads correctly (using test.toml or ci.toml)"""
     app_config = Config()
 
-    # Test app config fields (from test.toml)
-    assert app_config.app.name == "ragtrial-app-test"
+    # Test app config fields (from test.toml or ci.toml in CI)
+    assert app_config.app.name in ["ragtrial-app-test", "ragtrial-app-ci"]
     assert app_config.app.version == "1.0.0"
-    assert app_config.app.environment == "test"
+    assert app_config.app.environment in ["test", "ci"]
 
 
 def test_logging_config_section():
@@ -45,13 +45,13 @@ def test_google_config_section():
 
 
 def test_config_consistency():
-    """Test that Config produces consistent values across instantiations (using test.toml)"""
+    """Test that Config produces consistent values across instantiations (using test.toml or ci.toml)"""
     config1 = Config()
     config2 = Config()
 
-    # Both should have same values (loaded from test.toml)
+    # Both should have same values (loaded from test.toml or ci.toml in CI)
     assert config1.app.name == config2.app.name
-    assert config1.app.name == "ragtrial-app-test"
+    assert config1.app.name in ["ragtrial-app-test", "ragtrial-app-ci"]
     assert config1.logging.level == config2.logging.level
 
 

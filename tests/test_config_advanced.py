@@ -18,15 +18,15 @@ class TestTestEnvironmentConfig:
     """Test that test.toml is loaded correctly"""
 
     def test_app_environment_is_test(self):
-        """Test that APP_ENV is set to 'test'"""
+        """Test that APP_ENV is set to 'test' or 'ci' (in CI)"""
         config = Config()
-        assert config.app.environment == "test"
-        assert config.AppEnv == "test"
+        assert config.app.environment in ["test", "ci"]
+        assert config.AppEnv in ["test", "ci"]
 
     def test_app_name_is_test_variant(self):
-        """Test that app name reflects test environment"""
+        """Test that app name reflects test or ci environment"""
         config = Config()
-        assert config.app.name == "ragtrial-app-test"
+        assert config.app.name in ["ragtrial-app-test", "ragtrial-app-ci"]
 
 
 class TestConfigValues:
