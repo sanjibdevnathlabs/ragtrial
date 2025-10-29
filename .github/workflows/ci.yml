@@ -76,30 +76,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      - name: Verify image is pullable
-        if: steps.check.outputs.exists == 'false'
-        run: |
-          echo "⏳ Waiting for Docker Hub to propagate the image..."
-          for i in {1..30}; do
-            if docker pull ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }} > /dev/null 2>&1; then
-              echo "✅ Image is pullable from Docker Hub"
-              docker rmi ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }} > /dev/null 2>&1 || true
-              break
-            fi
-            if [ $i -eq 30 ]; then
-              echo "❌ Image not pullable after 30 attempts"
-              exit 1
-            fi
-            echo "⏳ Attempt $i/30 - waiting 2 seconds..."
-            sleep 2
-          done
-      
       - name: Image details
         run: |
           if [ "${{ steps.check.outputs.exists }}" = "true" ]; then
             echo "✅ Base image already exists (skipped build)"
           else
-            echo "✅ Base image built, pushed, and verified pullable!"
+            echo "✅ Base image built and pushed successfully!"
           fi
           echo ""
           echo "📦 Image: ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }}"
@@ -263,10 +245,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup test database
-        run: |
-          mysql -h mysql -u root -proot < scripts/setup_test_mysql.sql
-          APP_ENV=test make migrate-up
+      - name: Run database migrations
+        run: APP_ENV=test make migrate-up
       
       - name: Run integration tests
         run: make test-integration

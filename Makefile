@@ -132,7 +132,7 @@ test-html:
 
 test-ci:
 	@echo "Running unit tests for CI (with xml + term + html coverage)..."
-	@APP_ENV=test ./venv/bin/python -m pytest \
+	@APP_ENV=test $(PYTHON) -m pytest \
 		-m "not integration" \
 		-n auto \
 		--cov=. \
