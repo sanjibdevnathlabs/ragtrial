@@ -7,12 +7,14 @@ shared fixtures and configuration for all tests.
 Key Features:
 - Sets APP_ENV=test for all tests
 - Adds project root to Python path
-- Provides shared fixtures
+- Provides mock fixtures for external dependencies
+- Ensures test isolation with singleton reset
 """
 
 import os
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -29,6 +31,10 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 
+# ============================================================================
+# SINGLETON RESET - Critical for Test Isolation
+# ============================================================================
+
 @pytest.fixture(autouse=True)
 def reset_singletons():
     """
@@ -44,29 +50,89 @@ def reset_singletons():
     SingletonMeta._instances.clear()
 
 
-@pytest.fixture(autouse=True)
-def clean_database_after_test():
-    """
-    Clean database data after each test for isolation.
-    
-    This ensures tests don't affect each other.
-    Only runs if database tables exist.
-    """
-    yield
-    
-    # Clean up after test
-    try:
-        from database.session import SessionFactory
-        from sqlalchemy import text
-        
-        sf = SessionFactory()
-        with sf.get_write_session() as session:
-            # Delete all records from files table
-            session.execute(text("DELETE FROM files"))
-    except Exception:
-        # Silently ignore if tables don't exist or other errors
-        pass
+# ============================================================================
+# MOCK FIXTURES - Database, Vector Store, Embeddings
+# ============================================================================
 
+@pytest.fixture
+def mock_db_engine():
+    """
+    Mock SQLAlchemy engine for database operations.
+    
+    Use this fixture to avoid real database connections.
+    Returns MagicMock that supports context manager protocol.
+    """
+    mock_engine = MagicMock()
+    mock_connection = MagicMock()
+    mock_engine.connect.return_value.__enter__.return_value = mock_connection
+    mock_engine.connect.return_value.__exit__.return_value = None
+    return mock_engine
+
+
+@pytest.fixture
+def mock_db_session():
+    """
+    Mock SQLAlchemy session for database operations.
+    
+    Use this fixture to avoid real database connections.
+    Returns MagicMock with common session methods.
+    """
+    mock_session = MagicMock()
+    mock_session.execute.return_value = MagicMock()
+    mock_session.commit.return_value = None
+    mock_session.rollback.return_value = None
+    mock_session.close.return_value = None
+    return mock_session
+
+
+@pytest.fixture
+def mock_vectorstore():
+    """
+    Mock vector store client (ChromaDB, Qdrant, etc.).
+    
+    Use this fixture to avoid real vector store connections.
+    Returns MagicMock with common vector store methods.
+    """
+    mock_store = MagicMock()
+    mock_store.add_documents.return_value = None
+    mock_store.search.return_value = []
+    mock_store.clear.return_value = None
+    return mock_store
+
+
+@pytest.fixture
+def mock_embeddings():
+    """
+    Mock embeddings provider (Google AI, OpenAI, etc.).
+    
+    Use this fixture to avoid real API calls.
+    Returns MagicMock with fake embedding vectors.
+    """
+    mock_embed = MagicMock()
+    # Fake 384-dimensional embedding vector
+    fake_embedding = [0.1] * 384
+    mock_embed.embed_query.return_value = fake_embedding
+    mock_embed.embed_documents.return_value = [fake_embedding]
+    return mock_embed
+
+
+@pytest.fixture
+def mock_llm():
+    """
+    Mock LLM provider (Google Gemini, OpenAI, etc.).
+    
+    Use this fixture to avoid real LLM API calls.
+    Returns MagicMock with fake responses.
+    """
+    mock = MagicMock()
+    mock.invoke.return_value = "This is a mock LLM response."
+    mock.generate.return_value = "This is a mock generated text."
+    return mock
+
+
+# ============================================================================
+# UTILITY FIXTURES
+# ============================================================================
 
 @pytest.fixture
 def project_root_path():
@@ -74,33 +140,48 @@ def project_root_path():
     return Path(__file__).parent.parent
 
 
+# ============================================================================
+# TEST CLEANUP - Remove test artifacts after test session
+# ============================================================================
+
 @pytest.fixture(scope="session", autouse=True)
-def setup_test_database():
+def cleanup_test_artifacts():
     """
-    Set up test database before all tests.
+    Clean up test artifacts after all tests complete.
     
-    This fixture:
-    - Removes existing test database
-    - Runs migrations to create schema
-    - Runs once per test session
+    This fixture runs once at the end of the entire test session
+    and removes all test-related files and directories.
+    
+    Cleaned up:
+    - storage/test.db (SQLite test database)
+    - storage/chroma_test/ (ChromaDB test collection)
+    - storage/test_documents/ (Test document storage)
     """
-    import subprocess
-    
-    # Clean up old test database
-    test_db_path = project_root / "storage" / "test.db"
-    if test_db_path.exists():
-        test_db_path.unlink()
-    
-    # Run migrations to create schema
-    subprocess.run(
-        ["python", "-m", "migration", "up"],
-        cwd=str(project_root),
-        capture_output=True
-    )
-    
+    # Yield to run tests first
     yield
     
-    # Optional: Clean up after all tests
-    if test_db_path.exists():
-        test_db_path.unlink()
+    # Cleanup after all tests complete
+    import shutil
+    from pathlib import Path
+    
+    project_root = Path(__file__).parent.parent
+    storage_dir = project_root / "storage"
+    
+    cleanup_paths = [
+        storage_dir / "test.db",
+        storage_dir / "chroma_test",
+        storage_dir / "test_documents",
+    ]
+    
+    for path in cleanup_paths:
+        try:
+            if path.exists():
+                if path.is_file():
+                    path.unlink()
+                    print(f"✓ Cleaned up: {path}")
+                elif path.is_dir():
+                    shutil.rmtree(path)
+                    print(f"✓ Cleaned up: {path}")
+        except Exception as e:
+            print(f"⚠ Failed to clean up {path}: {e}")
 

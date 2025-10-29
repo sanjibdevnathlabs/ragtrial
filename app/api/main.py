@@ -28,6 +28,63 @@ def get_config() -> Config:
     return Config()
 
 
+def log_registered_routes(app: FastAPI):
+    """
+    Display all registered routes in a formatted table.
+    
+    Args:
+        app: FastAPI application instance
+    """
+    # Collect routes grouped by path
+    routes_info = []
+    for route in app.routes:
+        if hasattr(route, "methods") and hasattr(route, "path"):
+            # Skip HEAD and OPTIONS methods (auto-generated)
+            methods = [m for m in route.methods if m not in ["HEAD", "OPTIONS"]]
+            if methods:
+                route_name = getattr(route, "name", "")
+                routes_info.append({
+                    "methods": sorted(methods),
+                    "path": route.path,
+                    "name": route_name
+                })
+    
+    # Sort by path for better readability
+    routes_info.sort(key=lambda x: x["path"])
+    
+    # Calculate column widths
+    max_method_len = max(len(", ".join(r["methods"])) for r in routes_info)
+    max_path_len = max(len(r["path"]) for r in routes_info)
+    max_name_len = max(len(r["name"]) for r in routes_info)
+    
+    # Ensure minimum widths
+    method_width = max(max_method_len, 10)
+    path_width = max(max_path_len, 30)
+    name_width = max(max_name_len, 20)
+    
+    # Print table header
+    print("\n" + "=" * 80)
+    print("🚀 REGISTERED API ROUTES")
+    print("=" * 80)
+    
+    # Print column headers
+    header = f"{'METHOD':<{method_width}} | {'PATH':<{path_width}} | {'NAME':<{name_width}}"
+    print(header)
+    print("-" * len(header))
+    
+    # Print each route
+    for route_data in routes_info:
+        methods_str = ", ".join(route_data["methods"])
+        path = route_data["path"]
+        name = route_data["name"]
+        print(f"{methods_str:<{method_width}} | {path:<{path_width}} | {name:<{name_width}}")
+    
+    # Print footer
+    print("=" * 80)
+    print(f"Total routes: {len(routes_info)}")
+    print("=" * 80 + "\n")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -43,6 +100,9 @@ async def lifespan(app: FastAPI):
         port=config.api.port,
         storage_backend=config.storage.backend
     )
+    
+    # Log all registered routes
+    log_registered_routes(app)
     
     logger.info(codes.API_SERVER_STARTED, message=codes.MSG_API_SERVER_STARTED)
     

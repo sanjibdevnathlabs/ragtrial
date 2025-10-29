@@ -1,16 +1,51 @@
 """
 Integration tests for API endpoints.
 
-Tests full request/response flow with database backend.
+INTEGRATION TESTS - These tests require real database and external services.
+They test the full request/response flow with actual database backend.
+
+These tests are marked with @pytest.mark.integration and are skipped
+during unit test runs. Run with: make test-integration
+
+Test Coverage:
+- Health endpoint with database
+- Upload endpoint with storage
+- List files endpoint with database
+- File metadata endpoint with database
 """
 
 import pytest
+
+# Mark all tests in this module as integration tests
+pytestmark = pytest.mark.integration
 import time
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
 
 from app.api.main import app
 from app.modules.file.core import FileService as DBFileService
+from database.session import SessionFactory
+from sqlalchemy import text
+
+
+@pytest.fixture(autouse=True)
+def clean_database():
+    """Clean database before each integration test."""
+    # Clean before test
+    session_factory = SessionFactory()
+    engine = session_factory.get_write_engine()
+    
+    # Delete all files
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM files"))
+        conn.commit()
+    
+    yield
+    
+    # Optional: Clean after test as well
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM files"))
+        conn.commit()
 
 
 @pytest.fixture

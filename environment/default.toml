@@ -57,7 +57,7 @@ default_https_port = 443         # Default HTTPS port for secure connections
 
 # Embeddings Configuration
 [embeddings]
-provider = "google"              # Which embeddings: google, openai, huggingface, cohere, anthropic
+provider = "google"              # Which embeddings: google, openai, huggingface, anthropic
 dimension = 768
 
 # Google Embeddings settings

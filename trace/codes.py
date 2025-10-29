@@ -250,6 +250,9 @@ API_FILES_LISTED = "api_files_listed"
 API_FILE_METADATA_RETRIEVED = "api_file_metadata_retrieved"
 API_VALIDATION_ERROR = "api_validation_error"
 API_ERROR = "api_error"
+API_ROUTES_REGISTERED = "api_routes_registered"
+API_ROUTE_REGISTERED = "api_route_registered"
+API_ROUTES_COUNT = "api_routes_count"
 
 # API messages
 MSG_API_SERVER_STARTED = "API server started successfully"

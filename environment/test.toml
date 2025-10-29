@@ -164,4 +164,3 @@ schema = "public"
 pool_size = 1
 max_overflow = 1
 debug = false
-

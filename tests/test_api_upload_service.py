@@ -1,11 +1,19 @@
 """
 Tests for upload service.
 
-Tests file upload business logic.
+Unit tests with mocked database - no real DB connections.
+Following best practices for fast, isolated testing.
+
+Test Coverage:
+- File upload business logic
+- Validation
+- Storage integration
+- Duplicate detection
+- Error handling
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, MagicMock, patch
 
 from app.modules.upload import UploadService
 from app.modules.upload.response import UploadResponse
@@ -33,9 +41,34 @@ def mock_storage():
 
 
 @pytest.fixture
-def service(mock_config, mock_storage):
-    """Create upload service instance."""
-    return UploadService(mock_config, mock_storage)
+def mock_db_file_service():
+    """Mock database file service."""
+    service = MagicMock()
+    service.check_duplicate.return_value = None  # No duplicates by default
+    
+    # Dynamic return value that uses the actual parameters
+    def create_file_record_side_effect(**kwargs):
+        return {
+            "id": "test-id",
+            "filename": kwargs.get("filename", "test.pdf"),
+            "file_path": kwargs.get("file_path", "source_docs/test.pdf"),
+            "file_size": kwargs.get("file_size", 100),
+            "checksum": kwargs.get("checksum", "test-checksum"),
+            "file_type": "pdf",
+            "indexed": False,
+            "storage_backend": kwargs.get("storage_backend", "local")
+        }
+    
+    service.create_file_record.side_effect = create_file_record_side_effect
+    return service
+
+
+@pytest.fixture
+def service(mock_config, mock_storage, mock_db_file_service):
+    """Create upload service instance with mocked dependencies."""
+    with patch("database.session.SessionFactory"):
+        with patch("app.modules.upload.service.DBFileService", return_value=mock_db_file_service):
+            return UploadService(mock_config, mock_storage)
 
 
 class TestUploadFile:

@@ -14,11 +14,12 @@ help:
 	@echo "  make setup-database   Run database migrations (setup DB)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test             Run all tests"
-	@echo "  make test-verbose     Run tests with verbose output"
-	@echo "  make test-coverage    Run tests with coverage report"
-	@echo "  make test-config      Run config tests only"
-	@echo "  make test-logging     Run logging tests only"
+	@echo "  make test             Run unit tests with coverage"
+	@echo "  make test-html        Run unit tests with HTML coverage report"
+	@echo "  make test-integration Run integration tests (auto-setup SQLite)"
+	@echo "  make test-clean       Clean up test artifacts (DB, storage)"
+	@echo "  make setup-test-db    Set up SQLite test database"
+	@echo "  make setup-test-chromadb  Set up ChromaDB test collection"
 	@echo ""
 	@echo "Database Management:"
 	@echo "  make populate-db      Populate databases with sample data"
@@ -61,25 +62,79 @@ install-dev:
 	@./venv/bin/pip install pytest pytest-cov black ruff
 
 # Testing
+# Default: Run unit tests with terminal coverage (fast, no external dependencies)
 test:
-	@echo "Running all tests..."
-	@./venv/bin/python -m pytest tests/ -v
+	@echo "Running unit tests with coverage..."
+	@APP_ENV=test ./venv/bin/python -m pytest \
+		-m "not integration" \
+		-vv \
+		--ff \
+		--cov=. \
+		--cov-report=term \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
 
-test-verbose:
-	@echo "Running tests with verbose output..."
-	@./venv/bin/python -m pytest tests/ -vv
+# Run unit tests with HTML coverage report (for detailed analysis)
+test-html:
+	@echo "Running unit tests with HTML coverage report..."
+	@APP_ENV=test ./venv/bin/python -m pytest \
+		-m "not integration" \
+		-vv \
+		--ff \
+		--cov=. \
+		--cov-report=html \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
+	@echo ""
+	@echo "📊 HTML coverage report generated: htmlcov/index.html"
+	@echo "💡 Open with: open htmlcov/index.html"
 
-test-coverage:
-	@echo "Running tests with coverage..."
-	@./venv/bin/python -m pytest tests/ --cov=. --cov-report=html --cov-report=term
+# Set up SQLite test database
+setup-test-db:
+	@echo "📦 Setting up SQLite test database..."
+	@APP_ENV=test $(MAKE) migrate-up
+	@echo "✅ Test database ready at: storage/test.db"
 
-test-config:
-	@echo "Running config tests..."
-	@./venv/bin/python -m pytest tests/test_config.py tests/test_config_advanced.py -v
+# Set up ChromaDB test collection
+setup-test-chromadb:
+	@echo "📦 Setting up ChromaDB test collection..."
+	@mkdir -p storage/chroma_test
+	@echo "✅ ChromaDB test directory ready at: storage/chroma_test/"
 
-test-logging:
-	@echo "Running logging tests..."
-	@./venv/bin/python -m pytest tests/test_logging.py -v
+# Run integration tests (requires SQLite test database)
+test-integration: setup-test-db
+	@echo "🧪 Running integration tests..."
+	@APP_ENV=test ./venv/bin/python -m pytest \
+		-m "integration" \
+		-vv \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
+
+# Clean up test artifacts (database, storage, etc.)
+test-clean:
+	@echo "🧹 Cleaning up test artifacts..."
+	@rm -f storage/test.db && echo "  ✓ Removed storage/test.db" || true
+	@rm -rf storage/chroma_test && echo "  ✓ Removed storage/chroma_test/" || true
+	@rm -rf storage/test_documents && echo "  ✓ Removed storage/test_documents/" || true
+	@echo "✅ Test cleanup complete!"
 
 # Database Management
 setup-db:

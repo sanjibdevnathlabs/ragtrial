@@ -362,7 +362,7 @@ class MigrationManager:
         logger.info(
             codes.DB_MIGRATION_GENERATE,
             version=version,
-            msg=constants.MSG_DB_MIGRATION_GENERATE
+            msg=constants.MSG_MIGRATION_GENERATED
         )
         
         return version
