@@ -97,7 +97,7 @@ install-dev:
 # Default: Run unit tests with terminal coverage (fast, no external dependencies)
 test:
 	@echo "Running unit tests with coverage (parallel execution)..."
-	@APP_ENV=test ./venv/bin/python -m pytest \
+	@APP_ENV=test $(PYTHON) -m pytest \
 		-m "not integration" \
 		-n auto \
 		--ff \
@@ -115,7 +115,7 @@ test:
 # Run unit tests with HTML coverage report (for detailed analysis)
 test-html:
 	@echo "Running unit tests with HTML coverage report (parallel execution)..."
-	@APP_ENV=test ./venv/bin/python -m pytest \
+	@APP_ENV=test $(PYTHON) -m pytest \
 		-m "not integration" \
 		-n auto \
 		--ff \
@@ -160,7 +160,7 @@ setup-test-chromadb:
 # Note: Parallel execution with SELECT FOR UPDATE deadlock prevention
 test-integration:
 	@echo "🧪 Running integration tests (parallel, ~1s)..."
-	@APP_ENV=test ./venv/bin/python -m pytest \
+	@APP_ENV=test $(PYTHON) -m pytest \
 		-m "integration" \
 		-n auto \
 		-vv \
@@ -185,15 +185,15 @@ test-clean:
 # Database Management
 setup-db:
 	@echo "Setting up database..."
-	@./venv/bin/python scripts/setup_database.py
+	@$(PYTHON) scripts/setup_database.py
 
 populate-db:
 	@echo "Populating databases with sample data..."
-	@./venv/bin/python scripts/populate_sample_data.py
+	@$(PYTHON) scripts/populate_sample_data.py
 
 cleanup-db:
 	@echo "Cleaning up databases..."
-	@./venv/bin/python scripts/cleanup_all_databases.py
+	@$(PYTHON) scripts/cleanup_all_databases.py
 
 reset-db: cleanup-db populate-db
 	@echo "Database reset complete!"
@@ -205,23 +205,23 @@ migrate-generate:
 		exit 1; \
 	fi
 	@echo "Generating migration: $(DESC)"
-	@./venv/bin/python -m migration generate $(DESC)
+	@$(PYTHON) -m migration generate $(DESC)
 
 migrate-up:
 	@echo "Applying pending migrations..."
-	@./venv/bin/python -m migration up
+	@$(PYTHON) -m migration up
 
 migrate-down:
 	@echo "Rolling back last migration..."
-	@./venv/bin/python -m migration down
+	@$(PYTHON) -m migration down
 
 migrate-status:
 	@echo "Checking migration status..."
-	@./venv/bin/python -m migration status
+	@$(PYTHON) -m migration status
 
 migrate-reset:
 	@echo "Resetting database migrations..."
-	@./venv/bin/python -m migration reset --yes
+	@$(PYTHON) -m migration reset --yes
 
 setup-database: migrate-up
 	@echo "✅ Database setup complete!"
@@ -287,21 +287,21 @@ run-api:
 run-rag-cli:
 	@echo "Starting Interactive RAG CLI..."
 	@echo ""
-	@./venv/bin/python -m app.cli.main
+	@$(PYTHON) -m app.cli.main
 
 run-rag-demo:
 	@echo "Running RAG query demonstration..."
 	@echo ""
-	@./venv/bin/python examples/demo_rag_query.py
+	@$(PYTHON) examples/demo_rag_query.py
 
 run-examples:
 	@echo "Running demo examples..."
 	@echo ""
 	@echo "1. Running vectorstore demo..."
-	@./venv/bin/python examples/demo_vectorstore.py
+	@$(PYTHON) examples/demo_vectorstore.py
 	@echo ""
 	@echo "2. Running provider switching demo..."
-	@./venv/bin/python examples/demo_provider_switching.py
+	@$(PYTHON) examples/demo_provider_switching.py
 
 check-env:
 	@echo "Checking environment variables..."
@@ -337,7 +337,7 @@ clean-all: clean
 # Python version check
 check-python:
 	@echo "Python version:"
-	@./venv/bin/python --version
+	@$(PYTHON) --version
 	@echo ""
 	@echo "Installed packages:"
 	@./venv/bin/pip list | grep -E "(pytest|structlog|chroma|pinecone|qdrant|weaviate)" || echo "No matching packages found"
