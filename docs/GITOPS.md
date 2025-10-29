@@ -37,48 +37,44 @@ deployment/local/
 - SHA-tagged for isolation (no race conditions between PRs)
 - Reduces CI/CD time by 70% (no package installation)
 
-### GitHub Actions Workflows
+### GitHub Actions Workflow (Single Unified Pipeline)
 
 ```
 .github/workflows/
-├── base-image.yml         # Build base image (auto-triggers on requirements.txt changes)
-├── tests.yml              # Tests + Coverage reporting
-├── lint.yml               # Code quality (Black, Flake8, isort, mypy)
-├── security.yml           # Security scanning (Bandit, Safety, pip-audit)
-└── docker.yml             # Docker build & push to Docker Hub
+└── ci.yml                 # Single unified CI pipeline with job dependencies
 ```
 
-**Workflow Efficiency:**
-- **Hybrid execution** - fast feedback + optimized tests
-- **Tests workflow** depends on base image (pulls pre-built dependencies)
-- **Security & Lint** run independently (don't need dependencies)
-- **No redundant pip installs** = 70% faster overall execution
-- Base image auto-rebuilds when `requirements.txt` changes
-- SHA-specific tags prevent race conditions between multiple PRs
+**Workflow Architecture:**
+- **Single workflow** with 5 stages and 7 jobs
+- **Job-level dependencies** using `needs:` keyword
+- **Parallel execution** where possible
+- **Works on ALL branches and PRs** (no `workflow_run` limitations!)
+- **SHA-specific tags** prevent race conditions between multiple PRs
 
-**Workflow Dependencies:**
+**Job Dependencies (Parent-Child Pattern):**
 ```
-Push/PR triggers multiple independent workflows:
+Stage 1: Build Base Image
+   └─> build-base-image (builds & pushes sanjibdevnath/ragtrial-base:<sha>)
+       │
+       ├──> Stage 2: Parallel Quality Checks (no dependencies)
+       │    ├─> lint (Black, Flake8, isort)
+       │    └─> security (Bandit, Safety, pip-audit)
+       │
+       └──> Stage 3: Tests (depends on base image)
+            ├─> unit-tests (uses base image container)
+            └─> integration-tests (uses base image container)
+            │
+            └──> Stage 4: Docker Build (depends on tests)
+                 └─> docker-build (builds & pushes app image)
+                     │
+                     └──> Stage 5: Security Scan (depends on docker)
+                          └─> docker-security-scan (Trivy scan)
 
-1. Base Image Build (if needed)
-   └─> Tests & Coverage (pulls pre-built base image)
-
-2. Security Scan (independent)
-   └─> Runs immediately (~30-45 sec)
-   └─> Scans: source code + requirements.txt
-   └─> No dependencies installed!
-
-3. Code Quality / Lint (independent)
-   └─> Runs immediately (~20-30 sec)
-   └─> Linters: Black, Flake8, isort, mypy
-   └─> No dependencies installed!
-
-4. Docker Build & Push (independent)
-   └─> Builds application image
-
-✅ Security & Lint run FIRST (instant feedback!)
-✅ Tests run after base image ready (uses pre-built deps)
-✅ Total savings: 6-9 minutes per push!
+✅ Lint & Security run in parallel (instant feedback!)
+✅ Tests wait for base image (uses pre-built deps)
+✅ Docker build waits for tests (ensures quality)
+✅ Works on PRs from feature branches (no workflow_run issues!)
+✅ Total time: ~8-12 minutes (with parallelization)
 ```
 
 ### GitHub Templates
@@ -166,53 +162,69 @@ sanjibdevnath/ragtrial:xyz789abc123def456abc789def123abc456def  # Full SHA only
 
 ## 🔄 CI/CD Pipeline Flow
 
-### On Push/PR to `master` or `develop`
+### Single Unified Workflow (Parent-Child Jobs)
+
+**On Push/PR to any branch:**
 
 ```
-1. Tests Workflow (Parallel Jobs)
-   │
-   ├─ Unit Tests Job (~10s)
-   │  ├─ Setup Python 3.13
-   │  ├─ Run unit tests (632 tests)
-   │  ├─ Upload coverage to Codecov
-   │  └─ Post coverage comment on PR
-   │
-   └─ Integration Tests Job (~5s)
-      ├─ Setup Python 3.13
-      ├─ Setup MySQL test database
-      └─ Run integration tests (21 tests)
-
-2. Lint Workflow
-   ├─ Black formatting check (make black-check)
-   ├─ isort import order check (make isort-check)
-   ├─ Flake8 linting (make flake8-check) [non-blocking]
-   └─ mypy type checking [non-blocking]
-
-3. Security Workflow
-   ├─ Bandit security scan
-   ├─ Safety vulnerability check
-   └─ pip-audit dependency audit
-
-4. Docker Workflow (on push to master/develop)
-   ├─ Build multi-platform image (linux/amd64, linux/arm64)
-   ├─ Push to Docker Hub with tags:
-   │  ├─ <full-commit-sha> (always)
-   │  └─ latest (master only)
-   ├─ Update Docker Hub description (master only)
-   └─ Trivy vulnerability scan (master only)
+┌─────────────────────────────────────────────────────────────┐
+│ Stage 1: Build Base Image (Foundation)                     │
+├─────────────────────────────────────────────────────────────┤
+│ Job: build-base-image (~2-5 min, cached if unchanged)      │
+│   ├─ Check if image exists (docker manifest)               │
+│   ├─ Skip build if SHA-tagged image exists                 │
+│   └─ Build & push sanjibdevnath/ragtrial-base:<sha>        │
+└─────────────────────────────────────────────────────────────┘
+                          │
+         ┌────────────────┴──────────────┐
+         ▼                               ▼
+┌─────────────────────┐   ┌──────────────────────────────┐
+│ Stage 2: Quality    │   │ Stage 3: Tests (needs base)  │
+│ (Parallel - no deps)│   │ (Parallel within stage)      │
+├─────────────────────┤   ├──────────────────────────────┤
+│ Job: lint (~30s)    │   │ Job: unit-tests (~10s)       │
+│  ├─ Black           │   │  ├─ Container: base:<sha>    │
+│  ├─ isort           │   │  ├─ 632 tests                │
+│  └─ Flake8          │   │  ├─ Coverage to Codecov      │
+│                     │   │  └─ PR comment               │
+│ Job: security (~45s)│   │                              │
+│  ├─ Bandit          │   │ Job: integration-tests (~5s) │
+│  ├─ Safety          │   │  ├─ Container: base:<sha>    │
+│  └─ pip-audit       │   │  ├─ MySQL service            │
+└─────────────────────┘   │  └─ 21 tests                 │
+                          └──────────────────────────────┘
+                                        │
+                                        ▼
+                          ┌──────────────────────────────┐
+                          │ Stage 4: Docker Build        │
+                          │ (needs: [unit-tests,         │
+                          │          integration-tests]) │
+                          ├──────────────────────────────┤
+                          │ Job: docker-build (~5-8 min) │
+                          │  ├─ Multi-platform (master)  │
+                          │  ├─ Single platform (PRs)    │
+                          │  ├─ Push (master only)       │
+                          │  └─ Tags: <sha>, latest      │
+                          └──────────────────────────────┘
+                                        │
+                                        ▼
+                          ┌──────────────────────────────┐
+                          │ Stage 5: Security Scan       │
+                          │ (needs: docker-build)        │
+                          │ (master only)                │
+                          ├──────────────────────────────┤
+                          │ Job: docker-security-scan    │
+                          │  ├─ Trivy scan               │
+                          │  └─ Upload to GitHub Security│
+                          └──────────────────────────────┘
 ```
 
-### On Tag `v*` (Release)
-
-```
-1. Docker Workflow
-   ├─ Build multi-platform image (linux/amd64, linux/arm64)
-   ├─ Push to Docker Hub with tags:
-   │  └─ <full-commit-sha>
-   └─ Trivy security scan (if master)
-```
-
-**Note:** Release tags use the same SHA-based tagging. Use `latest` or specific SHA tags for deployments.
+**Key Benefits:**
+- ✅ **Parallel execution**: Lint & security run immediately
+- ✅ **Sequential where needed**: Tests wait for base, docker waits for tests
+- ✅ **Works on all branches**: No `workflow_run` limitations
+- ✅ **Fast feedback**: Quality checks in <1 min
+- ✅ **Safe releases**: Docker only builds after tests pass
 
 ### ⚡ Performance Optimizations
 
@@ -560,15 +572,21 @@ docker push sanjibdevnath/ragtrial:test
 ## ✅ Summary
 
 **Complete GitOps setup includes:**
-- ✅ 4 GitHub Actions workflows
+- ✅ **1 unified CI pipeline** (with parent-child job dependencies)
 - ✅ 2 issue templates
 - ✅ 1 PR template
 - ✅ Dependabot configuration
 - ✅ Pre-commit hooks
 - ✅ Docker multi-stage build
 - ✅ Docker Compose development environment
-- ✅ Makefile automation (16 new commands)
+- ✅ Makefile automation (60+ commands)
 - ✅ Updated README with badges and Docker docs
+
+**Workflow Architecture:**
+- **Single workflow, 5 stages, 7 jobs**
+- **Parent-child dependencies** using `needs:` keyword
+- **Works on all branches and PRs** (no `workflow_run` limitations!)
+- **Total execution time:** ~8-12 minutes (with parallelization)
 
 **All tests passing:** 653 tests (632 unit + 21 integration) in ~16s
 
