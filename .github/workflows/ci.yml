@@ -2,6 +2,8 @@ name: CI Pipeline
 
 on:
   push:
+    branches:
+      - master
   pull_request:
 
 # Cancel in-progress runs when a new commit is pushed
@@ -12,6 +14,8 @@ concurrency:
 env:
   BASE_IMAGE: sanjibdevnath/ragtrial-base
   DOCKER_IMAGE: sanjibdevnath/ragtrial
+  # Use head SHA for PRs, otherwise use the commit SHA
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   # =============================================================================
@@ -24,6 +28,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.COMMIT_SHA }}
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -36,17 +42,17 @@ jobs:
       
       - name: Get commit SHA
         id: sha
-        run: echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+        run: echo "sha=${{ env.COMMIT_SHA }}" >> $GITHUB_OUTPUT
       
       - name: Check if base image exists
         id: check
         run: |
-          if docker manifest inspect ${{ env.BASE_IMAGE }}:${{ github.sha }} > /dev/null 2>&1; then
+          if docker manifest inspect ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }} > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "✅ Base image already exists for commit ${{ github.sha }}"
+            echo "✅ Base image already exists for commit ${{ env.COMMIT_SHA }}"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "🔨 Need to build base image for commit ${{ github.sha }}"
+            echo "🔨 Need to build base image for commit ${{ env.COMMIT_SHA }}"
           fi
       
       - name: Extract metadata
@@ -78,7 +84,7 @@ jobs:
             echo "✅ Base image built and pushed successfully!"
           fi
           echo ""
-          echo "📦 Image: ${{ env.BASE_IMAGE }}:${{ github.sha }}"
+          echo "📦 Image: ${{ env.BASE_IMAGE }}:${{ env.COMMIT_SHA }}"
           echo "🔒 Commit-specific tag ensures isolation between branches/PRs"
 
   # =============================================================================
@@ -106,9 +112,10 @@ jobs:
           restore-keys: |
             lint-tools-${{ runner.os }}-
       
-      - name: Install dependencies
-        if: steps.cache-lint.outputs.cache-hit != 'true'
-        run: pip install black flake8 isort mypy
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8 isort
       
       - name: Check code formatting with Black
         run: make black-check
@@ -142,8 +149,9 @@ jobs:
             security-tools-${{ runner.os }}-
       
       - name: Install security tools
-        if: steps.cache-security.outputs.cache-hit != 'true'
-        run: pip install bandit safety pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety pip-audit
       
       - name: Run Bandit security linter
         run: |
@@ -180,7 +188,7 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     needs: build-base-image
-    container: sanjibdevnath/ragtrial-base:${{ github.sha }}
+    container: sanjibdevnath/ragtrial-base:${{ github.event.pull_request.head.sha || github.sha }}
     
     steps:
       - name: Checkout code
@@ -217,7 +225,7 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: build-base-image
-    container: sanjibdevnath/ragtrial-base:${{ github.sha }}
+    container: sanjibdevnath/ragtrial-base:${{ github.event.pull_request.head.sha || github.sha }}
     
     services:
       mysql:
@@ -289,7 +297,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            BASE_IMAGE_TAG=${{ github.sha }}
+            BASE_IMAGE_TAG=${{ github.event.pull_request.head.sha || github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=${{ github.event_name == 'pull_request' && 'min' || 'max' }}
       
@@ -315,7 +323,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          image-ref: ${{ env.DOCKER_IMAGE }}:${{ github.event.pull_request.head.sha || github.sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
       
