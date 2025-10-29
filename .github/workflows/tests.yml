@@ -6,6 +6,7 @@ on:
     types:
       - completed
     branches: [ master ]
+  push:
 
 # Cancel in-progress runs when a new commit is pushed
 concurrency:
@@ -19,8 +20,8 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    container: sanjibdevnath/ragtrial-base:${{ github.event.workflow_run.head_sha }}
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    container: sanjibdevnath/ragtrial-base:${{ github.event_name == 'push' && 'latest' || github.event.workflow_run.head_sha }}
     
     steps:
       - name: Checkout code
@@ -56,8 +57,8 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    container: sanjibdevnath/ragtrial-base:${{ github.event.workflow_run.head_sha }}
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    container: sanjibdevnath/ragtrial-base:${{ github.event_name == 'push' && 'latest' || github.event.workflow_run.head_sha }}
     
     services:
       mysql:

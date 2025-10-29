@@ -7,8 +7,6 @@ on:
       - completed
     branches: [ master ]
   push:
-    tags:
-      - 'v*'
 
 # Cancel in-progress runs when a new commit is pushed
 concurrency:
@@ -21,7 +19,7 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     
     steps:
       - name: Checkout code
@@ -58,9 +56,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Pass base image tag (commit SHA from workflow_run trigger)
+          # Pass base image tag (commit SHA from workflow_run, or latest for push events)
           build-args: |
-            BASE_IMAGE_TAG=${{ github.event.workflow_run.head_sha }}
+            BASE_IMAGE_TAG=${{ github.event_name == 'push' && 'latest' || github.event.workflow_run.head_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
