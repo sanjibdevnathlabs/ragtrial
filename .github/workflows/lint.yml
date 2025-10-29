@@ -14,14 +14,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
         with:
-          python-version: '3.13'
+          install-deps: 'false'
       
       - name: Install linters
-        run: |
-          pip install black flake8 isort mypy
+        run: pip install black flake8 isort mypy
       
       - name: Check code formatting with Black
         run: black --check --diff .

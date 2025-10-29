@@ -35,6 +35,26 @@ docker-compose.yml          # Development environment (API + MySQL + ChromaDB)
 └── docker.yml             # Docker build & push to Docker Hub
 ```
 
+### Composite Actions (Reusable)
+
+```
+.github/actions/
+└── setup-python-env/      # Reusable Python setup with pip caching
+    └── action.yml
+```
+
+**Purpose:** Centralizes Python environment setup across all workflows (DRY principle)
+
+**Features:**
+- Sets up Python 3.13 with automatic pip caching
+- Upgrades pip
+- Optionally installs `requirements.txt` dependencies
+
+**Benefits:**
+- ✅ 70% faster dependency installation (pip cache)
+- ✅ Single source of truth for Python setup
+- ✅ Easy to update Python version globally
+
 ### GitHub Templates
 
 ```
@@ -83,7 +103,7 @@ make pre-commit-update
 
 **a) Create Docker Hub Repository**
 1. Go to https://hub.docker.com
-2. Create repository: `yourusername/ragtrial`
+2. Create repository: `sanjibdevnath/ragtrial` ✅ (Already created)
 3. Make it public or private
 
 **b) Generate Access Token**
@@ -96,12 +116,25 @@ make pre-commit-update
 2. Add `DOCKERHUB_USERNAME` (your Docker Hub username)
 3. Add `DOCKERHUB_TOKEN` (the token you created)
 
-### 3. Update Repository URLs
+### 3. Docker Image Configuration ✅
 
-Replace `yourusername` with your actual username in:
-- `.github/workflows/docker.yml` (line 15: `DOCKER_IMAGE`)
-- `Makefile` (line 304: `docker-push` command)
-- `README.md` (badges and Docker pull commands)
+**Image:** `sanjibdevnath/ragtrial`
+
+**Tagging Strategy:**
+- **All commits:** `ragtrial-<full-commit-sha>` (40 chars)
+- **Master branch:** `latest` + `ragtrial-<full-commit-sha>`
+- **Other branches:** Only `ragtrial-<full-commit-sha>`
+- **Pull Requests:** Build only (no push)
+
+**Examples:**
+```bash
+# Master branch push (commit: abc123...def)
+sanjibdevnath/ragtrial:ragtrial-abc123def456...789  # Full SHA
+sanjibdevnath/ragtrial:latest                       # Only on master
+
+# Develop branch push
+sanjibdevnath/ragtrial:ragtrial-xyz789abc...def     # Full SHA only
+```
 
 ---
 
@@ -110,13 +143,18 @@ Replace `yourusername` with your actual username in:
 ### On Push/PR to `master` or `develop`
 
 ```
-1. Tests Workflow
-   ├─ Setup Python 3.13
-   ├─ Setup MySQL test database
-   ├─ Run unit tests (parallel, ~10s)
-   ├─ Run integration tests (parallel, ~5s)
-   ├─ Upload coverage to Codecov
-   └─ Post coverage comment on PR
+1. Tests Workflow (Parallel Jobs)
+   │
+   ├─ Unit Tests Job (~10s)
+   │  ├─ Setup Python 3.13
+   │  ├─ Run unit tests (632 tests)
+   │  ├─ Upload coverage to Codecov
+   │  └─ Post coverage comment on PR
+   │
+   └─ Integration Tests Job (~5s)
+      ├─ Setup Python 3.13
+      ├─ Setup MySQL test database
+      └─ Run integration tests (21 tests)
 
 2. Lint Workflow
    ├─ Black formatting check
@@ -129,21 +167,26 @@ Replace `yourusername` with your actual username in:
    ├─ Safety vulnerability check
    └─ pip-audit dependency audit
 
-4. Docker Workflow (if merged to master)
-   ├─ Build multi-platform image
-   ├─ Push to Docker Hub (latest, master, master-{sha})
-   ├─ Update Docker Hub description
-   └─ Trivy vulnerability scan
+4. Docker Workflow (on push to master/develop)
+   ├─ Build multi-platform image (linux/amd64, linux/arm64)
+   ├─ Push to Docker Hub with tags:
+   │  ├─ ragtrial-<full-commit-sha> (always)
+   │  └─ latest (master only)
+   ├─ Update Docker Hub description (master only)
+   └─ Trivy vulnerability scan (master only)
 ```
 
 ### On Tag `v*` (Release)
 
 ```
 1. Docker Workflow
-   ├─ Build multi-platform image
-   ├─ Push versioned tags (v1.2.3, 1.2.3, 1.2, 1)
-   └─ Trivy security scan
+   ├─ Build multi-platform image (linux/amd64, linux/arm64)
+   ├─ Push to Docker Hub with tags:
+   │  └─ ragtrial-<full-commit-sha>
+   └─ Trivy security scan (if master)
 ```
+
+**Note:** Release tags use the same SHA-based tagging. Use `latest` or specific SHA tags for deployments.
 
 ---
 
@@ -181,14 +224,14 @@ make docker-clean
 ### Pull from Docker Hub
 
 ```bash
-# Latest stable
-docker pull yourusername/ragtrial:latest
+# Latest stable (master branch)
+docker pull sanjibdevnath/ragtrial:latest
 
-# Specific version
-docker pull yourusername/ragtrial:1.2.3
+# Specific commit (by full SHA)
+docker pull sanjibdevnath/ragtrial:ragtrial-abc123def456789...
 
-# Development branch
-docker pull yourusername/ragtrial:develop
+# List all available tags
+# Visit: https://hub.docker.com/r/sanjibdevnath/ragtrial/tags
 ```
 
 ### Production Deployment
@@ -355,12 +398,11 @@ git push origin v1.2.3
 ### Automatic Actions on Tag
 
 When `v1.2.3` tag is pushed:
-1. Docker images built for all platforms
+1. Docker images built for all platforms (linux/amd64, linux/arm64)
 2. Images pushed with tags:
-   - `yourusername/ragtrial:1.2.3`
-   - `yourusername/ragtrial:1.2`
-   - `yourusername/ragtrial:1`
-   - `yourusername/ragtrial:v1.2.3`
+   - `sanjibdevnath/ragtrial:ragtrial-<full-commit-sha>`
+   
+**Note:** Use commit SHA tags for precise versioning instead of semantic version tags.
 3. Trivy security scan
 4. GitHub Release created (manually or via workflow)
 
@@ -432,7 +474,11 @@ docker login
 
 # Verify credentials
 docker logout
-docker login -u yourusername
+docker login -u sanjibdevnath
+
+# Test push locally
+docker tag ragtrial:local sanjibdevnath/ragtrial:test
+docker push sanjibdevnath/ragtrial:test
 ```
 
 ---

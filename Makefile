@@ -16,6 +16,7 @@ help:
 	@echo "Testing:"
 	@echo "  make test             Run unit tests with coverage (parallel, ~10s)"
 	@echo "  make test-html        Run unit tests with HTML coverage report"
+	@echo "  make test-ci          Run unit tests for CI (xml + term + html)"
 	@echo "  make test-integration Run integration tests (parallel, ~1s)"
 	@echo "  make test-clean       Clean up test storage artifacts"
 	@echo "  make setup-test-chromadb  Set up ChromaDB test collection"
@@ -104,6 +105,24 @@ test-html:
 		-n auto \
 		--ff \
 		--cov=. \
+		--cov-report=html \
+		--ignore=scripts \
+		--ignore=examples \
+		--ignore=venv \
+		--ignore=models \
+		--ignore=storage \
+		--ignore=htmlcov \
+		--ignore=migration/versions \
+		--ignore=migration/templates
+
+test-ci:
+	@echo "Running unit tests for CI (with xml + term + html coverage)..."
+	@APP_ENV=test ./venv/bin/python -m pytest \
+		-m "not integration" \
+		-n auto \
+		--cov=. \
+		--cov-report=xml \
+		--cov-report=term-missing \
 		--cov-report=html \
 		--ignore=scripts \
 		--ignore=examples \

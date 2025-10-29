@@ -7,77 +7,19 @@ on:
     branches: [ master, develop ]
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_ragtrial
-          MYSQL_USER: test_ragtrial
-          MYSQL_PASSWORD: test_ragtrial
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-          cache: 'pip'
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
       
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Setup test database
-        run: |
-          mysql -h 127.0.0.1 -u root -proot < scripts/setup_test_mysql.sql
-          APP_ENV=test python -m migration up
-      
-      - name: Run unit tests
-        run: |
-          APP_ENV=test pytest \
-            -m "not integration" \
-            -n auto \
-            --cov=. \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            --cov-report=html \
-            --ignore=scripts \
-            --ignore=examples \
-            --ignore=venv \
-            --ignore=models \
-            --ignore=storage \
-            --ignore=htmlcov \
-            --ignore=migration/versions \
-            --ignore=migration/templates
-      
-      - name: Run integration tests
-        run: |
-          APP_ENV=test pytest \
-            -m "integration" \
-            -n auto \
-            -vv \
-            --ignore=scripts \
-            --ignore=examples \
-            --ignore=venv \
-            --ignore=models \
-            --ignore=storage \
-            --ignore=htmlcov \
-            --ignore=migration/versions \
-            --ignore=migration/templates
+      - name: Run unit tests with coverage
+        run: make test-ci
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -102,4 +44,39 @@ jobs:
           name: coverage-report
           path: htmlcov/
           retention-days: 30
+  
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_ragtrial
+          MYSQL_USER: test_ragtrial
+          MYSQL_PASSWORD: test_ragtrial
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python environment
+        uses: ./.github/actions/setup-python-env
+      
+      - name: Setup test database
+        run: |
+          mysql -h 127.0.0.1 -u root -proot < scripts/setup_test_mysql.sql
+          APP_ENV=test make migrate-up
+      
+      - name: Run integration tests
+        run: make test-integration
 
