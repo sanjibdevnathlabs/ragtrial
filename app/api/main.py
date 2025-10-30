@@ -6,8 +6,6 @@ Embeds Streamlit UI for unified application architecture.
 """
 
 import atexit
-import os
-import signal
 import subprocess
 import sys
 import trace.codes as codes

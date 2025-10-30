@@ -25,6 +25,7 @@ def mock_health_dependencies():
     - No real LLM API calls (Google Gemini) - costs money + quota limits
     - No real Embeddings API calls (Google) - costs money + quota limits
     - No real Vectorstore connections (ChromaDB) - disk I/O
+    - No real Database connections (MySQL) - requires external service
     """
     # Reset HealthService singleton to ensure clean state
     from app.modules.health.service import HealthService
@@ -37,7 +38,11 @@ def mock_health_dependencies():
         HealthService, "_test_embeddings_api", return_value=True
     ), patch("app.modules.health.service.create_embeddings") as mock_embeddings, patch(
         "app.modules.health.service.create_vectorstore"
-    ) as mock_vectorstore:
+    ) as mock_vectorstore, patch(
+        "database.session.SessionFactory.check_health", return_value=True
+    ), patch(
+        "database.session.SessionFactory.get_read_session"
+    ) as mock_read_session:
 
         # Mock Embeddings to return success
         mock_embeddings_instance = Mock()
@@ -48,6 +53,20 @@ def mock_health_dependencies():
         mock_vs_instance = Mock()
         mock_vs_instance.check_health.return_value = True
         mock_vectorstore.return_value = mock_vs_instance
+
+        # Mock Database read session to return empty results
+        mock_session = Mock()
+        # Create a mock query chain that returns empty list at the end
+        mock_query_chain = Mock()
+        mock_query_chain.filter.return_value = mock_query_chain
+        mock_query_chain.order_by.return_value = mock_query_chain
+        mock_query_chain.limit.return_value = mock_query_chain
+        mock_query_chain.offset.return_value = mock_query_chain
+        mock_query_chain.all.return_value = []
+        mock_query_chain.first.return_value = None
+        mock_session.query.return_value = mock_query_chain
+        mock_read_session.return_value.__enter__.return_value = mock_session
+        mock_read_session.return_value.__exit__.return_value = None
 
         yield
 
@@ -292,45 +311,37 @@ class TestIntegration:
         - POST-only endpoints should return 405 (Method Not Allowed), NOT 404
         - 404 means the route is not registered at all (failure)
         """
-        from unittest.mock import patch
-        
-        # Mock database health check to avoid requiring actual DB connection in unit tests
-        with patch("database.session.SessionFactory.check_health", return_value=True):
-            # GET endpoints - should return success or valid business errors
-            get_endpoints = [
-                ("/api/v1/health", 200),  # Health check
-                ("/api/v1/files", 200),  # List files (may be empty)
-                ("/api/v1/devdocs/list", 200),  # List documentation files
-            ]
+        # GET endpoints - should return success or valid business errors
+        get_endpoints = [
+            ("/api/v1/health", 200),  # Health check
+            ("/api/v1/files", 200),  # List files (may be empty)
+            ("/api/v1/devdocs/list", 200),  # List documentation files
+        ]
 
-            for endpoint, expected_status in get_endpoints:
-                response = client.get(endpoint)
-                assert (
-                    response.status_code == expected_status
-                ), f"GET {endpoint} returned {response.status_code}, expected {expected_status}"
+        for endpoint, expected_status in get_endpoints:
+            response = client.get(endpoint)
+            assert (
+                response.status_code == expected_status
+            ), f"GET {endpoint} returned {response.status_code}, expected {expected_status}"
 
-            # POST-only endpoints - should return 405 (Method Not Allowed) when called with GET
-            post_only_endpoints = [
-                "/api/v1/upload",  # File upload
-                "/api/v1/query",  # RAG query
-            ]
+        # POST-only endpoints - should return 405 (Method Not Allowed) when called with GET
+        post_only_endpoints = [
+            "/api/v1/upload",  # File upload
+            "/api/v1/query",  # RAG query
+        ]
 
-            for endpoint in post_only_endpoints:
-                response = client.get(endpoint)
-                assert response.status_code == 405, (
-                    f"GET {endpoint} returned {response.status_code}, expected 405 (Method Not Allowed). "
-                    f"404 would indicate the route is not registered."
-                )
+        for endpoint in post_only_endpoints:
+            response = client.get(endpoint)
+            assert response.status_code == 405, (
+                f"GET {endpoint} returned {response.status_code}, expected 405 (Method Not Allowed). "
+                f"404 would indicate the route is not registered."
+            )
 
     def test_application_starts_successfully(self, client):
         """Test that application can start and respond to requests."""
-        from unittest.mock import patch
-        
-        # Mock database health check to avoid requiring actual DB connection in unit tests
-        with patch("database.session.SessionFactory.check_health", return_value=True):
-            # Simple smoke test
-            response = client.get("/")
-            assert response.status_code == 200
+        # Simple smoke test
+        response = client.get("/")
+        assert response.status_code == 200
 
-            response = client.get("/api/v1/health")
-            assert response.status_code == 200
+        response = client.get("/api/v1/health")
+        assert response.status_code == 200

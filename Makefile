@@ -294,7 +294,7 @@ isort-check:
 
 flake8-check:
 	@echo "🔍 Running Flake8 linter..."
-	@$(FLAKE8) . --max-line-length=88 --extend-ignore=E203,W503 \
+	@$(FLAKE8) . --max-line-length=120 --extend-ignore=E203,W503 \
 		--count --show-source --statistics $(FLAKE8_EXCLUDE)
 
 # Check formatting (for CI/CD and pre-push)

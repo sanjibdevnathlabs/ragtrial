@@ -1,8 +1,7 @@
 """Developer documentation router."""
 
-import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List
 
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel

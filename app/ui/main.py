@@ -50,41 +50,42 @@ st.markdown(
         box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
         height: 80px !important; /* Fixed height for input area */
     }
-    
+
     /* When sidebar is collapsed */
     [data-testid="collapsedControl"] ~ div .stChatInput {
         left: 0 !important;
     }
-    
+
     /* Main container adjustments */
     .main .block-container {
         padding-bottom: 100px !important; /* Space for fixed input */
         max-height: calc(100vh - 80px) !important; /* Full viewport minus input */
         overflow-y: hidden !important;
     }
-    
+
     /* Chat messages container - bounded above fixed input */
     section[data-testid="stVerticalBlock"]:has(.stChatMessage) {
-        max-height: calc(100vh - 350px) !important; /* Account for header, tabs, and input */
+        /* Account for header, tabs, and input */
+        max-height: calc(100vh - 350px) !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
         padding-bottom: 120px !important; /* Extra padding to prevent overlap */
         margin-bottom: 100px !important; /* Margin to keep away from input */
     }
-    
+
     /* Alternative: Target the tab content directly */
     .stTabs [data-baseweb="tab-panel"] {
         max-height: calc(100vh - 350px) !important;
         overflow-y: auto !important;
         padding-bottom: 120px !important;
     }
-    
+
     /* Ensure chat messages don't overflow */
     .stChatMessage {
         margin-bottom: 1rem !important;
         max-width: 100% !important;
     }
-    
+
     /* Hide duplicate tabs during loading */
     .stSpinner ~ div .stTabs {
         display: none !important;
@@ -97,9 +98,9 @@ st.markdown(
         // Try tab panel first, then vertical block
         const tabPanel = document.querySelector('.stTabs [data-baseweb="tab-panel"]');
         const verticalBlock = document.querySelector('[data-testid="stVerticalBlock"]');
-        
+
         const chatContainer = tabPanel || verticalBlock;
-        
+
         if (chatContainer) {
             // Smooth scroll to bottom
             chatContainer.scrollTo({
@@ -108,36 +109,36 @@ st.markdown(
             });
         }
     }
-    
+
     // Debounced scroll function
     let scrollTimeout;
     function debouncedScroll() {
         clearTimeout(scrollTimeout);
         scrollTimeout = setTimeout(scrollToBottom, 100);
     }
-    
+
     // Run on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', scrollToBottom);
     } else {
         setTimeout(scrollToBottom, 300); // Delay to ensure content is rendered
     }
-    
+
     // Watch for new messages in both possible containers
     const observer = new MutationObserver(debouncedScroll);
-    
+
     // Observe tab panel
     const tabPanel = document.querySelector('.stTabs [data-baseweb="tab-panel"]');
     if (tabPanel) {
         observer.observe(tabPanel, { childList: true, subtree: true });
     }
-    
+
     // Also observe vertical block as fallback
     const verticalBlock = document.querySelector('[data-testid="stVerticalBlock"]');
     if (verticalBlock) {
         observer.observe(verticalBlock, { childList: true, subtree: true });
     }
-    
+
     // Force scroll on any rerun
     window.addEventListener('load', () => setTimeout(scrollToBottom, 500));
 </script>
@@ -305,7 +306,8 @@ def export_chat_history() -> None:
 
     # Create export content
     export_content = f"{constants.UI_EXPORT_HEADER}\n\n"
-    export_content += f"{constants.UI_EXPORT_TIMESTAMP_LABEL} {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    export_content += f"{constants.UI_EXPORT_TIMESTAMP_LABEL} {timestamp}\n\n"
 
     for msg in st.session_state.messages:
         role = msg["role"].title()
@@ -320,10 +322,13 @@ def export_chat_history() -> None:
             export_content += "\n"
 
     # Offer download
+    prefix = constants.UI_EXPORT_FILENAME_PREFIX
+    suffix = constants.UI_EXPORT_FILENAME_SUFFIX
+    file_name = f"{prefix}{int(time.time())}{suffix}"
     st.download_button(
         label=constants.UI_EXPORT_DOWNLOAD_LABEL,
         data=export_content,
-        file_name=f"{constants.UI_EXPORT_FILENAME_PREFIX}{int(time.time())}{constants.UI_EXPORT_FILENAME_SUFFIX}",
+        file_name=file_name,
         mime=constants.UI_EXPORT_MIME_TYPE,
     )
 
