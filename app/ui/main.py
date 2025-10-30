@@ -306,7 +306,7 @@ def export_chat_history() -> None:
 
     # Create export content
     export_content = f"{constants.UI_EXPORT_HEADER}\n\n"
-    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     export_content += f"{constants.UI_EXPORT_TIMESTAMP_LABEL} {timestamp}\n\n"
 
     for msg in st.session_state.messages:
