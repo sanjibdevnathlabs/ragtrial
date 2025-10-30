@@ -168,32 +168,24 @@ class TestUIRoutes:
         assert "text/html" in response.headers.get("content-type", "")
 
     def test_langchain_chat_ui_not_available(self, client):
-        """Test /langchain/chat when Streamlit not available."""
-        with patch("app.api.main.streamlit_process", None):
-            response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
+        """Test /langchain/chat now serves React app (no Streamlit)."""
+        # React app is always available (no Streamlit dependency)
+        response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
 
-            assert response.status_code == 503
-            assert constants.UI_STREAMLIT_NOT_INSTALLED in response.text
+        assert response.status_code == 200
+        # React app has root div and loads JS bundles
+        assert '<div id="root"></div>' in response.text
+        assert "/static/dist/assets/" in response.text
 
-    @patch("app.api.main.streamlit_process")
-    def test_langchain_chat_ui_available(self, mock_process, client):
-        """Test /langchain/chat when Streamlit is available."""
-        # Mock streamlit process as running
-        mock_process.return_value = Mock(spec=subprocess.Popen)
+    def test_langchain_chat_ui_available(self, client):
+        """Test /langchain/chat serves React app."""
+        # No need for Streamlit mocking - React is always available
+        response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
 
-        from app.api.main import app
-        from config import Config
-
-        config = Config()
-
-        with patch("app.api.main.streamlit_process", mock_process):
-            with patch("app.api.main.get_config", return_value=config):
-                client_with_ui = TestClient(app)
-                response = client_with_ui.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
-
-                assert response.status_code == 200
-                assert "<iframe" in response.text
-                assert f"http://{config.ui.host}:{config.ui.port}" in response.text
+        assert response.status_code == 200
+        # React app has root div and loads JS bundles
+        assert '<div id="root"></div>' in response.text
+        assert "/static/dist/assets/" in response.text
 
 
 class TestUIConfiguration:

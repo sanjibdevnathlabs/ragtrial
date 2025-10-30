@@ -118,30 +118,10 @@ class TestUIRouteAccessibility:
 
         assert "text/html" in response.headers["content-type"]
 
-    @patch("app.api.main.start_streamlit_ui")
-    @patch("app.api.main.streamlit_process")
     def test_ui_available_returns_iframe(
-        self, mock_process, mock_start, mock_streamlit_process
+        self, mock_streamlit_process
     ):
-        """Test /langchain/chat returns iframe when UI is available."""
-        mock_process.return_value = mock_streamlit_process
-
-        from fastapi.testclient import TestClient
-
-        from app.api.main import app
-
-        with patch("app.api.main.streamlit_process", mock_streamlit_process):
-            client = TestClient(app)
-            response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
-
-            assert response.status_code == 200
-            assert "<iframe" in response.text
-            assert "8501" in response.text  # Streamlit port
-
-    @patch("app.api.main.start_streamlit_ui")
-    @patch("app.api.main.streamlit_process", None)
-    def test_ui_unavailable_returns_warning(self, mock_start):
-        """Test /langchain/chat returns 503 when UI is unavailable."""
+        """Test /langchain/chat returns React app (no iframe)."""
         from fastapi.testclient import TestClient
 
         from app.api.main import app
@@ -149,22 +129,36 @@ class TestUIRouteAccessibility:
         client = TestClient(app)
         response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
 
-        assert response.status_code == 503
-        assert "Not Available" in response.text
-        assert constants.UI_STREAMLIT_NOT_INSTALLED in response.text
+        assert response.status_code == 200
+        # React app has root div and loads JS bundles
+        assert '<div id="root"></div>' in response.text
+        assert "/static/dist/assets/" in response.text
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_ui_iframe_title(self, mock_start, mock_streamlit_process):
-        """Test iframe page has correct title."""
+    def test_ui_unavailable_returns_warning(self):
+        """Test /langchain/chat returns React app (always available)."""
         from fastapi.testclient import TestClient
 
         from app.api.main import app
 
-        with patch("app.api.main.streamlit_process", mock_streamlit_process):
-            client = TestClient(app)
-            response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
+        client = TestClient(app)
+        response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
 
-            assert constants.UI_IFRAME_TITLE_LANGCHAIN in response.text
+        # React app is always available (no Streamlit dependency)
+        assert response.status_code == 200
+        assert '<div id="root"></div>' in response.text
+        assert "/static/dist/assets/" in response.text
+
+    def test_ui_iframe_title(self, mock_streamlit_process):
+        """Test /langchain/chat page title (React app)."""
+        from fastapi.testclient import TestClient
+
+        from app.api.main import app
+
+        client = TestClient(app)
+        response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
+
+        # React app has its own title in index.html
+        assert "RAG Trial" in response.text or "Intelligent Document Search" in response.text
 
     @patch("app.api.main.start_streamlit_ui")
     def test_favicon_returns_204(self, mock_start):
@@ -331,22 +325,19 @@ class TestAPIAndUIIntegration:
         assert root_response.status_code == 200
         assert "text/html" in root_response.headers.get("content-type", "")
 
-        # Docs endpoint is accessible
+        # Docs endpoint is accessible (React app)
         docs_response = client.get("/docs")
         assert docs_response.status_code == 200
-        assert (
-            "swagger" in docs_response.text.lower()
-            or "api" in docs_response.text.lower()
-        )
+        # React app has root div and loads JS bundles
+        assert '<div id="root"></div>' in docs_response.text
+        assert "/static/dist/assets/" in docs_response.text
 
 
 class TestErrorHandling:
     """Test error handling in UI routes."""
 
-    @patch("app.api.main.start_streamlit_ui")
-    @patch("app.api.main.streamlit_process", None)
-    def test_ui_disabled_error_message(self, mock_start):
-        """Test error message when UI is disabled."""
+    def test_ui_disabled_error_message(self):
+        """Test React app is always available (no error)."""
         from fastapi.testclient import TestClient
 
         from app.api.main import app
@@ -354,9 +345,10 @@ class TestErrorHandling:
         client = TestClient(app)
         response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
 
-        assert response.status_code == 503
-        assert "UI Not Available" in response.text
-        assert "pip install streamlit" in response.text
+        # React app is always available (no Streamlit dependency)
+        assert response.status_code == 200
+        assert '<div id="root"></div>' in response.text
+        assert "/static/dist/assets/" in response.text
 
     @patch("app.api.main.start_streamlit_ui")
     def test_404_for_unknown_routes(self, mock_start):

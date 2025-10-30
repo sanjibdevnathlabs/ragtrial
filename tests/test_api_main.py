@@ -78,12 +78,14 @@ class TestRootEndpoint:
         assert "text/html" in response.headers["content-type"]
 
     def test_docs_endpoint_accessible(self, client):
-        """Test /docs endpoint is directly accessible."""
+        """Test /docs endpoint is directly accessible (React app)."""
         response = client.get("/docs")
         assert response.status_code == 200
-        # Docs page contains HTML with API documentation
+        # Docs page now serves React app (index.html)
         assert "text/html" in response.headers["content-type"]
-        assert "swagger" in response.text.lower() or "api" in response.text.lower()
+        # React app has root div and loads JS bundles
+        assert '<div id="root"></div>' in response.text
+        assert "/static/dist/assets/" in response.text
 
 
 class TestFaviconEndpoint:
