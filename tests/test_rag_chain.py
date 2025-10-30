@@ -335,9 +335,7 @@ class TestRAGChainGenerateAnswer:
         """Test that LLM error raises RuntimeError."""
         with patch("app.chain_rag.chain.DocumentRetriever"), patch(
             "app.chain_rag.chain.create_rag_prompt"
-        ) as mock_create_prompt, patch(
-            "llm.factory.create_llm"
-        ) as mock_llm_class:
+        ) as mock_create_prompt, patch("llm.factory.create_llm") as mock_llm_class:
 
             mock_prompt = Mock()
             mock_prompt.format_messages.return_value = []

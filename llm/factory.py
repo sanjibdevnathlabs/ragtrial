@@ -126,4 +126,3 @@ def _create_anthropic_llm(config: "Config", **override_kwargs: Any):
         kwargs["anthropic_api_key"] = llm_config.api_key
 
     return ChatAnthropic(**kwargs)
-

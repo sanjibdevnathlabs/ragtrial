@@ -307,7 +307,7 @@ class TestFactoryIntegration:
         mock_client = MagicMock()
         mock_collection = MagicMock()
         mock_client.get_or_create_collection.return_value = mock_collection
-        
+
         with patch("chromadb.PersistentClient", return_value=mock_client):
             with patch("pathlib.Path.mkdir"):
                 vectorstore = create_vectorstore(config_chroma, embeddings)

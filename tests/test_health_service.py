@@ -75,7 +75,9 @@ class TestDatabaseHealthCheck:
         """Test database health check handles exceptions."""
         with patch("app.modules.health.service.SessionFactory") as mock_factory:
             mock_instance = Mock()
-            mock_instance.check_health.side_effect = Exception("Database connection failed")
+            mock_instance.check_health.side_effect = Exception(
+                "Database connection failed"
+            )
             mock_factory.return_value = mock_instance
 
             is_healthy, details = health_service._check_database_health()
@@ -89,7 +91,9 @@ class TestVectorstoreHealthCheck:
 
     def test_check_vectorstore_healthy(self, health_service):
         """Test vectorstore health check when vectorstore is healthy."""
-        with patch("app.modules.health.service.create_embeddings") as mock_embeddings, patch(
+        with patch(
+            "app.modules.health.service.create_embeddings"
+        ) as mock_embeddings, patch(
             "app.modules.health.service.create_vectorstore"
         ) as mock_vs:
             mock_vs_instance = Mock()
@@ -104,7 +108,9 @@ class TestVectorstoreHealthCheck:
 
     def test_check_vectorstore_unhealthy(self, health_service):
         """Test vectorstore health check when vectorstore is unhealthy."""
-        with patch("app.modules.health.service.create_embeddings") as mock_embeddings, patch(
+        with patch(
+            "app.modules.health.service.create_embeddings"
+        ) as mock_embeddings, patch(
             "app.modules.health.service.create_vectorstore"
         ) as mock_vs:
             mock_vs_instance = Mock()
@@ -297,7 +303,9 @@ class TestOverallHealthStatus:
 
     def test_all_components_healthy(self, health_service):
         """Test overall status when all components are healthy."""
-        with patch.object(health_service, "_check_database_health") as mock_db, patch.object(
+        with patch.object(
+            health_service, "_check_database_health"
+        ) as mock_db, patch.object(
             health_service, "_check_vectorstore_health"
         ) as mock_vs, patch.object(
             health_service, "_check_llm_health_cached"
@@ -316,7 +324,9 @@ class TestOverallHealthStatus:
 
     def test_critical_component_unhealthy(self, health_service):
         """Test overall status when critical component (database) is unhealthy."""
-        with patch.object(health_service, "_check_database_health") as mock_db, patch.object(
+        with patch.object(
+            health_service, "_check_database_health"
+        ) as mock_db, patch.object(
             health_service, "_check_vectorstore_health"
         ) as mock_vs, patch.object(
             health_service, "_check_llm_health_cached"
@@ -334,7 +344,9 @@ class TestOverallHealthStatus:
 
     def test_dependency_unhealthy_overall_healthy(self, health_service):
         """Test overall status when only dependency (LLM) is unhealthy."""
-        with patch.object(health_service, "_check_database_health") as mock_db, patch.object(
+        with patch.object(
+            health_service, "_check_database_health"
+        ) as mock_db, patch.object(
             health_service, "_check_vectorstore_health"
         ) as mock_vs, patch.object(
             health_service, "_check_llm_health_cached"
@@ -343,7 +355,10 @@ class TestOverallHealthStatus:
         ) as mock_emb:
             mock_db.return_value = (True, {"type": "mysql"})
             mock_vs.return_value = (True, {"provider": "chroma"})
-            mock_llm.return_value = (False, {"provider": "google", "error": "API failure"})
+            mock_llm.return_value = (
+                False,
+                {"provider": "google", "error": "API failure"},
+            )
             mock_emb.return_value = (True, {"provider": "google", "cached": "false"})
 
             health_response = health_service.get_health_status()
@@ -353,7 +368,11 @@ class TestOverallHealthStatus:
 
             # But LLM component should show unhealthy
             llm_component = next(
-                (c for c in health_response.components if c.name == constants.COMPONENT_LLM),
+                (
+                    c
+                    for c in health_response.components
+                    if c.name == constants.COMPONENT_LLM
+                ),
                 None,
             )
             assert llm_component is not None
@@ -361,7 +380,9 @@ class TestOverallHealthStatus:
 
     def test_component_details_structure(self, health_service):
         """Test that component details have correct structure."""
-        with patch.object(health_service, "_check_database_health") as mock_db, patch.object(
+        with patch.object(
+            health_service, "_check_database_health"
+        ) as mock_db, patch.object(
             health_service, "_check_vectorstore_health"
         ) as mock_vs, patch.object(
             health_service, "_check_llm_health_cached"
@@ -408,7 +429,9 @@ class TestCacheBehavior:
 
     def test_independent_caches_for_llm_and_embeddings(self, health_service):
         """Test that LLM and embeddings have independent caches."""
-        with patch.object(health_service, "_test_llm_api") as mock_llm_test, patch.object(
+        with patch.object(
+            health_service, "_test_llm_api"
+        ) as mock_llm_test, patch.object(
             health_service, "_test_embeddings_api"
         ) as mock_emb_test:
             mock_llm_test.return_value = True
@@ -427,5 +450,7 @@ class TestCacheBehavior:
             # Caches should be independent
             assert health_service._llm_health_cache is not None
             assert health_service._embeddings_health_cache is not None
-            assert health_service._llm_health_cache != health_service._embeddings_health_cache
-
+            assert (
+                health_service._llm_health_cache
+                != health_service._embeddings_health_cache
+            )

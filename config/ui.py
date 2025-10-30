@@ -16,4 +16,3 @@ class UIConfig:
     enable_xsrf_protection: bool = False
     startup_timeout: int = 10  # seconds to wait for Streamlit to start
     shutdown_timeout: int = 5  # seconds to wait for graceful shutdown
-

@@ -34,7 +34,8 @@ st.set_page_config(
 )
 
 # Custom CSS to fix chat input at bottom like WhatsApp/Slack
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* Fixed chat input at bottom of viewport */
     .stChatInput {
@@ -140,7 +141,9 @@ st.markdown("""
     // Force scroll on any rerun
     window.addEventListener('load', () => setTimeout(scrollToBottom, 500));
 </script>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 @st.cache_resource
@@ -182,7 +185,9 @@ def display_sidebar() -> None:
 
         if uploaded_file:
             if st.button(constants.UI_BUTTON_UPLOAD_INDEX, use_container_width=True):
-                with st.spinner(f"{constants.UI_MSG_UPLOADING} {uploaded_file.name}..."):
+                with st.spinner(
+                    f"{constants.UI_MSG_UPLOADING} {uploaded_file.name}..."
+                ):
                     try:
                         logger.info(
                             codes.UI_FILE_UPLOAD_STARTED,
@@ -195,7 +200,9 @@ def display_sidebar() -> None:
                         file_path.parent.mkdir(exist_ok=True)
                         file_path.write_bytes(file_bytes)
 
-                        st.success(f"{constants.UI_MSG_UPLOAD_SUCCESS}: {uploaded_file.name}")
+                        st.success(
+                            f"{constants.UI_MSG_UPLOAD_SUCCESS}: {uploaded_file.name}"
+                        )
                         st.info(constants.UI_MSG_UPLOAD_HINT)
 
                         logger.info(
@@ -239,15 +246,15 @@ def display_sidebar() -> None:
         # RAG configuration
         st.subheader(constants.UI_TITLE_CONFIGURATION)
         config = Config()
-        
+
         # Get model name from active provider
         provider = config.rag.provider
         model = "N/A"
         if hasattr(config.rag, provider):
             provider_config = getattr(config.rag, provider)
-            if hasattr(provider_config, 'model'):
+            if hasattr(provider_config, "model"):
                 model = provider_config.model
-        
+
         st.code(
             f"""
 LLM: {config.rag.provider}
@@ -263,7 +270,11 @@ Vector Store: {config.vectorstore.provider}
         # Session statistics
         st.subheader(constants.UI_TITLE_STATISTICS)
         user_messages = len(
-            [m for m in st.session_state.messages if m["role"] == constants.UI_CHAT_ROLE_USER]
+            [
+                m
+                for m in st.session_state.messages
+                if m["role"] == constants.UI_CHAT_ROLE_USER
+            ]
         )
         st.metric(constants.UI_METRIC_QUESTIONS_ASKED, user_messages)
 
@@ -333,22 +344,24 @@ def display_chat_message(role: str, content: str, sources: list = None) -> None:
 
         if sources:
             source_count = len(sources)
-            
+
             # Wrap entire sources section in a collapsed expander
             with st.expander(f"📚 View {source_count} Sources", expanded=False):
                 for idx, source in enumerate(sources, 1):
-                    filename = source.get("filename", constants.UI_SOURCE_FILENAME_UNKNOWN)
+                    filename = source.get(
+                        "filename", constants.UI_SOURCE_FILENAME_UNKNOWN
+                    )
                     content_preview = source.get("content", "")
-                    
+
                     # Display each source
                     st.markdown(f"**{idx}. 📄 {filename}**")
-                    
+
                     # Show metadata if available
                     metadata = source.get("metadata", {})
                     if metadata:
                         page = metadata.get("page", metadata.get("chunk_id", "N/A"))
                         st.caption(f"Page/Chunk: {page}")
-                    
+
                     # Show content preview
                     if content_preview:
                         # Limit to ~400 chars for better readability
@@ -356,7 +369,7 @@ def display_chat_message(role: str, content: str, sources: list = None) -> None:
                         if len(content_preview) > 400:
                             preview += "..."
                         st.text(preview)
-                    
+
                     # Add divider between sources
                     if idx < len(sources):
                         st.divider()
@@ -403,7 +416,7 @@ def render_chat_tab() -> None:
     """Render the chat interface tab."""
     # Create a container for chat history
     chat_container = st.container()
-    
+
     # Display all chat history in the container
     with chat_container:
         for message in st.session_state.messages:
@@ -412,7 +425,7 @@ def render_chat_tab() -> None:
                 content=message["content"],
                 sources=message.get("sources"),
             )
-    
+
     # Chat input is always at the bottom (Streamlit automatically positions it)
     if question := st.chat_input(constants.UI_CHAT_INPUT_PLACEHOLDER):
         # Add user message to chat
@@ -434,7 +447,7 @@ def render_chat_tab() -> None:
             "sources": response.get("sources", []),
         }
         st.session_state.messages.append(assistant_message)
-        
+
         # Rerun to display new messages (this keeps input at bottom)
         st.rerun()
 
@@ -458,15 +471,16 @@ def render_analytics_tab() -> None:
         ]
 
         with col1:
-            st.metric(constants.UI_METRIC_TOTAL_MESSAGES, len(st.session_state.messages))
+            st.metric(
+                constants.UI_METRIC_TOTAL_MESSAGES, len(st.session_state.messages)
+            )
 
         with col2:
             st.metric(constants.UI_METRIC_QUESTIONS_ASKED, len(user_msgs))
 
         with col3:
-            avg_sources = (
-                sum(len(m.get("sources", [])) for m in assistant_msgs)
-                / max(len(assistant_msgs), 1)
+            avg_sources = sum(len(m.get("sources", [])) for m in assistant_msgs) / max(
+                len(assistant_msgs), 1
             )
             st.metric(constants.UI_METRIC_AVG_SOURCES, f"{avg_sources:.1f}")
 

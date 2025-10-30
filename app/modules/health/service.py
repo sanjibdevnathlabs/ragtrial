@@ -133,9 +133,11 @@ class HealthService(metaclass=SingletonMeta):
         elapsed = (time.time() - start_time) * 1000  # ms
         logger.info(
             codes.API_HEALTH_CHECK_COMPLETED,
-            status=constants.HEALTH_STATUS_HEALTHY
-            if overall_healthy
-            else constants.HEALTH_STATUS_UNHEALTHY,
+            status=(
+                constants.HEALTH_STATUS_HEALTHY
+                if overall_healthy
+                else constants.HEALTH_STATUS_UNHEALTHY
+            ),
             duration_ms=f"{elapsed:.2f}",
             database=db_healthy,
             vectorstore=vs_healthy,
@@ -218,7 +220,10 @@ class HealthService(metaclass=SingletonMeta):
             logger.error(
                 codes.HEALTH_CHECK_VECTORSTORE_UNHEALTHY, error=str(e), exc_info=True
             )
-            return False, {"provider": self.config.vectorstore.provider, "error": str(e)}
+            return False, {
+                "provider": self.config.vectorstore.provider,
+                "error": str(e),
+            }
 
     def _check_llm_health_cached(self) -> Tuple[bool, Dict[str, str]]:
         """

@@ -39,4 +39,3 @@ class LLMProtocol(Protocol):
             print(response.content)  # "RAG stands for..."
         """
         ...
-

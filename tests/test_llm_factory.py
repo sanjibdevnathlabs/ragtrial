@@ -188,7 +188,9 @@ class TestCreateLLMAnthropic:
             assert (
                 call_kwargs["temperature"] == config_anthropic.rag.anthropic.temperature
             )
-            assert call_kwargs["max_tokens"] == config_anthropic.rag.anthropic.max_tokens
+            assert (
+                call_kwargs["max_tokens"] == config_anthropic.rag.anthropic.max_tokens
+            )
 
     def test_create_anthropic_llm_with_overrides(self, config_anthropic):
         """Test creating Anthropic LLM with parameter overrides."""
@@ -278,7 +280,10 @@ class TestProviderSwitching:
     def test_multiple_providers_in_sequence(self, config_google):
         """Test creating multiple providers sequentially."""
         providers = [
-            (constants.LLM_PROVIDER_GOOGLE, "langchain_google_genai.ChatGoogleGenerativeAI"),
+            (
+                constants.LLM_PROVIDER_GOOGLE,
+                "langchain_google_genai.ChatGoogleGenerativeAI",
+            ),
             (constants.LLM_PROVIDER_OPENAI, "langchain_openai.ChatOpenAI"),
             (constants.LLM_PROVIDER_ANTHROPIC, "langchain_anthropic.ChatAnthropic"),
         ]
@@ -338,4 +343,3 @@ class TestLLMProtocolCompliance:
             # Check protocol methods exist
             assert hasattr(llm, "invoke")
             assert callable(llm.invoke)
-

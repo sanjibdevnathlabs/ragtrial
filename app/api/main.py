@@ -113,7 +113,9 @@ def start_streamlit_ui() -> None:
     config = get_config()
 
     if not config.ui.enabled:
-        logger.info(codes.UI_STREAMLIT_NOT_INSTALLED, message="UI disabled in configuration")
+        logger.info(
+            codes.UI_STREAMLIT_NOT_INSTALLED, message="UI disabled in configuration"
+        )
         return
 
     logger.info(codes.UI_STREAMLIT_STARTING)
@@ -366,16 +368,16 @@ async def favicon():
 async def serve_react_routes():
     """
     Serve React app for client-side routes.
-    
+
     All these routes are handled by React Router on the client side:
     - /about: About page
     - /dev-docs: Developer documentation
     - /docs: API documentation (Swagger UI in iframe)
     - /langchain/chat: Chat UI (Streamlit in iframe)
-    
+
     We serve index.html which loads the React app, and React Router
     handles the navigation. This ensures consistent navbar across all pages.
-    
+
     Returns:
         FileResponse: The React app's index.html
     """

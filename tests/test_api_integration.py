@@ -165,9 +165,9 @@ def mock_storage():
 def mock_health_dependencies():
     """
     Mock ALL health check dependencies at module level to prevent real API calls.
-    
+
     This fixture uses autouse=True to ensure it's ALWAYS applied for integration tests.
-    
+
     CRITICAL: Integration tests should NEVER connect to:
     - Real ChromaDB (vectorstore) - disk I/O issues
     - Real LLM APIs (Google Gemini) - costs money + quota limits
@@ -175,29 +175,31 @@ def mock_health_dependencies():
     """
     # Reset HealthService singleton to ensure clean state
     from app.modules.health.service import HealthService
-    if hasattr(HealthService, '_instances'):
+
+    if hasattr(HealthService, "_instances"):
         HealthService._instances.clear()
-    
+
     # Patch internal health check methods directly
-    with patch.object(HealthService, '_test_llm_api', return_value=True), \
-         patch.object(HealthService, '_test_embeddings_api', return_value=True), \
-         patch("app.modules.health.service.create_embeddings") as mock_embeddings, \
-         patch("app.modules.health.service.create_vectorstore") as mock_vectorstore:
-        
+    with patch.object(HealthService, "_test_llm_api", return_value=True), patch.object(
+        HealthService, "_test_embeddings_api", return_value=True
+    ), patch("app.modules.health.service.create_embeddings") as mock_embeddings, patch(
+        "app.modules.health.service.create_vectorstore"
+    ) as mock_vectorstore:
+
         # Mock Embeddings to return success
         mock_embeddings_instance = Mock()
         mock_embeddings_instance.embed_query.return_value = [0.1] * 768
         mock_embeddings.return_value = mock_embeddings_instance
-        
+
         # Mock Vectorstore to return success
         mock_vs_instance = Mock()
         mock_vs_instance.check_health.return_value = True
         mock_vectorstore.return_value = mock_vs_instance
-        
+
         yield
-        
+
         # Clean up singleton after module
-        if hasattr(HealthService, '_instances'):
+        if hasattr(HealthService, "_instances"):
             HealthService._instances.clear()
 
 
@@ -209,7 +211,7 @@ def client(mock_storage, override_db_dependency):
     The override_db_dependency fixture ensures all database operations
     happen within a transaction that gets rolled back after the test.
     This provides perfect isolation for parallel test execution.
-    
+
     The mock_health_dependencies fixture (autouse=True) ensures we don't
     connect to real external services (ChromaDB, LLM APIs, Embeddings APIs).
     """

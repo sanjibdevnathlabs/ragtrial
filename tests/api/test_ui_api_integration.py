@@ -35,47 +35,49 @@ import trace.codes as codes
 def mock_health_dependencies():
     """
     Mock ALL health check dependencies at module level to prevent real API calls.
-    
+
     This fixture uses autouse=True to ensure it's ALWAYS applied for ALL UI tests.
-    
+
     CRITICAL: UI tests should NEVER connect to real services:
     - No real database connections (SQLite/MySQL) - file/network I/O
     - No real LLM API calls (Google Gemini) - costs money + quota limits
-    - No real Embeddings API calls (Google) - costs money + quota limits  
+    - No real Embeddings API calls (Google) - costs money + quota limits
     - No real Vectorstore connections (ChromaDB) - disk I/O
     """
     # Reset HealthService singleton to ensure clean state
     from app.modules.health.service import HealthService
     from database.session import SessionFactory
-    
-    if hasattr(HealthService, '_instances'):
+
+    if hasattr(HealthService, "_instances"):
         HealthService._instances.clear()
-    if hasattr(SessionFactory, '_instances'):
+    if hasattr(SessionFactory, "_instances"):
         SessionFactory._instances.clear()
-    
+
     # Patch internal health check methods directly
-    with patch.object(HealthService, '_test_llm_api', return_value=True), \
-         patch.object(HealthService, '_test_embeddings_api', return_value=True), \
-         patch.object(SessionFactory, 'check_health', return_value=True), \
-         patch("app.modules.health.service.create_embeddings") as mock_embeddings, \
-         patch("app.modules.health.service.create_vectorstore") as mock_vectorstore:
-        
+    with patch.object(HealthService, "_test_llm_api", return_value=True), patch.object(
+        HealthService, "_test_embeddings_api", return_value=True
+    ), patch.object(SessionFactory, "check_health", return_value=True), patch(
+        "app.modules.health.service.create_embeddings"
+    ) as mock_embeddings, patch(
+        "app.modules.health.service.create_vectorstore"
+    ) as mock_vectorstore:
+
         # Mock Embeddings to return success
         mock_embeddings_instance = Mock()
         mock_embeddings_instance.embed_query.return_value = [0.1] * 768
         mock_embeddings.return_value = mock_embeddings_instance
-        
+
         # Mock Vectorstore to return success
         mock_vs_instance = Mock()
         mock_vs_instance.check_health.return_value = True
         mock_vectorstore.return_value = mock_vs_instance
-        
+
         yield
-        
+
         # Clean up singletons after module
-        if hasattr(HealthService, '_instances'):
+        if hasattr(HealthService, "_instances"):
             HealthService._instances.clear()
-        if hasattr(SessionFactory, '_instances'):
+        if hasattr(SessionFactory, "_instances"):
             SessionFactory._instances.clear()
 
 
@@ -116,7 +118,9 @@ class TestUIRouteAccessibility:
 
     @patch("app.api.main.start_streamlit_ui")
     @patch("app.api.main.streamlit_process")
-    def test_ui_available_returns_iframe(self, mock_process, mock_start, mock_streamlit_process):
+    def test_ui_available_returns_iframe(
+        self, mock_process, mock_start, mock_streamlit_process
+    ):
         """Test /langchain/chat returns iframe when UI is available."""
         mock_process.return_value = mock_streamlit_process
 
@@ -321,7 +325,10 @@ class TestAPIAndUIIntegration:
         # Docs endpoint is accessible
         docs_response = client.get("/docs")
         assert docs_response.status_code == 200
-        assert "swagger" in docs_response.text.lower() or "api" in docs_response.text.lower()
+        assert (
+            "swagger" in docs_response.text.lower()
+            or "api" in docs_response.text.lower()
+        )
 
 
 class TestErrorHandling:
@@ -351,4 +358,3 @@ class TestErrorHandling:
         response = client.get("/unknown/route/here")
 
         assert response.status_code == 404
-

@@ -150,7 +150,8 @@ class TestHealthService:
 
         # Find database component
         db_component = next(
-            (c for c in result.components if c.name == constants.COMPONENT_DATABASE), None
+            (c for c in result.components if c.name == constants.COMPONENT_DATABASE),
+            None,
         )
         assert db_component is not None
         assert "type" in db_component.details

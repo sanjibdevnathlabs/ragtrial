@@ -58,8 +58,10 @@ class ResponseFormatter:
 
         for doc in documents:
             # Extract filename from metadata for better UX
-            filename = doc.metadata.get("filename", doc.metadata.get("source", "Unknown Document"))
-            
+            filename = doc.metadata.get(
+                "filename", doc.metadata.get("source", "Unknown Document")
+            )
+
             source_info = {
                 "filename": filename,  # Promote filename to top level for easy access
                 "content": doc.page_content[:500],  # Increased from 200 to 500 chars

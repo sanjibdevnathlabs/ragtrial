@@ -18,39 +18,41 @@ import constants
 def mock_health_dependencies():
     """
     Mock ALL health check dependencies at module level to prevent real API calls.
-    
+
     This fixture uses autouse=True to ensure it's ALWAYS applied for ALL tests in this module.
-    
+
     CRITICAL: Unit tests should NEVER connect to real services:
     - No real LLM API calls (Google Gemini) - costs money + quota limits
-    - No real Embeddings API calls (Google) - costs money + quota limits  
+    - No real Embeddings API calls (Google) - costs money + quota limits
     - No real Vectorstore connections (ChromaDB) - disk I/O
     """
     # Reset HealthService singleton to ensure clean state
     from app.modules.health.service import HealthService
-    if hasattr(HealthService, '_instances'):
+
+    if hasattr(HealthService, "_instances"):
         HealthService._instances.clear()
-    
+
     # Patch internal health check methods directly
-    with patch.object(HealthService, '_test_llm_api', return_value=True), \
-         patch.object(HealthService, '_test_embeddings_api', return_value=True), \
-         patch("app.modules.health.service.create_embeddings") as mock_embeddings, \
-         patch("app.modules.health.service.create_vectorstore") as mock_vectorstore:
-        
+    with patch.object(HealthService, "_test_llm_api", return_value=True), patch.object(
+        HealthService, "_test_embeddings_api", return_value=True
+    ), patch("app.modules.health.service.create_embeddings") as mock_embeddings, patch(
+        "app.modules.health.service.create_vectorstore"
+    ) as mock_vectorstore:
+
         # Mock Embeddings to return success
         mock_embeddings_instance = Mock()
         mock_embeddings_instance.embed_query.return_value = [0.1] * 768
         mock_embeddings.return_value = mock_embeddings_instance
-        
+
         # Mock Vectorstore to return success
         mock_vs_instance = Mock()
         mock_vs_instance.check_health.return_value = True
         mock_vectorstore.return_value = mock_vs_instance
-        
+
         yield
-        
+
         # Clean up singleton after module
-        if hasattr(HealthService, '_instances'):
+        if hasattr(HealthService, "_instances"):
             HealthService._instances.clear()
 
 
@@ -282,7 +284,7 @@ class TestIntegration:
     def test_all_routers_registered(self, client):
         """
         Test that all routers are properly registered.
-        
+
         This test verifies route registration, not business logic:
         - GET endpoints should return 200 or valid errors (400, 422, 500), NOT 404
         - POST-only endpoints should return 405 (Method Not Allowed), NOT 404
@@ -294,19 +296,19 @@ class TestIntegration:
             ("/api/v1/files", 200),  # List files (may be empty)
             ("/api/v1/devdocs/list", 200),  # List documentation files
         ]
-        
+
         for endpoint, expected_status in get_endpoints:
             response = client.get(endpoint)
-            assert response.status_code == expected_status, (
-                f"GET {endpoint} returned {response.status_code}, expected {expected_status}"
-            )
-        
+            assert (
+                response.status_code == expected_status
+            ), f"GET {endpoint} returned {response.status_code}, expected {expected_status}"
+
         # POST-only endpoints - should return 405 (Method Not Allowed) when called with GET
         post_only_endpoints = [
             "/api/v1/upload",  # File upload
-            "/api/v1/query",   # RAG query
+            "/api/v1/query",  # RAG query
         ]
-        
+
         for endpoint in post_only_endpoints:
             response = client.get(endpoint)
             assert response.status_code == 405, (

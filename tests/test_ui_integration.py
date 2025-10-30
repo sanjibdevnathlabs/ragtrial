@@ -273,4 +273,3 @@ class TestUIIntegrationFlow:
         stop_streamlit_ui()
         mock_process = mock_popen.return_value
         assert mock_process.terminate.called
-
