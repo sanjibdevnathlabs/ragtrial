@@ -1,15 +1,15 @@
 # RAG Document Chat Application
 
-[![Tests](https://github.com/yourusername/ragtrial/actions/workflows/tests.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/tests.yml)
-[![Code Quality](https://github.com/yourusername/ragtrial/actions/workflows/lint.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/lint.yml)
-[![Security](https://github.com/yourusername/ragtrial/actions/workflows/security.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/security.yml)
-[![Docker](https://github.com/yourusername/ragtrial/actions/workflows/docker.yml/badge.svg)](https://github.com/yourusername/ragtrial/actions/workflows/docker.yml)
-[![codecov](https://codecov.io/gh/yourusername/ragtrial/branch/master/graph/badge.svg)](https://codecov.io/gh/yourusername/ragtrial)
+[![Tests](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml)
+[![Security](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml)
+[![Docker](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml/badge.svg)](https://github.com/sanjibdevnathlabs/ragtrial/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/sanjibdevnathlabs/ragtrial/branch/master/graph/badge.svg)](https://codecov.io/gh/sanjibdevnathlabs/ragtrial)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-[![Docker Pulls](https://img.shields.io/docker/pulls/yourusername/ragtrial.svg)](https://hub.docker.com/r/yourusername/ragtrial)
+[![Docker Pulls](https://img.shields.io/docker/pulls/sanjibdevnath/ragtrial.svg)](https://hub.docker.com/r/sanjibdevnath/ragtrial)
 
 A production-ready Retrieval-Augmented Generation (RAG) system with **ORM-like abstraction** for vector databases and embeddings. Switch providers with just configuration changes - **no code modifications needed**!
 
@@ -328,7 +328,7 @@ make run-rag-demo
 
 ```bash
 # Pull from Docker Hub
-docker pull yourusername/ragtrial:latest
+docker pull sanjibdevnath/ragtrial:latest
 
 # Run with Docker Compose
 docker-compose up -d
@@ -379,7 +379,7 @@ docker run -d \
   -e APP_ENV=production \
   -e DATABASE_HOST=your-mysql-host \
   -e DATABASE_PASSWORD=secure-password \
-  yourusername/ragtrial:1.2.3
+  sanjibdevnath/ragtrial:1.2.3
 
 # Or use docker-compose with .env file
 docker-compose up -d
