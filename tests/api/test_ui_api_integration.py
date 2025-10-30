@@ -2,33 +2,33 @@
 API-level UI integration tests.
 
 Fast, reliable tests for UI endpoint accessibility without browser automation.
-Tests the unified architecture where Streamlit UI is served via FastAPI.
+Tests the unified architecture with React UI served via FastAPI.
 
-UI INTEGRATION TESTS - These tests verify UI endpoints and Streamlit embedding.
-They test route accessibility, iframe embedding, and configuration handling.
+UI INTEGRATION TESTS - These tests verify UI endpoints and React app integration.
+They test route accessibility, React app serving, and configuration handling.
 
 These tests are marked with @pytest.mark.ui and are skipped during
 unit test runs. Run with: make test-ui-api
 
 Test Coverage:
 - UI route accessibility (/langchain/chat, /, /docs)
-- iframe embedding when UI is available
-- Error handling when UI is disabled
+- React app serving
+- Error handling
 - Configuration validation (UIConfig)
 - Constants verification (UI_ROUTE_*, UI_PAGE_*)
-- Trace codes validation (UI_STREAMLIT_*, UI_QUERY_*)
+- Trace codes validation (UI_*, QUERY_*)
 - API + UI integration on same port
 """
-
-import pytest
-
-# Mark all tests in this module as UI integration tests
-pytestmark = pytest.mark.ui
 
 import trace.codes as codes
 from unittest.mock import Mock, patch
 
+import pytest
+
 import constants
+
+# Mark all tests in this module as UI integration tests
+pytestmark = pytest.mark.ui
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -81,19 +81,10 @@ def mock_health_dependencies():
             SessionFactory._instances.clear()
 
 
-@pytest.fixture
-def mock_streamlit_process():
-    """Mock Streamlit process for tests."""
-    process = Mock()
-    process.returncode = 0
-    return process
-
-
 class TestUIRouteAccessibility:
     """Test UI route accessibility and responses."""
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_root_redirects_to_docs(self, mock_start):
+    def test_root_redirects_to_docs(self):
         """Test / serves React frontend."""
         from fastapi.testclient import TestClient
 
@@ -106,8 +97,7 @@ class TestUIRouteAccessibility:
         # Check that it's serving HTML (React app)
         assert "text/html" in response.headers.get("content-type", "")
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_langchain_chat_returns_html(self, mock_start):
+    def test_langchain_chat_returns_html(self):
         """Test /langchain/chat returns HTML page."""
         from fastapi.testclient import TestClient
 
@@ -118,9 +108,7 @@ class TestUIRouteAccessibility:
 
         assert "text/html" in response.headers["content-type"]
 
-    def test_ui_available_returns_iframe(
-        self, mock_streamlit_process
-    ):
+    def test_ui_available_returns_iframe(self):
         """Test /langchain/chat returns React app (no iframe)."""
         from fastapi.testclient import TestClient
 
@@ -148,7 +136,7 @@ class TestUIRouteAccessibility:
         assert '<div id="root"></div>' in response.text
         assert "/static/dist/assets/" in response.text
 
-    def test_ui_iframe_title(self, mock_streamlit_process):
+    def test_ui_iframe_title(self):
         """Test /langchain/chat page title (React app)."""
         from fastapi.testclient import TestClient
 
@@ -158,10 +146,12 @@ class TestUIRouteAccessibility:
         response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
 
         # React app has its own title in index.html
-        assert "RAG Trial" in response.text or "Intelligent Document Search" in response.text
+        assert (
+            "RAG Trial" in response.text
+            or "Intelligent Document Search" in response.text
+        )
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_favicon_returns_204(self, mock_start):
+    def test_favicon_returns_204(self):
         """Test /favicon.ico returns 204 No Content."""
         from fastapi.testclient import TestClient
 
@@ -279,8 +269,7 @@ class TestUITraceCodes:
 class TestAPIAndUIIntegration:
     """Test API and UI work together correctly."""
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_api_routes_still_accessible_with_ui(self, mock_start):
+    def test_api_routes_still_accessible_with_ui(self):
         """Test API routes remain accessible when UI is enabled."""
         from fastapi.testclient import TestClient
 
@@ -295,8 +284,7 @@ class TestAPIAndUIIntegration:
         docs_response = client.get("/docs")
         assert docs_response.status_code == 200
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_ui_and_api_use_same_port(self, mock_start):
+    def test_ui_and_api_use_same_port(self):
         """Test UI and API are served from same port."""
         from fastapi.testclient import TestClient
 
@@ -311,8 +299,7 @@ class TestAPIAndUIIntegration:
         assert api_response.status_code == 200
         assert ui_response.status_code in [200, 503]  # 503 if UI disabled
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_root_serves_react_and_docs_accessible(self, mock_start):
+    def test_root_serves_react_and_docs_accessible(self):
         """Test root serves React and /docs is accessible."""
         from fastapi.testclient import TestClient
 
@@ -350,8 +337,7 @@ class TestErrorHandling:
         assert '<div id="root"></div>' in response.text
         assert "/static/dist/assets/" in response.text
 
-    @patch("app.api.main.start_streamlit_ui")
-    def test_404_for_unknown_routes(self, mock_start):
+    def test_404_for_unknown_routes(self):
         """Test 404 returned for unknown routes."""
         from fastapi.testclient import TestClient
 

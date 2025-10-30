@@ -117,13 +117,15 @@ def db_file_service():
 
 
 @pytest.fixture
-def sample_integration_files(db_file_service):
+def sample_integration_files(db_file_service, override_db_dependency):
     """
     Create sample files in database for integration tests.
 
     Uses uuid4() for checksums to ensure uniqueness in parallel test execution.
     This prevents deadlocks when multiple test workers try to insert files
     with the same checksum simultaneously.
+    
+    IMPORTANT: Depends on override_db_dependency to use transactional session.
     """
     unique_id = str(uuid.uuid4())
 
@@ -159,6 +161,42 @@ def mock_storage():
     storage.upload_file.return_value = "source_docs/test.pdf"
     storage.delete_file.return_value = None
     return storage
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_test_database():
+    """
+    Clean up test database before and after test session.
+    
+    This ensures a clean slate for each test run by removing any
+    leftover data from previous test runs that may have failed.
+    """
+    from database.session import SessionFactory
+    from app.modules.file.entity import File
+    
+    def clean_db():
+        """Remove all test data from database."""
+        session_factory = SessionFactory()
+        engine = session_factory.get_write_engine()
+        
+        with engine.connect() as conn:
+            # Hard delete all files (including soft-deleted ones)
+            conn.execute(File.__table__.delete())
+            conn.commit()
+    
+    # Clean before tests
+    try:
+        clean_db()
+    except Exception:
+        pass  # Database might not exist yet
+    
+    yield
+    
+    # Clean after tests
+    try:
+        clean_db()
+    except Exception:
+        pass
 
 
 @pytest.fixture(scope="module", autouse=True)

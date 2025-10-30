@@ -116,6 +116,8 @@ test:
 		--cov-report=term \
 		--ignore=scripts \
 		--ignore=examples \
+		--ignore=cli \
+		--ignore=app/cli \
 		--ignore=venv \
 		--ignore=models \
 		--ignore=storage \
@@ -134,6 +136,8 @@ test-html:
 		--cov-report=html \
 		--ignore=scripts \
 		--ignore=examples \
+		--ignore=cli \
+		--ignore=app/cli \
 		--ignore=venv \
 		--ignore=models \
 		--ignore=storage \
@@ -147,11 +151,14 @@ test-ci:
 		-m "not integration and not ui" \
 		-n auto \
 		--cov=. \
+		--cov-config=pytest.ini \
 		--cov-report=xml \
 		--cov-report=term-missing \
 		--cov-report=html \
 		--ignore=scripts \
 		--ignore=examples \
+		--ignore=cli \
+		--ignore=app/cli \
 		--ignore=venv \
 		--ignore=models \
 		--ignore=storage \
@@ -170,7 +177,7 @@ setup-test-chromadb:
 # Run integration tests (requires MySQL test database)
 # Note: Parallel execution with SELECT FOR UPDATE deadlock prevention
 test-integration:
-	@echo "🧪 Running integration tests (parallel, ~1s)..."
+	@echo "🧪 Running integration tests (parallel execution with transaction isolation)..."
 	@$(PYTHON) -m pytest \
 		-m "integration" \
 		-n auto \
