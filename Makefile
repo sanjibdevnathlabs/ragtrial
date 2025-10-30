@@ -113,6 +113,7 @@ test:
 		-n auto \
 		--ff \
 		--cov=. \
+		--cov-config=pytest.ini \
 		--cov-report=term \
 		--ignore=scripts \
 		--ignore=examples \
@@ -133,6 +134,7 @@ test-html:
 		-n auto \
 		--ff \
 		--cov=. \
+		--cov-config=pytest.ini \
 		--cov-report=html \
 		--ignore=scripts \
 		--ignore=examples \
