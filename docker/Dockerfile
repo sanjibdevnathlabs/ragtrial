@@ -6,9 +6,9 @@ ARG BASE_IMAGE_TAG=local
 # =============================================================================
 # Stage 1: Build frontend with Node.js
 # =============================================================================
-# Using specific Node.js version for security and reproducibility
-# Update this version regularly to get security patches
-FROM node:20.18.1-alpine3.20 AS frontend-builder
+# Using Node.js 22 LTS (latest) with Alpine 3.22 for security
+# Node 22.21.1 is the current LTS with all security patches
+FROM node:22.21.1-alpine3.22 AS frontend-builder
 
 WORKDIR /app
 
