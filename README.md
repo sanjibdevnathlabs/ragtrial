@@ -10,7 +10,7 @@
 
 A production-ready Retrieval-Augmented Generation (RAG) system with **ORM-like abstraction** for vector databases and embeddings. Switch providers with just configuration changes - **no code modifications needed**!
 
-**✅ 653 tests passing (100%)** | **⚡ 15s test execution** | **🔒 MySQL + ChromaDB** | **🐳 Docker ready**
+**✅ 795 tests passing (100%)** | **⚡ 10s test execution** | **🔒 MySQL + ChromaDB** | **🐳 Docker ready** | **📊 85% coverage**
 
 ## 🎯 Project Status
 
@@ -21,7 +21,8 @@ A production-ready Retrieval-Augmented Generation (RAG) system with **ORM-like a
 - ✅ Security guardrails (prompt injection, input validation)
 - ✅ Multi-provider LLM support (Google Gemini, OpenAI GPT, Anthropic Claude)
 - ✅ Enterprise database architecture (SQLAlchemy + migrations)
-- ✅ 549 tests passing (100% pass rate)
+- ✅ 795 tests passing (752 unit + 21 integration + 22 UI) - 100% pass rate
+- ✅ 85% code coverage (96% for app directory)
 
 **🚧 IN PROGRESS:** Agent-Based RAG with LangGraph (next phase)
 
@@ -81,7 +82,7 @@ Build a "Chat with your Documents" application with **three interaction methods*
 - ✅ Zero string literals (trace codes for all events)
 - ✅ Comprehensive error handling
 - ✅ Batch processing for efficiency
-- ✅ **Complete test suite with pytest (549 tests, 100% pass rate!)**
+- ✅ **Complete test suite with pytest (795 tests, 100% pass rate, 85% coverage!)**
 - ✅ **Enterprise database with migrations (SQLAlchemy ORM)**
 
 ### ⚡ FastAPI REST API
