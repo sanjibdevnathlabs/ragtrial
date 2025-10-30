@@ -1,7 +1,5 @@
-# Git
-.git/
-.gitignore
-.github/
+# Docker build context exclusions
+# Reduces build context size and improves build speed
 
 # Python
 __pycache__/
@@ -9,12 +7,16 @@ __pycache__/
 *$py.class
 *.so
 .Python
-venv/
-env/
-ENV/
 *.egg-info/
 dist/
 build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
 
 # Testing
 .pytest_cache/
@@ -22,16 +24,7 @@ build/
 htmlcov/
 .tox/
 .mypy_cache/
-
-# Storage
-storage/
-*.db
-*.sqlite3
-
-# Documentation
-*.md
-docs/
-memory_bank/
+*.log
 
 # IDE
 .vscode/
@@ -41,18 +34,89 @@ memory_bank/
 *~
 .DS_Store
 
+# Git
+.git/
+.gitignore
+.gitattributes
+
 # CI/CD
 .github/
+.gitlab-ci.yml
 
-# Development
-# Makefile - Needed for migration Dockerfile
-deployment/
-.dockerignore
-docker/
-scripts/
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
 examples/
-source_docs/
 
-# Models
-models/
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
 
+# Storage (will be mounted as volume)
+storage/
+!storage/.gitkeep
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+.cache/
+
+# Node modules (will be installed in Docker)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Frontend build output (will be built in Docker)
+app/static/dist/
+
+# Deployment files
+deployment/
+
+# Scripts (not needed in container)
+scripts/
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory

@@ -5,88 +5,106 @@ Tests application initialization, middleware, error handlers, and lifecycle.
 """
 
 from io import StringIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+import constants
 from app.api.main import app, get_config, log_registered_routes
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_health_dependencies():
+    """
+    Mock ALL health check dependencies at module level to prevent real API calls.
+
+    This fixture uses autouse=True to ensure it's ALWAYS applied for ALL tests in this module.
+
+    CRITICAL: Unit tests should NEVER connect to real services:
+    - No real LLM API calls (Google Gemini) - costs money + quota limits
+    - No real Embeddings API calls (Google) - costs money + quota limits
+    - No real Vectorstore connections (ChromaDB) - disk I/O
+    - No real Database connections (MySQL) - requires external service
+    """
+    # Reset HealthService singleton to ensure clean state
+    from app.modules.health.service import HealthService
+
+    if hasattr(HealthService, "_instances"):
+        HealthService._instances.clear()
+
+    # Patch internal health check methods directly
+    with patch.object(HealthService, "_test_llm_api", return_value=True), patch.object(
+        HealthService, "_test_embeddings_api", return_value=True
+    ), patch("app.modules.health.service.create_embeddings") as mock_embeddings, patch(
+        "app.modules.health.service.create_vectorstore"
+    ) as mock_vectorstore, patch(
+        "database.session.SessionFactory.check_health", return_value=True
+    ), patch(
+        "database.session.SessionFactory.get_read_session"
+    ) as mock_read_session:
+
+        # Mock Embeddings to return success
+        mock_embeddings_instance = Mock()
+        mock_embeddings_instance.embed_query.return_value = [0.1] * 768
+        mock_embeddings.return_value = mock_embeddings_instance
+
+        # Mock Vectorstore to return success
+        mock_vs_instance = Mock()
+        mock_vs_instance.check_health.return_value = True
+        mock_vectorstore.return_value = mock_vs_instance
+
+        # Mock Database read session to return empty results
+        mock_session = Mock()
+        # Create a mock query chain that returns empty list at the end
+        mock_query_chain = Mock()
+        mock_query_chain.filter.return_value = mock_query_chain
+        mock_query_chain.order_by.return_value = mock_query_chain
+        mock_query_chain.limit.return_value = mock_query_chain
+        mock_query_chain.offset.return_value = mock_query_chain
+        mock_query_chain.all.return_value = []
+        mock_query_chain.first.return_value = None
+        mock_session.query.return_value = mock_query_chain
+        mock_read_session.return_value.__enter__.return_value = mock_session
+        mock_read_session.return_value.__exit__.return_value = None
+
+        yield
+
+        # Clean up singleton after module
+        if hasattr(HealthService, "_instances"):
+            HealthService._instances.clear()
 
 
 @pytest.fixture
 def client():
-    """Create test client."""
+    """Create test client with mocked dependencies (via autouse fixture)."""
     return TestClient(app)
 
 
 class TestRootEndpoint:
     """Test suite for root endpoint."""
 
-    def test_root_returns_200(self, client):
-        """Test root endpoint returns 200 OK."""
-        response = client.get("/")
+    def test_root_serves_react_app(self, client):
+        """Test root endpoint serves React frontend."""
+        response = client.get("/", follow_redirects=False)
         assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
 
-    def test_root_returns_json(self, client):
-        """Test root endpoint returns JSON."""
-        response = client.get("/")
-        assert response.headers["content-type"] == "application/json"
+    def test_root_returns_html(self, client):
+        """Test root endpoint returns HTML (React app)."""
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
 
-    def test_root_includes_api_name(self, client):
-        """Test root response includes API name."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "name" in data
-        assert data["name"] == "RAG Application API"
-
-    def test_root_includes_version(self, client):
-        """Test root response includes version."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "version" in data
-        assert data["version"] == "1.0.0"
-
-    def test_root_includes_status(self, client):
-        """Test root response includes status."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "status" in data
-        assert data["status"] == "running"
-
-    def test_root_includes_docs_link(self, client):
-        """Test root response includes docs link."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "docs" in data
-        assert data["docs"] == "/docs"
-
-    def test_root_includes_endpoints(self, client):
-        """Test root response includes endpoint information."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "endpoints" in data
-        endpoints = data["endpoints"]
-
-        assert "health" in endpoints
-        assert "upload" in endpoints
-        assert "files" in endpoints
-        assert "query" in endpoints
-
-    def test_root_endpoint_paths_correct(self, client):
-        """Test root response has correct endpoint paths."""
-        response = client.get("/")
-        data = response.json()
-
-        endpoints = data["endpoints"]
-        assert endpoints["health"] == "/health"
-        assert endpoints["upload"] == "/api/v1/upload"
-        assert endpoints["files"] == "/api/v1/files"
-        assert endpoints["query"] == "/api/v1/query"
+    def test_docs_endpoint_accessible(self, client):
+        """Test /docs endpoint is directly accessible (React app)."""
+        response = client.get("/docs")
+        assert response.status_code == 200
+        # Docs page now serves React app (index.html)
+        assert "text/html" in response.headers["content-type"]
+        # React app has root div and loads JS bundles
+        assert '<div id="root"></div>' in response.text
+        assert "/static/dist/assets/" in response.text
 
 
 class TestFaviconEndpoint:
@@ -285,19 +303,39 @@ class TestIntegration:
     """Integration tests for main application."""
 
     def test_all_routers_registered(self, client):
-        """Test that all routers are accessible."""
-        # Test health router
-        response = client.get("/api/v1/health")
-        assert response.status_code == 200
+        """
+        Test that all routers are properly registered.
 
-        # Test that endpoints exist (may return errors without proper setup, but should not 404)
-        endpoints = ["/api/v1/files", "/api/v1/upload", "/api/v1/query"]
+        This test verifies route registration, not business logic:
+        - GET endpoints should return 200 or valid errors (400, 422, 500), NOT 404
+        - POST-only endpoints should return 405 (Method Not Allowed), NOT 404
+        - 404 means the route is not registered at all (failure)
+        """
+        # GET endpoints - should return success or valid business errors
+        get_endpoints = [
+            ("/api/v1/health", 200),  # Health check
+            ("/api/v1/files", 200),  # List files (may be empty)
+            ("/api/v1/devdocs/list", 200),  # List documentation files
+        ]
 
-        for endpoint in endpoints:
-            # Just verify the endpoint exists (not 404)
-            # Some may return 4xx/5xx but that's OK for this test
+        for endpoint, expected_status in get_endpoints:
             response = client.get(endpoint)
-            assert response.status_code != 404
+            assert (
+                response.status_code == expected_status
+            ), f"GET {endpoint} returned {response.status_code}, expected {expected_status}"
+
+        # POST-only endpoints - should return 405 (Method Not Allowed) when called with GET
+        post_only_endpoints = [
+            "/api/v1/upload",  # File upload
+            "/api/v1/query",  # RAG query
+        ]
+
+        for endpoint in post_only_endpoints:
+            response = client.get(endpoint)
+            assert response.status_code == 405, (
+                f"GET {endpoint} returned {response.status_code}, expected 405 (Method Not Allowed). "
+                f"404 would indicate the route is not registered."
+            )
 
     def test_application_starts_successfully(self, client):
         """Test that application can start and respond to requests."""

@@ -117,13 +117,15 @@ def db_file_service():
 
 
 @pytest.fixture
-def sample_integration_files(db_file_service):
+def sample_integration_files(db_file_service, override_db_dependency):
     """
     Create sample files in database for integration tests.
 
     Uses uuid4() for checksums to ensure uniqueness in parallel test execution.
     This prevents deadlocks when multiple test workers try to insert files
     with the same checksum simultaneously.
+    
+    IMPORTANT: Depends on override_db_dependency to use transactional session.
     """
     unique_id = str(uuid.uuid4())
 
@@ -161,6 +163,84 @@ def mock_storage():
     return storage
 
 
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_test_database():
+    """
+    Clean up test database before and after test session.
+    
+    This ensures a clean slate for each test run by removing any
+    leftover data from previous test runs that may have failed.
+    """
+    from database.session import SessionFactory
+    from app.modules.file.entity import File
+    
+    def clean_db():
+        """Remove all test data from database."""
+        session_factory = SessionFactory()
+        engine = session_factory.get_write_engine()
+        
+        with engine.connect() as conn:
+            # Hard delete all files (including soft-deleted ones)
+            conn.execute(File.__table__.delete())
+            conn.commit()
+    
+    # Clean before tests
+    try:
+        clean_db()
+    except Exception:
+        pass  # Database might not exist yet
+    
+    yield
+    
+    # Clean after tests
+    try:
+        clean_db()
+    except Exception:
+        pass
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_health_dependencies():
+    """
+    Mock ALL health check dependencies at module level to prevent real API calls.
+
+    This fixture uses autouse=True to ensure it's ALWAYS applied for integration tests.
+
+    CRITICAL: Integration tests should NEVER connect to:
+    - Real ChromaDB (vectorstore) - disk I/O issues
+    - Real LLM APIs (Google Gemini) - costs money + quota limits
+    - Real Embeddings APIs (Google) - costs money + quota limits
+    """
+    # Reset HealthService singleton to ensure clean state
+    from app.modules.health.service import HealthService
+
+    if hasattr(HealthService, "_instances"):
+        HealthService._instances.clear()
+
+    # Patch internal health check methods directly
+    with patch.object(HealthService, "_test_llm_api", return_value=True), patch.object(
+        HealthService, "_test_embeddings_api", return_value=True
+    ), patch("app.modules.health.service.create_embeddings") as mock_embeddings, patch(
+        "app.modules.health.service.create_vectorstore"
+    ) as mock_vectorstore:
+
+        # Mock Embeddings to return success
+        mock_embeddings_instance = Mock()
+        mock_embeddings_instance.embed_query.return_value = [0.1] * 768
+        mock_embeddings.return_value = mock_embeddings_instance
+
+        # Mock Vectorstore to return success
+        mock_vs_instance = Mock()
+        mock_vs_instance.check_health.return_value = True
+        mock_vectorstore.return_value = mock_vs_instance
+
+        yield
+
+        # Clean up singleton after module
+        if hasattr(HealthService, "_instances"):
+            HealthService._instances.clear()
+
+
 @pytest.fixture
 def client(mock_storage, override_db_dependency):
     """
@@ -169,6 +249,9 @@ def client(mock_storage, override_db_dependency):
     The override_db_dependency fixture ensures all database operations
     happen within a transaction that gets rolled back after the test.
     This provides perfect isolation for parallel test execution.
+
+    The mock_health_dependencies fixture (autouse=True) ensures we don't
+    connect to real external services (ChromaDB, LLM APIs, Embeddings APIs).
     """
     with patch("app.api.dependencies.create_storage", return_value=mock_storage):
         yield TestClient(app)
@@ -197,12 +280,14 @@ class TestHealthEndpoint:
         assert "status" in data
         assert data["status"] == "healthy"
 
-    def test_health_includes_storage_backend(self, client):
-        """Test health response includes storage backend."""
+    def test_health_includes_components(self, client):
+        """Test health response includes components array."""
         response = client.get("/api/v1/health")
         data = response.json()
 
-        assert "storage_backend" in data
+        assert "components" in data
+        assert isinstance(data["components"], list)
+        assert len(data["components"]) == 4  # database, vectorstore, llm, embeddings
 
     def test_health_includes_version(self, client):
         """Test health response includes version."""

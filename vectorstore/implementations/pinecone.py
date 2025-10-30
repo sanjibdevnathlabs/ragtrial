@@ -433,3 +433,31 @@ class PineconeVectorStore:
                 codes.VECTORSTORE_ERROR, operation="clear", error=str(e), exc_info=True
             )
             raise
+
+    def check_health(self) -> bool:
+        """
+        Fast health check using Pinecone API.
+
+        Returns:
+            True if Pinecone is responsive, False otherwise
+        """
+        logger.debug(codes.HEALTH_CHECK_VECTORSTORE_CHECKING, provider="pinecone")
+
+        try:
+            # Use describe_index_stats as a lightweight health check
+            if not self.index:
+                return False
+
+            self.index.describe_index_stats()
+
+            logger.debug(codes.HEALTH_CHECK_VECTORSTORE_HEALTHY, provider="pinecone")
+            return True
+
+        except Exception as e:
+            logger.error(
+                codes.HEALTH_CHECK_VECTORSTORE_UNHEALTHY,
+                provider="pinecone",
+                error=str(e),
+                exc_info=True,
+            )
+            return False

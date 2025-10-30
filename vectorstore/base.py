@@ -121,3 +121,18 @@ class VectorStoreProtocol(Protocol):
             vectorstore.clear()
         """
         ...
+
+    def check_health(self) -> bool:
+        """
+        Fast health check to verify vectorstore connectivity.
+
+        Should be a lightweight operation (ping/heartbeat).
+        Must complete in < 100ms for optimal performance.
+
+        Returns:
+            True if vectorstore is responsive, False otherwise
+
+        Example:
+            is_healthy = vectorstore.check_health()
+        """
+        ...

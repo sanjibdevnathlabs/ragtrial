@@ -58,12 +58,12 @@ class TestRAGChainInit:
         ) as mock_retriever_class, patch(
             "app.chain_rag.chain.create_rag_prompt"
         ) as mock_create_prompt, patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
-        ) as mock_llm_class:
+            "llm.factory.create_llm"
+        ) as mock_create_llm:
 
             mock_retriever_class.return_value = Mock()
             mock_create_prompt.return_value = Mock()
-            mock_llm_class.return_value = Mock()
+            mock_create_llm.return_value = Mock()
 
             chain = RAGChain(mock_config)
 
@@ -79,7 +79,7 @@ class TestRAGChainInit:
         ) as mock_retriever_class, patch(
             "app.chain_rag.chain.create_rag_prompt"
         ), patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
+            "llm.factory.create_llm"
         ):
 
             RAGChain(mock_config)
@@ -90,26 +90,21 @@ class TestRAGChainInit:
         """Test that initialization creates RAG prompt."""
         with patch("app.chain_rag.chain.DocumentRetriever"), patch(
             "app.chain_rag.chain.create_rag_prompt"
-        ) as mock_create_prompt, patch("app.chain_rag.chain.ChatGoogleGenerativeAI"):
+        ) as mock_create_prompt, patch("llm.factory.create_llm"):
 
             RAGChain(mock_config)
 
             mock_create_prompt.assert_called_once()
 
-    def test_init_creates_llm_with_correct_params(self, mock_config):
-        """Test that LLM is created with correct parameters."""
+    def test_init_creates_llm_via_factory(self, mock_config):
+        """Test that LLM is created via factory."""
         with patch("app.chain_rag.chain.DocumentRetriever"), patch(
             "app.chain_rag.chain.create_rag_prompt"
-        ), patch("app.chain_rag.chain.ChatGoogleGenerativeAI") as mock_llm_class:
+        ), patch("llm.factory.create_llm") as mock_create_llm:
 
             RAGChain(mock_config)
 
-            mock_llm_class.assert_called_once_with(
-                model=mock_config.rag.google.model,
-                temperature=mock_config.rag.google.temperature,
-                max_output_tokens=mock_config.rag.google.max_tokens,  # Google uses max_output_tokens
-                google_api_key=mock_config.rag.google.api_key,
-            )
+            mock_create_llm.assert_called_once_with(mock_config)
 
     def test_init_failure_raises_runtime_error(self, mock_config):
         """Test that initialization failure raises RuntimeError."""
@@ -133,7 +128,7 @@ class TestRAGChainQuery:
         ) as mock_retriever_class, patch(
             "app.chain_rag.chain.create_rag_prompt"
         ) as mock_create_prompt, patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
+            "llm.factory.create_llm"
         ) as mock_llm_class:
 
             mock_retriever = Mock()
@@ -164,7 +159,7 @@ class TestRAGChainQuery:
         """Test that empty question raises ValueError."""
         with patch("app.chain_rag.chain.DocumentRetriever"), patch(
             "app.chain_rag.chain.create_rag_prompt"
-        ), patch("app.chain_rag.chain.ChatGoogleGenerativeAI"):
+        ), patch("llm.factory.create_llm"):
 
             chain = RAGChain(mock_config)
 
@@ -177,7 +172,7 @@ class TestRAGChainQuery:
         """Test that whitespace question raises ValueError."""
         with patch("app.chain_rag.chain.DocumentRetriever"), patch(
             "app.chain_rag.chain.create_rag_prompt"
-        ), patch("app.chain_rag.chain.ChatGoogleGenerativeAI"):
+        ), patch("llm.factory.create_llm"):
 
             chain = RAGChain(mock_config)
 
@@ -191,7 +186,7 @@ class TestRAGChainQuery:
         ) as mock_retriever_class, patch(
             "app.chain_rag.chain.create_rag_prompt"
         ), patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
+            "llm.factory.create_llm"
         ):
 
             mock_retriever = Mock()
@@ -215,7 +210,7 @@ class TestRAGChainQuery:
         ) as mock_retriever_class, patch(
             "app.chain_rag.chain.create_rag_prompt"
         ) as mock_create_prompt, patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
+            "llm.factory.create_llm"
         ) as mock_llm_class:
 
             mock_retriever = Mock()
@@ -246,7 +241,7 @@ class TestRAGChainQuery:
         ) as mock_retriever_class, patch(
             "app.chain_rag.chain.create_rag_prompt"
         ) as mock_create_prompt, patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
+            "llm.factory.create_llm"
         ) as mock_llm_class:
 
             mock_retriever = Mock()
@@ -277,7 +272,7 @@ class TestRAGChainQuery:
         ) as mock_retriever_class, patch(
             "app.chain_rag.chain.create_rag_prompt"
         ) as mock_create_prompt, patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
+            "llm.factory.create_llm"
         ) as mock_llm_class:
 
             mock_retriever = Mock()
@@ -310,7 +305,7 @@ class TestRAGChainGenerateAnswer:
         with patch("app.chain_rag.chain.DocumentRetriever"), patch(
             "app.chain_rag.chain.create_rag_prompt"
         ) as mock_create_prompt, patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
+            "llm.factory.create_llm"
         ) as mock_llm_class, patch(
             "app.chain_rag.chain.format_context"
         ) as mock_format_context:
@@ -340,9 +335,7 @@ class TestRAGChainGenerateAnswer:
         """Test that LLM error raises RuntimeError."""
         with patch("app.chain_rag.chain.DocumentRetriever"), patch(
             "app.chain_rag.chain.create_rag_prompt"
-        ) as mock_create_prompt, patch(
-            "app.chain_rag.chain.ChatGoogleGenerativeAI"
-        ) as mock_llm_class:
+        ) as mock_create_prompt, patch("llm.factory.create_llm") as mock_llm_class:
 
             mock_prompt = Mock()
             mock_prompt.format_messages.return_value = []

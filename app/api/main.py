@@ -9,9 +9,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
-from app.routers import files, health, query, upload
+import constants
+from app.routers import devdocs, files, health, query, upload
 from config import Config
 from logger import get_logger
 
@@ -121,6 +123,8 @@ app = FastAPI(
     description="API for document management and RAG query operations",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None,  # Disable default docs (using React-rendered Swagger UI)
+    redoc_url=None,  # Disable redoc
 )
 
 
@@ -139,6 +143,11 @@ app.include_router(health.router)
 app.include_router(upload.router)
 app.include_router(files.router)
 app.include_router(query.router)
+app.include_router(devdocs.router)
+
+# Mount static files for React frontend
+# This serves the built React app (CSS, JS, assets)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.exception_handler(Exception)
@@ -173,26 +182,19 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get("/")
+@app.get(constants.UI_ROUTE_ROOT, response_class=FileResponse)
 async def root():
     """
-    Root endpoint with API information.
+    Root endpoint - serves React landing page.
 
     Returns:
-        dict: API welcome message and version
+        FileResponse: The React app's index.html
     """
-    return {
-        "name": "RAG Application API",
-        "version": "1.0.0",
-        "status": "running",
-        "docs": "/docs",
-        "endpoints": {
-            "health": "/health",
-            "upload": "/api/v1/upload",
-            "files": "/api/v1/files",
-            "query": "/api/v1/query",
-        },
-    }
+    return FileResponse("app/static/dist/index.html")
+
+
+# Removed: /docs and /langchain/chat now handled by React Router
+# See serve_react_routes() below
 
 
 @app.get("/favicon.ico")
@@ -207,3 +209,28 @@ async def favicon():
         Response: Empty 204 No Content response
     """
     return Response(status_code=204)
+
+
+# Catch-all for React Router - serve index.html for frontend routes
+# Use specific paths instead of greedy {full_path:path} to avoid catching API routes
+@app.get("/about", response_class=FileResponse)
+@app.get("/dev-docs", response_class=FileResponse)
+@app.get("/docs", response_class=FileResponse)
+@app.get("/langchain/chat", response_class=FileResponse)
+async def serve_react_routes():
+    """
+    Serve React app for client-side routes.
+
+    All these routes are handled by React Router on the client side:
+    - /about: About page
+    - /dev-docs: Developer documentation
+    - /docs: API documentation (Swagger UI in iframe)
+    - /langchain/chat: Chat UI (Streamlit in iframe)
+
+    We serve index.html which loads the React app, and React Router
+    handles the navigation. This ensures consistent navbar across all pages.
+
+    Returns:
+        FileResponse: The React app's index.html
+    """
+    return FileResponse("app/static/dist/index.html")

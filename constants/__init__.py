@@ -961,3 +961,122 @@ ERROR_CODE_NO_FILES = "NO_FILES"
 ERROR_CODE_VALIDATION_ERROR = "VALIDATION_ERROR"
 ERROR_CODE_UPLOAD_ERROR = "UPLOAD_ERROR"
 ERROR_CODE_READ_ERROR = "READ_ERROR"
+
+
+# ============================================================================
+# UI CONSTANTS
+# ============================================================================
+
+# Streamlit Configuration
+UI_STREAMLIT_PORT = 8501
+UI_STREAMLIT_HOST = "localhost"
+UI_STREAMLIT_HEADLESS = "true"
+UI_STREAMLIT_CORS_ENABLED = "false"
+UI_STREAMLIT_XSRF_ENABLED = "false"
+
+# UI Routes
+UI_ROUTE_LANGCHAIN_CHAT = "/langchain/chat"
+UI_ROUTE_LANGGRAPH_CHAT = "/langgraph/chat"
+UI_ROUTE_ROOT = "/"
+UI_ROUTE_DOCS = "/docs"
+
+# UI Messages
+UI_STREAMLIT_NOT_INSTALLED = "Streamlit not installed. UI will not be available."
+UI_STREAMLIT_INSTALL_HINT = "Install with: pip install streamlit"
+UI_PORT_IN_USE = "Port already in use"
+UI_STREAMLIT_STARTUP_FAILED = "Failed to start Streamlit UI server"
+UI_STREAMLIT_SHUTDOWN_FAILED = "Failed to stop Streamlit UI server"
+
+# UI HTML Templates
+UI_IFRAME_TITLE_LANGCHAIN = "RAG Chat - LangChain"
+UI_IFRAME_TITLE_LANGGRAPH = "RAG Chat - LangGraph (Agent)"
+
+# UI Page Configuration
+UI_PAGE_TITLE = "RAG Document Chat"
+UI_PAGE_ICON = "💬"
+UI_LAYOUT = "wide"
+UI_SIDEBAR_STATE = "expanded"
+
+# UI Section Titles
+UI_TITLE_DOCUMENT_MANAGEMENT = "📁 Document Management"
+UI_TITLE_UPLOAD_DOCUMENTS = "📤 Upload Documents"
+UI_TITLE_INDEXED_DOCUMENTS = "📚 Indexed Documents"
+UI_TITLE_CONFIGURATION = "⚙️ Configuration"
+UI_TITLE_STATISTICS = "📊 Statistics"
+UI_TITLE_ACTIONS = "🛠️ Actions"
+UI_TITLE_ANALYTICS = "📊 Analytics"
+UI_TITLE_ABOUT = "ℹ️ About"
+
+# UI Button Labels
+UI_BUTTON_UPLOAD_INDEX = "Upload & Index"
+UI_BUTTON_CLEAR_CHAT = "🗑️ Clear Chat"
+UI_BUTTON_EXPORT_CHAT = "💾 Export Chat"
+
+# UI Messages
+UI_MSG_UPLOAD_SUCCESS = "✅ Uploaded"
+UI_MSG_UPLOAD_HINT = "💡 Run ingestion to index: `python ingestion/ingest.py`"
+UI_MSG_UPLOAD_FAILED = "❌ Upload failed"
+UI_MSG_NO_DOCUMENTS = "No documents uploaded yet"
+UI_MSG_NO_MESSAGES_TO_EXPORT = "No messages to export"
+UI_MSG_COULD_NOT_LIST_DOCUMENTS = "Could not list documents"
+UI_MSG_INITIALIZING_SERVICES = "🔄 Initializing services..."
+UI_MSG_THINKING = "🤔 Thinking..."
+UI_MSG_UPLOADING = "Uploading"
+
+# UI Tab Names
+UI_TAB_CHAT = "💬 Chat"
+UI_TAB_ANALYTICS = "📊 Analytics"
+UI_TAB_ABOUT = "ℹ️ About"
+
+# UI Metrics
+UI_METRIC_TOTAL_DOCUMENTS = "Total Documents"
+UI_METRIC_QUESTIONS_ASKED = "Questions Asked"
+UI_METRIC_TOTAL_MESSAGES = "Total Messages"
+UI_METRIC_AVG_SOURCES = "Avg Sources/Answer"
+
+# UI File Upload
+UI_FILE_UPLOAD_LABEL = "Upload a document"
+UI_FILE_UPLOAD_HELP = "Supported: PDF, TXT, MD, DOCX, CSV, JSON"
+UI_FILE_TYPES = ["pdf", "txt", "md", "docx", "csv", "json"]
+
+# UI Export
+UI_EXPORT_HEADER = "# RAG Chat History Export"
+UI_EXPORT_TIMESTAMP_LABEL = "**Exported:**"
+UI_EXPORT_SOURCES_LABEL = "**Sources:**"
+UI_EXPORT_FILENAME_PREFIX = "chat_history_"
+UI_EXPORT_FILENAME_SUFFIX = ".md"
+UI_EXPORT_MIME_TYPE = "text/markdown"
+UI_EXPORT_DOWNLOAD_LABEL = "Download Chat History"
+
+# UI Source Display
+UI_SOURCE_LABEL_PREFIX = "Source"
+UI_SOURCE_FILENAME_UNKNOWN = "Unknown"
+UI_SOURCE_CONTENT_LABEL = "Content"
+UI_VIEW_SOURCES_LABEL = "📚 View Sources"
+UI_VIEW_N_SOURCES_LABEL = "📚 View {} Sources"
+
+# UI Chat
+UI_CHAT_INPUT_PLACEHOLDER = "Ask a question about your documents..."
+UI_CHAT_ROLE_USER = "user"
+UI_CHAT_ROLE_ASSISTANT = "assistant"
+
+# ============================================================================
+# HEALTH CHECK CONSTANTS
+# ============================================================================
+
+# Health check status
+HEALTH_STATUS_HEALTHY = "healthy"
+HEALTH_STATUS_UNHEALTHY = "unhealthy"
+
+# Component names
+COMPONENT_DATABASE = "database"
+COMPONENT_VECTORSTORE = "vectorstore"
+COMPONENT_LLM = "llm"
+COMPONENT_EMBEDDINGS = "embeddings"
+
+# Component categories
+COMPONENT_CATEGORY_CRITICAL = "critical"
+COMPONENT_CATEGORY_DEPENDENCY = "dependency"
+
+# Health check cache duration (for external APIs only)
+HEALTH_CHECK_CACHE_DURATION = 60  # seconds

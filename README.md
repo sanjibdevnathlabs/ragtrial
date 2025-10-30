@@ -10,7 +10,7 @@
 
 A production-ready Retrieval-Augmented Generation (RAG) system with **ORM-like abstraction** for vector databases and embeddings. Switch providers with just configuration changes - **no code modifications needed**!
 
-**✅ 653 tests passing (100%)** | **⚡ 15s test execution** | **🔒 MySQL + ChromaDB** | **🐳 Docker ready**
+**✅ 795 tests passing (100%)** | **⚡ 10s test execution** | **🔒 MySQL + ChromaDB** | **🐳 Docker ready** | **📊 85% coverage**
 
 ## 🎯 Project Status
 
@@ -21,7 +21,8 @@ A production-ready Retrieval-Augmented Generation (RAG) system with **ORM-like a
 - ✅ Security guardrails (prompt injection, input validation)
 - ✅ Multi-provider LLM support (Google Gemini, OpenAI GPT, Anthropic Claude)
 - ✅ Enterprise database architecture (SQLAlchemy + migrations)
-- ✅ 549 tests passing (100% pass rate)
+- ✅ 795 tests passing (752 unit + 21 integration + 22 UI) - 100% pass rate
+- ✅ 85% code coverage (96% for app directory)
 
 **🚧 IN PROGRESS:** Agent-Based RAG with LangGraph (next phase)
 
@@ -81,7 +82,7 @@ Build a "Chat with your Documents" application with **three interaction methods*
 - ✅ Zero string literals (trace codes for all events)
 - ✅ Comprehensive error handling
 - ✅ Batch processing for efficiency
-- ✅ **Complete test suite with pytest (549 tests, 100% pass rate!)**
+- ✅ **Complete test suite with pytest (795 tests, 100% pass rate, 85% coverage!)**
 - ✅ **Enterprise database with migrations (SQLAlchemy ORM)**
 
 ### ⚡ FastAPI REST API
@@ -270,14 +271,18 @@ The default configuration uses:
 
 ### 4. Index Your Documents
 
-**Option A: Using REST API**
+**Option A: Using Unified Application (Recommended)**
 ```bash
-# Start the API server
-make run-api
-# or: uvicorn app.api.main:app --reload
+# Start unified application (API + Web UI)
+make run
 
-# Upload documents (in another terminal)
-curl -X POST http://localhost:8000/upload -F "file=@your_document.pdf"
+# Access the application:
+# - Web UI: http://localhost:8000/langchain/chat
+# - API Docs: http://localhost:8000/docs
+# - API: http://localhost:8000/api/v1/*
+
+# Upload documents via Web UI or API
+curl -X POST http://localhost:8000/api/v1/upload -F "file=@your_document.pdf"
 ```
 
 **Option B: Using Ingestion Script**
@@ -408,14 +413,27 @@ docker-compose up -d
 
 Production-ready API for document management and RAG queries with **thread-safe singleton pattern** for high-RPS scalability.
 
-### Start the API Server
+### Start the Application
 
+**Unified Application (Recommended):**
 ```bash
-make run-api
-# or: uvicorn app.api.main:app --reload
+make run
+# Starts FastAPI + embedded Streamlit UI on port 8000
 ```
 
-The API server will start at `http://localhost:8000`
+**Access Points:**
+- **Web UI:** http://localhost:8000/langchain/chat
+- **API Docs:** http://localhost:8000/docs
+- **API:** http://localhost:8000/api/v1/*
+
+**Development Mode (Separate Services):**
+```bash
+# Run API only (no UI)
+make run-dev-api
+
+# Run UI only (standalone)
+make run-dev-ui  # Opens on port 8501
+```
 
 **Interactive Documentation:**
 - Swagger UI: http://localhost:8000/docs
@@ -518,6 +536,47 @@ curl http://localhost:8000/api/v1/query/health
 - **PostgreSQL** - Production-ready with master-slave support
 
 **📚 Full API Documentation:** See [docs/API.md](docs/API.md)
+
+---
+
+## 🏗️ Application Architecture
+
+### Unified Application Design
+
+The application uses a **unified architecture** where FastAPI and Streamlit UI run as a single application on port 8000:
+
+```
+┌─────────────────────────────────────────┐
+│     FastAPI (Port 8000)                 │
+│  ┌─────────────────────────────────┐    │
+│  │  HTTP Routes:                   │    │
+│  │  • / → Redirect to /docs        │    │
+│  │  • /docs → API Documentation    │    │
+│  │  • /langchain/chat → UI (iframe)│    │
+│  │  • /api/v1/* → REST API         │    │
+│  └─────────────────────────────────┘    │
+│                                          │
+│  ┌─────────────────────────────────┐    │
+│  │  Streamlit (Subprocess)         │    │
+│  │  Internal Port: 8501            │    │
+│  │  Embedded via iframe            │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+```
+
+**Benefits:**
+- **Single Command:** `make run` starts everything
+- **Single Port:** Access API and UI from port 8000
+- **Graceful Lifecycle:** Automatic Streamlit startup/shutdown
+- **Configuration-Driven:** Enable/disable UI via TOML
+- **Production-Ready:** Works in Docker containers
+
+**Development Modes:**
+```bash
+make run          # Unified: API + UI on 8000
+make run-dev-api  # API only (no UI embedded)
+make run-dev-ui   # UI only on 8501 (standalone)
+```
 
 ---
 
@@ -827,17 +886,20 @@ make migrate-generate     # Generate new migration (requires DESCRIPTION="...")
 
 ### Application
 ```bash
-make run-api             # Start FastAPI server
+make run                 # 🚀 Start unified app (API + UI on port 8000)
+make run-dev-api         # Start FastAPI only (dev mode)
+make run-dev-ui          # Start Streamlit UI only (dev mode)
 make run-rag-cli         # Interactive CLI for RAG queries
 ```
 
 ### Testing
 ```bash
-make test                # Run all tests
-make test-verbose        # Run with verbose output
+make test                # Run unit tests (~10s, 642 tests)
+make test-integration    # Run integration tests (~2s, 21 tests)
+make test-ui-api         # Run UI API tests (~2s, 22 tests)
+make test-all            # Run ALL tests (~15s, 685 tests)
 make test-coverage       # Run with coverage report
-make test-unit           # Run unit tests only
-make test-integration    # Run integration tests only
+make test-html           # Generate HTML coverage report
 ```
 
 ### Development
@@ -853,7 +915,7 @@ make format              # Format code with black
 ## 🧪 Testing
 
 ```bash
-# Run all tests (549 tests!)
+# Run all tests (685 tests!)
 make test
 
 # Run with verbose output
@@ -871,8 +933,9 @@ pytest tests/test_vectorstore_*.py # Vectorstore tests
 ```
 
 **Test Coverage:**
-- ✅ 549 total tests
-- ✅ 100% pass rate
+- ✅ **685 total tests** (642 unit + 21 integration + 22 UI API)
+- ✅ **100% pass rate** (~15 seconds total)
+- ✅ **Marker-based segregation** (`@pytest.mark.integration`, `@pytest.mark.ui`)
 - ✅ API endpoints (upload, files, query)
 - ✅ RAG chain (retrieval, generation, response formatting)
 - ✅ Security guardrails (input validation, prompt injection, output filtering)
@@ -881,6 +944,8 @@ pytest tests/test_vectorstore_*.py # Vectorstore tests
 - ✅ Configuration loading
 - ✅ Storage backends (local, S3)
 - ✅ Database operations (SQLAlchemy with migrations)
+- ✅ UI integration (Streamlit lifecycle, route accessibility, configuration)
+- ✅ Unified architecture (API + UI on single port)
 
 ---
 

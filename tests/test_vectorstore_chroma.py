@@ -90,7 +90,7 @@ class TestInitialization:
         self, mock_config, mock_embeddings, mock_chroma_client
     ):
         """Test successful initialization."""
-        with patch("chromadb.Client", return_value=mock_chroma_client):
+        with patch("chromadb.PersistentClient", return_value=mock_chroma_client):
             with patch("pathlib.Path.mkdir"):
                 vectorstore = ChromaVectorStore(mock_config, mock_embeddings)
 
@@ -103,7 +103,7 @@ class TestInitialization:
         self, mock_config, mock_embeddings, mock_chroma_client
     ):
         """Test that persist directory is created."""
-        with patch("chromadb.Client", return_value=mock_chroma_client):
+        with patch("chromadb.PersistentClient", return_value=mock_chroma_client):
             with patch("pathlib.Path.mkdir") as mock_mkdir:
                 vectorstore = ChromaVectorStore(mock_config, mock_embeddings)
 
@@ -114,7 +114,7 @@ class TestInitialization:
         self, mock_config, mock_embeddings, mock_chroma_client
     ):
         """Test configuration is stored correctly."""
-        with patch("chromadb.Client", return_value=mock_chroma_client):
+        with patch("chromadb.PersistentClient", return_value=mock_chroma_client):
             with patch("pathlib.Path.mkdir"):
                 vectorstore = ChromaVectorStore(mock_config, mock_embeddings)
 

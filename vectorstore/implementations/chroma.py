@@ -351,3 +351,28 @@ class ChromaVectorStore:
                 codes.VECTORSTORE_ERROR, operation="clear", error=str(e), exc_info=True
             )
             raise
+
+    def check_health(self) -> bool:
+        """
+        Fast health check using ChromaDB heartbeat.
+
+        Returns:
+            True if ChromaDB is responsive, False otherwise
+        """
+        logger.debug(codes.HEALTH_CHECK_VECTORSTORE_CHECKING, provider="chroma")
+
+        try:
+            # Use heartbeat - fastest way to check ChromaDB
+            self.client.heartbeat()
+
+            logger.debug(codes.HEALTH_CHECK_VECTORSTORE_HEALTHY, provider="chroma")
+            return True
+
+        except Exception as e:
+            logger.error(
+                codes.HEALTH_CHECK_VECTORSTORE_UNHEALTHY,
+                provider="chroma",
+                error=str(e),
+                exc_info=True,
+            )
+            return False

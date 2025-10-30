@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-50;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-lg glass hover:bg-white/20 transition-all duration-300 font-semibold;
+  }
+
+  .feature-card {
+    @apply glass p-8 rounded-2xl hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-purple-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-purple-500;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Swagger UI Dark Theme Customization */
+.swagger-container {
+  @apply bg-slate-800/50 rounded-xl p-6;
+}
+
+.swagger-ui .topbar {
+  display: none; /* Hide default topbar */
+}
+
+.swagger-ui {
+  @apply text-slate-100;
+  color: #f1f5f9 !important; /* Force high contrast */
+}
+
+.swagger-ui .info .title {
+  @apply text-white;
+  color: #ffffff !important;
+  font-size: 2rem !important;
+}
+
+.swagger-ui .info .description,
+.swagger-ui .info p {
+  @apply text-slate-200;
+  color: #e2e8f0 !important;
+}
+
+.swagger-ui .scheme-container {
+  @apply bg-slate-700/50 border-slate-600;
+}
+
+.swagger-ui .opblock {
+  @apply bg-slate-700/50 border-slate-600;
+}
+
+.swagger-ui .opblock .opblock-summary {
+  @apply border-slate-600;
+}
+
+.swagger-ui .opblock-tag {
+  @apply text-white;
+  color: #ffffff !important;
+  font-size: 1.5rem !important;
+}
+
+.swagger-ui .opblock.opblock-get {
+  @apply border-blue-500/50 bg-blue-900/30;
+}
+
+.swagger-ui .opblock.opblock-get .opblock-summary-method {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-post {
+  @apply border-green-500/50 bg-green-900/30;
+}
+
+.swagger-ui .opblock.opblock-post .opblock-summary-method {
+  background: #10b981 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-put {
+  @apply border-yellow-500/50 bg-yellow-900/30;
+}
+
+.swagger-ui .opblock.opblock-put .opblock-summary-method {
+  background: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock.opblock-delete {
+  @apply border-red-500/50 bg-red-900/30;
+}
+
+.swagger-ui .opblock.opblock-delete .opblock-summary-method {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock-summary-path,
+.swagger-ui .opblock-summary-description {
+  @apply text-slate-100;
+  color: #f1f5f9 !important;
+}
+
+.swagger-ui .btn {
+  @apply bg-purple-600 hover:bg-purple-700 border-purple-500 text-white;
+  color: #ffffff !important;
+}
+
+.swagger-ui .response-col_status {
+  @apply text-white;
+  color: #ffffff !important;
+}
+
+.swagger-ui table thead tr th {
+  @apply text-white border-slate-600;
+  color: #ffffff !important;
+}
+
+.swagger-ui table tbody tr td {
+  @apply text-slate-200;
+  color: #e2e8f0 !important;
+}
+
+.swagger-ui .model-box {
+  @apply bg-slate-700/50 border-slate-600;
+}
+
+.swagger-ui .model-title {
+  @apply text-white;
+  color: #ffffff !important;
+}
+
+.swagger-ui .property-row .prop-name,
+.swagger-ui .parameter__name {
+  @apply text-slate-100;
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+}
+
+.swagger-ui .parameter__type {
+  @apply text-purple-400;
+  color: #c084fc !important;
+}
+
+.swagger-ui input[type=text],
+.swagger-ui textarea,
+.swagger-ui select {
+  @apply bg-slate-700 border-slate-600 text-white;
+  color: #ffffff !important;
+}
+
+.swagger-ui .response-col_description__inner p,
+.swagger-ui .response-col_description__inner div {
+  @apply text-slate-200;
+  color: #e2e8f0 !important;
+}
+
+.swagger-ui .markdown p,
+.swagger-ui .markdown code,
+.swagger-ui .renderedMarkdown p {
+  @apply text-slate-200;
+  color: #e2e8f0 !important;
+}
+
+.swagger-ui code {
+  @apply bg-slate-700 text-purple-300;
+  color: #d8b4fe !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+

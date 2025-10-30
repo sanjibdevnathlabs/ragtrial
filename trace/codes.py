@@ -147,6 +147,14 @@ MSG_EMBEDDINGS_GENERATED = "Embeddings generated successfully"
 MSG_EMBEDDINGS_PROVIDER_UNKNOWN = "Unknown embeddings provider"
 
 # ============================================================================
+# LLM TRACE CODES & MESSAGES
+# ============================================================================
+LLM_FACTORY_CREATING = "llm_factory_creating"
+LLM_PROVIDER_UNKNOWN = "llm_provider_unknown"
+
+MSG_LLM_PROVIDER_UNKNOWN = "Unknown LLM provider"
+
+# ============================================================================
 # DOCUMENT LOADING TRACE CODES & MESSAGES
 # ============================================================================
 
@@ -239,6 +247,8 @@ API_SERVER_SHUTDOWN = "api_server_shutdown"
 API_REQUEST_RECEIVED = "api_request_received"
 API_REQUEST_COMPLETED = "api_request_completed"
 API_HEALTH_CHECK_REQUESTED = "api_health_check_requested"
+API_HEALTH_CHECK_STARTED = "api_health_check_started"
+API_HEALTH_CHECK_COMPLETED = "api_health_check_completed"
 API_UPLOAD_STARTED = "api_upload_started"
 API_UPLOAD_COMPLETED = "api_upload_completed"
 API_UPLOAD_FAILED = "api_upload_failed"
@@ -270,6 +280,20 @@ MSG_API_ERROR = "An error occurred processing the request"
 STORAGE_DEPENDENCY_INJECTING = "storage_dependency_injecting"
 STORAGE_DEPENDENCY_RELEASED = "storage_dependency_released"
 STORAGE_FACTORY_CREATING = "storage_factory_creating"
+
+# Health check trace codes
+HEALTH_CHECK_DATABASE_CHECKING = "health_check_database_checking"
+HEALTH_CHECK_DATABASE_HEALTHY = "health_check_database_healthy"
+HEALTH_CHECK_DATABASE_UNHEALTHY = "health_check_database_unhealthy"
+HEALTH_CHECK_VECTORSTORE_CHECKING = "health_check_vectorstore_checking"
+HEALTH_CHECK_VECTORSTORE_HEALTHY = "health_check_vectorstore_healthy"
+HEALTH_CHECK_VECTORSTORE_UNHEALTHY = "health_check_vectorstore_unhealthy"
+HEALTH_CHECK_LLM_CHECKING = "health_check_llm_checking"
+HEALTH_CHECK_LLM_HEALTHY = "health_check_llm_healthy"
+HEALTH_CHECK_LLM_UNHEALTHY = "health_check_llm_unhealthy"
+HEALTH_CHECK_EMBEDDINGS_CHECKING = "health_check_embeddings_checking"
+HEALTH_CHECK_EMBEDDINGS_HEALTHY = "health_check_embeddings_healthy"
+HEALTH_CHECK_EMBEDDINGS_UNHEALTHY = "health_check_embeddings_unhealthy"
 
 # ============================================================================
 # RAG (RETRIEVAL-AUGMENTED GENERATION) TRACE CODES & MESSAGES
@@ -421,3 +445,36 @@ DB_SEEDING = "db_seeding"
 DB_SEEDED = "db_seeded"
 DB_MIGRATION_TABLE_EXISTS = "db_migration_table_exists"
 DB_MIGRATION_TABLE_CREATED = "db_migration_table_created"
+
+
+# ============================================================================
+# UI TRACE CODES
+# ============================================================================
+
+# Streamlit lifecycle
+UI_STREAMLIT_STARTING = "ui_streamlit_starting"
+UI_STREAMLIT_STARTED = "ui_streamlit_started"
+UI_STREAMLIT_STOPPING = "ui_streamlit_stopping"
+UI_STREAMLIT_STOPPED = "ui_streamlit_stopped"
+UI_STREAMLIT_FAILED = "ui_streamlit_failed"
+UI_STREAMLIT_NOT_INSTALLED = "ui_streamlit_not_installed"
+UI_STREAMLIT_PORT_IN_USE = "ui_streamlit_port_in_use"
+
+# UI route access
+UI_ROUTE_ACCESSED = "ui_route_accessed"
+UI_LANGCHAIN_CHAT_ACCESSED = "ui_langchain_chat_accessed"
+UI_LANGGRAPH_CHAT_ACCESSED = "ui_langgraph_chat_accessed"
+
+# UI operations
+UI_INITIALIZING_SERVICES = "ui_initializing_services"
+UI_SERVICES_INITIALIZED = "ui_services_initialized"
+UI_QUERY_PROCESSING = "ui_query_processing"
+UI_QUERY_COMPLETED = "ui_query_completed"
+UI_QUERY_FAILED = "ui_query_failed"
+
+# UI file operations
+UI_FILE_UPLOAD_STARTED = "ui_file_upload_started"
+UI_FILE_UPLOAD_COMPLETED = "ui_file_upload_completed"
+UI_FILE_UPLOAD_FAILED = "ui_file_upload_failed"
+UI_CHAT_EXPORT_STARTED = "ui_chat_export_started"
+UI_CHAT_EXPORT_COMPLETED = "ui_chat_export_completed"

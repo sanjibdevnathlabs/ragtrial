@@ -1,4 +1,4 @@
-.PHONY: help install install-cpu test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
+.PHONY: help install install-cpu test test-verbose test-coverage test-integration test-ui-api test-all test-clean clean setup-db populate-db cleanup-db lint format run-examples run run-api run-dev-api run-dev-ui run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database frontend-install frontend-dev frontend-build frontend-clean
 
 SHELL := /bin/bash
 
@@ -19,6 +19,8 @@ help:
 	@echo "  make test-html        Run unit tests with HTML coverage report"
 	@echo "  make test-ci          Run unit tests for CI (xml + term + html)"
 	@echo "  make test-integration Run integration tests (parallel, ~1s)"
+	@echo "  make test-ui-api      Run UI API integration tests (~2s)"
+	@echo "  make test-all         Run ALL tests (unit + integration + UI API)"
 	@echo "  make test-clean       Clean up test storage artifacts"
 	@echo "  make setup-test-chromadb  Set up ChromaDB test collection"
 	@echo ""
@@ -41,12 +43,21 @@ help:
 	@echo "  make lint-all         Run all linting checks (format + lint)"
 	@echo ""
 	@echo "Development:"
-	@echo "  make run-api          Start FastAPI server (with auto-reload)"
+	@echo "  make run              🚀 Start unified app (API + UI on port 8000)"
+	@echo "  make run-api          Start FastAPI server only (with auto-reload)"
+	@echo "  make run-dev-api      🔧 Start API dev mode (no UI embedded)"
+	@echo "  make run-dev-ui       🎨 Start Streamlit UI standalone (port 8501)"
 	@echo "  make run-rag-cli      Interactive RAG terminal interface"
 	@echo "  make run-rag-demo     Run RAG query demonstration"
 	@echo "  make run-examples     Run demo examples"
 	@echo "  make check-env        Check environment variables"
 	@echo "  make check-python     Check Python version and packages"
+	@echo ""
+	@echo "Frontend Development:"
+	@echo "  make frontend-install 📦 Install Node.js dependencies"
+	@echo "  make frontend-dev     🎨 Start frontend dev server (port 5173)"
+	@echo "  make frontend-build   🏗️  Build frontend for production"
+	@echo "  make frontend-clean   🧹 Clean frontend build artifacts"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            Clean temporary files"
@@ -98,13 +109,16 @@ install-dev:
 test:
 	@echo "Running unit tests with coverage (parallel execution)..."
 	@APP_ENV=test $(PYTHON) -m pytest \
-		-m "not integration" \
+		-m "not integration and not ui" \
 		-n auto \
 		--ff \
 		--cov=. \
+		--cov-config=pytest.ini \
 		--cov-report=term \
 		--ignore=scripts \
 		--ignore=examples \
+		--ignore=cli \
+		--ignore=app/cli \
 		--ignore=venv \
 		--ignore=models \
 		--ignore=storage \
@@ -116,13 +130,16 @@ test:
 test-html:
 	@echo "Running unit tests with HTML coverage report (parallel execution)..."
 	@APP_ENV=test $(PYTHON) -m pytest \
-		-m "not integration" \
+		-m "not integration and not ui" \
 		-n auto \
 		--ff \
 		--cov=. \
+		--cov-config=pytest.ini \
 		--cov-report=html \
 		--ignore=scripts \
 		--ignore=examples \
+		--ignore=cli \
+		--ignore=app/cli \
 		--ignore=venv \
 		--ignore=models \
 		--ignore=storage \
@@ -133,14 +150,17 @@ test-html:
 test-ci:
 	@echo "Running unit tests for CI (with xml + term + html coverage)..."
 	@$(PYTHON) -m pytest \
-		-m "not integration" \
+		-m "not integration and not ui" \
 		-n auto \
 		--cov=. \
+		--cov-config=pytest.ini \
 		--cov-report=xml \
 		--cov-report=term-missing \
 		--cov-report=html \
 		--ignore=scripts \
 		--ignore=examples \
+		--ignore=cli \
+		--ignore=app/cli \
 		--ignore=venv \
 		--ignore=models \
 		--ignore=storage \
@@ -159,7 +179,7 @@ setup-test-chromadb:
 # Run integration tests (requires MySQL test database)
 # Note: Parallel execution with SELECT FOR UPDATE deadlock prevention
 test-integration:
-	@echo "🧪 Running integration tests (parallel, ~1s)..."
+	@echo "🧪 Running integration tests (parallel execution with transaction isolation)..."
 	@$(PYTHON) -m pytest \
 		-m "integration" \
 		-n auto \
@@ -172,6 +192,21 @@ test-integration:
 		--ignore=htmlcov \
 		--ignore=migration/versions \
 		--ignore=migration/templates
+
+# Run UI API integration tests (fast, no browser)
+test-ui-api:
+	@echo "🎨 Running UI API integration tests (~2s)..."
+	@$(PYTHON) -m pytest \
+		-m "ui" \
+		-vv
+
+# Run all tests (unit + integration + UI API)
+test-all:
+	@echo "🧪 Running ALL tests..."
+	@make test
+	@make test-integration
+	@make test-ui-api
+	@echo "✅ All tests passed!"
 
 # Clean up test artifacts (storage directories only)
 # Note: Database test data is automatically cleaned after each test
@@ -240,6 +275,12 @@ PYTHON := $(shell if [ -f ./venv/bin/python ]; then echo "./venv/bin/python"; el
 BLACK := $(shell if [ -f ./venv/bin/black ]; then echo "./venv/bin/black"; else echo "black"; fi)
 ISORT := $(shell if [ -f ./venv/bin/isort ]; then echo "./venv/bin/isort"; else echo "isort"; fi)
 FLAKE8 := $(shell if [ -f ./venv/bin/flake8 ]; then echo "./venv/bin/flake8"; else echo "flake8"; fi)
+UVICORN := $(shell if [ -f ./venv/bin/uvicorn ]; then echo "./venv/bin/uvicorn"; else echo "uvicorn"; fi)
+STREAMLIT := $(shell if [ -f ./venv/bin/streamlit ]; then echo "./venv/bin/streamlit"; else echo "streamlit"; fi)
+
+# Frontend commands
+NPM := $(shell which npm)
+FRONTEND_DIR := frontend
 
 .PHONY: format lint-check lint lint-all black-check isort-check flake8-check
 
@@ -262,7 +303,7 @@ isort-check:
 
 flake8-check:
 	@echo "🔍 Running Flake8 linter..."
-	@$(FLAKE8) . --max-line-length=88 --extend-ignore=E203,W503 \
+	@$(FLAKE8) . --max-line-length=120 --extend-ignore=E203,W503 \
 		--count --show-source --statistics $(FLAKE8_EXCLUDE)
 
 # Check formatting (for CI/CD and pre-push)
@@ -284,10 +325,82 @@ run-api:
 	@echo ""
 	@./venv/bin/uvicorn app.api.main:app --reload --workers 4 --host 0.0.0.0 --port 8000
 
+run-api-prod:
+	@echo "🚀 Starting FastAPI server (production mode)..."
+	@echo "Server will be available at http://0.0.0.0:8000"
+	@echo ""
+	@$(UVICORN) app.api.main:app --host 0.0.0.0 --port 8000 --workers 1
+
 run-rag-cli:
 	@echo "Starting Interactive RAG CLI..."
 	@echo ""
 	@$(PYTHON) -m app.cli.main
+
+run: frontend-build
+	@echo "🚀 Starting Unified RAG Application..."
+	@echo ""
+	@echo "Services:"
+	@echo "  - Landing Page: http://localhost:8000"
+	@echo "  - FastAPI server: http://localhost:8000"
+	@echo "  - API docs: http://localhost:8000/docs"
+	@echo "  - LangChain Chat UI: http://localhost:8000/langchain/chat"
+	@echo ""
+	@echo "Note: Streamlit UI embedded automatically"
+	@echo ""
+	@$(UVICORN) app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+run-dev-api:
+	@echo "🔧 Starting FastAPI (dev mode, no UI)..."
+	@echo "Open browser: http://localhost:8000/docs"
+	@echo ""
+	@echo "Note: Set UI_ENABLED=false in config to disable Streamlit"
+	@echo ""
+	@$(UVICORN) app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+run-dev-ui:
+	@echo "🎨 Starting Streamlit UI (standalone dev mode)..."
+	@echo "Open browser: http://localhost:8501"
+	@echo ""
+	@echo "Note: For testing UI independently of FastAPI"
+	@echo ""
+	@$(STREAMLIT) run app/ui/main.py
+
+# Frontend Development Commands
+.PHONY: frontend-install frontend-dev frontend-build frontend-clean
+
+frontend-install:
+	@echo "📦 Installing frontend dependencies..."
+	@cd $(FRONTEND_DIR) && $(NPM) install
+	@echo "✅ Frontend dependencies installed"
+
+frontend-install-ci:
+	@echo "📦 Installing frontend dependencies (CI mode)..."
+	@cd $(FRONTEND_DIR) && $(NPM) ci --prefer-offline --no-audit
+	@echo "✅ Frontend dependencies installed (CI)"
+
+frontend-dev:
+	@echo "🎨 Starting frontend dev server..."
+	@echo "Open browser: http://localhost:5173"
+	@echo ""
+	@echo "Note: API proxy configured to http://localhost:8000"
+	@echo ""
+	@cd $(FRONTEND_DIR) && $(NPM) run dev
+
+frontend-build:
+	@echo "🏗️  Building frontend for production..."
+	@cd $(FRONTEND_DIR) && $(NPM) run build
+	@echo "✅ Frontend built to app/static/dist/"
+
+frontend-verify:
+	@echo "🔍 Verifying frontend build output..."
+	@test -f app/static/dist/index.html || \
+		(echo "❌ Frontend build failed - index.html not found!" && exit 1)
+	@echo "✅ Frontend build verified"
+
+frontend-clean:
+	@echo "🧹 Cleaning frontend build artifacts..."
+	@rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/dist app/static/dist
+	@echo "✅ Frontend cleaned"
 
 run-rag-demo:
 	@echo "Running RAG query demonstration..."

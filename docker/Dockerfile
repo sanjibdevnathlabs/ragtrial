@@ -1,32 +1,83 @@
-# Production image built on top of base image with pre-installed dependencies
-# Base image (sanjibdevnath/ragtrial-base) already contains all Python packages
-# Use ARG to accept base image tag from build command (commit SHA for isolation)
+# Multi-stage production image with optimized caching
+# =============================================================================
+# Global ARG for base image tag (must be before first FROM)
+ARG BASE_IMAGE_TAG=local
 
-ARG BASE_IMAGE_TAG=latest
-FROM sanjibdevnath/ragtrial-base:${BASE_IMAGE_TAG}
-
-LABEL maintainer="sanjib.devnath@example.com"
-LABEL org.opencontainers.image.source="https://github.com/username/ragtrial"
-LABEL org.opencontainers.image.description="RAG Trial - Production-ready RAG application"
+# =============================================================================
+# Stage 1: Build frontend with Node.js
+# =============================================================================
+# Using Node.js 22 LTS (latest) with Alpine 3.22 for security
+# Node 22.21.1 is the current LTS with all security patches
+FROM node:22.21.1-alpine3.22 AS frontend-builder
 
 WORKDIR /app
 
-# Copy application code (dependencies already in base image)
-COPY . .
+# Install make and bash for consistent command execution
+RUN apk add --no-cache make bash
 
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# Copy Makefile and frontend files
+COPY Makefile ./
+COPY frontend/ ./frontend/
 
-USER appuser
+# Install dependencies using make (CI mode for Docker)
+RUN make frontend-install-ci
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/home/appuser/.local/bin:$PATH"
+# Build frontend using make
+RUN make frontend-build
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Verify build output using make
+RUN make frontend-verify
+
+# =============================================================================
+# Stage 2: Production Python image with built frontend
+# =============================================================================
+FROM sanjibdevnath/ragtrial-base:${BASE_IMAGE_TAG}
+
+LABEL maintainer="sanjib.devnath@example.com"
+LABEL org.opencontainers.image.source="https://github.com/sanjibdevnathlabs/ragtrial"
+LABEL org.opencontainers.image.description="RAG Trial - Production-ready RAG application with React UI"
+
+# Base image already sets WORKDIR /app, USER appuser, ENV variables, and Makefile
+# No need to repeat them here
+
+# CACHE OPTIMIZATION: Copy application code in layers
+# Copy files that change less frequently first
+
+# 1. Copy configuration and constants (rarely change)
+COPY --chown=appuser:appuser config/ ./config/
+COPY --chown=appuser:appuser constants/ ./constants/
+COPY --chown=appuser:appuser environment/ ./environment/
+
+# 2. Copy core modules (change occasionally)
+COPY --chown=appuser:appuser database/ ./database/
+COPY --chown=appuser:appuser logger/ ./logger/
+COPY --chown=appuser:appuser trace/ ./trace/
+COPY --chown=appuser:appuser utils/ ./utils/
+COPY --chown=appuser:appuser migration/ ./migration/
+
+# 3. Copy LLM and embeddings modules (change occasionally)
+COPY --chown=appuser:appuser llm/ ./llm/
+COPY --chown=appuser:appuser embeddings/ ./embeddings/
+COPY --chown=appuser:appuser vectorstore/ ./vectorstore/
+COPY --chown=appuser:appuser loader/ ./loader/
+COPY --chown=appuser:appuser splitter/ ./splitter/
+COPY --chown=appuser:appuser storage_backend/ ./storage_backend/
+
+# 4. Copy ingestion module (change occasionally)
+COPY --chown=appuser:appuser ingestion/ ./ingestion/
+
+# 5. Copy application modules (change more frequently)
+COPY --chown=appuser:appuser app/ ./app/
+
+# Copy built frontend from builder stage
+COPY --from=frontend-builder --chown=appuser:appuser /app/app/static/dist ./app/static/dist
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
+# Expose port
 EXPOSE 8000
 
-CMD ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
-
+# Run unified application using make command for consistency
+CMD ["make", "run-api-prod"]

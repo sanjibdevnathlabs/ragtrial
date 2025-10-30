@@ -131,6 +131,17 @@ port = 8000                       # API server port
 cors_origins = ["*"]              # CORS allowed origins
 upload_chunk_size = 1048576       # Upload chunk size (1MB)
 
+# UI Configuration (Streamlit)
+[ui]
+enabled = true                    # Enable/disable Streamlit UI embedding
+host = "localhost"                # Streamlit host (internal)
+port = 8501                       # Streamlit port (internal)
+headless = true                   # Run in headless mode (no browser popup)
+enable_cors = false               # Disable CORS (served via FastAPI)
+enable_xsrf_protection = false    # Disable XSRF (served via FastAPI)
+startup_timeout = 10              # Startup timeout in seconds
+shutdown_timeout = 5              # Graceful shutdown timeout in seconds
+
 # RAG (Retrieval-Augmented Generation) Configuration
 [rag]
 provider = "google"               # LLM provider: google, openai, anthropic
