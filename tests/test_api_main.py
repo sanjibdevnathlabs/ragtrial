@@ -292,37 +292,45 @@ class TestIntegration:
         - POST-only endpoints should return 405 (Method Not Allowed), NOT 404
         - 404 means the route is not registered at all (failure)
         """
-        # GET endpoints - should return success or valid business errors
-        get_endpoints = [
-            ("/api/v1/health", 200),  # Health check
-            ("/api/v1/files", 200),  # List files (may be empty)
-            ("/api/v1/devdocs/list", 200),  # List documentation files
-        ]
+        from unittest.mock import patch
+        
+        # Mock database health check to avoid requiring actual DB connection in unit tests
+        with patch("database.session.SessionFactory.check_health", return_value=True):
+            # GET endpoints - should return success or valid business errors
+            get_endpoints = [
+                ("/api/v1/health", 200),  # Health check
+                ("/api/v1/files", 200),  # List files (may be empty)
+                ("/api/v1/devdocs/list", 200),  # List documentation files
+            ]
 
-        for endpoint, expected_status in get_endpoints:
-            response = client.get(endpoint)
-            assert (
-                response.status_code == expected_status
-            ), f"GET {endpoint} returned {response.status_code}, expected {expected_status}"
+            for endpoint, expected_status in get_endpoints:
+                response = client.get(endpoint)
+                assert (
+                    response.status_code == expected_status
+                ), f"GET {endpoint} returned {response.status_code}, expected {expected_status}"
 
-        # POST-only endpoints - should return 405 (Method Not Allowed) when called with GET
-        post_only_endpoints = [
-            "/api/v1/upload",  # File upload
-            "/api/v1/query",  # RAG query
-        ]
+            # POST-only endpoints - should return 405 (Method Not Allowed) when called with GET
+            post_only_endpoints = [
+                "/api/v1/upload",  # File upload
+                "/api/v1/query",  # RAG query
+            ]
 
-        for endpoint in post_only_endpoints:
-            response = client.get(endpoint)
-            assert response.status_code == 405, (
-                f"GET {endpoint} returned {response.status_code}, expected 405 (Method Not Allowed). "
-                f"404 would indicate the route is not registered."
-            )
+            for endpoint in post_only_endpoints:
+                response = client.get(endpoint)
+                assert response.status_code == 405, (
+                    f"GET {endpoint} returned {response.status_code}, expected 405 (Method Not Allowed). "
+                    f"404 would indicate the route is not registered."
+                )
 
     def test_application_starts_successfully(self, client):
         """Test that application can start and respond to requests."""
-        # Simple smoke test
-        response = client.get("/")
-        assert response.status_code == 200
+        from unittest.mock import patch
+        
+        # Mock database health check to avoid requiring actual DB connection in unit tests
+        with patch("database.session.SessionFactory.check_health", return_value=True):
+            # Simple smoke test
+            response = client.get("/")
+            assert response.status_code == 200
 
-        response = client.get("/api/v1/health")
-        assert response.status_code == 200
+            response = client.get("/api/v1/health")
+            assert response.status_code == 200
