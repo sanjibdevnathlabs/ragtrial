@@ -22,71 +22,29 @@ def client():
 class TestRootEndpoint:
     """Test suite for root endpoint."""
 
+    def test_root_redirects_to_docs(self, client):
+        """Test root endpoint redirects to /docs."""
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "/docs"
+
+    def test_root_redirect_target_accessible(self, client):
+        """Test following redirect from root leads to docs."""
+        response = client.get("/", follow_redirects=True)
+        assert response.status_code == 200
+        # Docs page contains HTML with API documentation
+        assert "text/html" in response.headers["content-type"]
+        assert "FastAPI" in response.text or "Swagger" in response.text or "API" in response.text
+
     def test_root_returns_200(self, client):
-        """Test root endpoint returns 200 OK."""
-        response = client.get("/")
+        """Test root endpoint (following redirect) returns 200 OK."""
+        response = client.get("/", follow_redirects=True)
         assert response.status_code == 200
 
-    def test_root_returns_json(self, client):
-        """Test root endpoint returns JSON."""
-        response = client.get("/")
-        assert response.headers["content-type"] == "application/json"
-
-    def test_root_includes_api_name(self, client):
-        """Test root response includes API name."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "name" in data
-        assert data["name"] == "RAG Application API"
-
-    def test_root_includes_version(self, client):
-        """Test root response includes version."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "version" in data
-        assert data["version"] == "1.0.0"
-
-    def test_root_includes_status(self, client):
-        """Test root response includes status."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "status" in data
-        assert data["status"] == "running"
-
-    def test_root_includes_docs_link(self, client):
-        """Test root response includes docs link."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "docs" in data
-        assert data["docs"] == "/docs"
-
-    def test_root_includes_endpoints(self, client):
-        """Test root response includes endpoint information."""
-        response = client.get("/")
-        data = response.json()
-
-        assert "endpoints" in data
-        endpoints = data["endpoints"]
-
-        assert "health" in endpoints
-        assert "upload" in endpoints
-        assert "files" in endpoints
-        assert "query" in endpoints
-
-    def test_root_endpoint_paths_correct(self, client):
-        """Test root response has correct endpoint paths."""
-        response = client.get("/")
-        data = response.json()
-
-        endpoints = data["endpoints"]
-        assert endpoints["health"] == "/health"
-        assert endpoints["upload"] == "/api/v1/upload"
-        assert endpoints["files"] == "/api/v1/files"
-        assert endpoints["query"] == "/api/v1/query"
+    def test_root_returns_html_after_redirect(self, client):
+        """Test root endpoint (following redirect) returns HTML."""
+        response = client.get("/", follow_redirects=True)
+        assert "text/html" in response.headers["content-type"]
 
 
 class TestFaviconEndpoint:

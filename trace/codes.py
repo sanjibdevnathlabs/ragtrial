@@ -421,3 +421,36 @@ DB_SEEDING = "db_seeding"
 DB_SEEDED = "db_seeded"
 DB_MIGRATION_TABLE_EXISTS = "db_migration_table_exists"
 DB_MIGRATION_TABLE_CREATED = "db_migration_table_created"
+
+
+# ============================================================================
+# UI TRACE CODES
+# ============================================================================
+
+# Streamlit lifecycle
+UI_STREAMLIT_STARTING = "ui_streamlit_starting"
+UI_STREAMLIT_STARTED = "ui_streamlit_started"
+UI_STREAMLIT_STOPPING = "ui_streamlit_stopping"
+UI_STREAMLIT_STOPPED = "ui_streamlit_stopped"
+UI_STREAMLIT_FAILED = "ui_streamlit_failed"
+UI_STREAMLIT_NOT_INSTALLED = "ui_streamlit_not_installed"
+UI_STREAMLIT_PORT_IN_USE = "ui_streamlit_port_in_use"
+
+# UI route access
+UI_ROUTE_ACCESSED = "ui_route_accessed"
+UI_LANGCHAIN_CHAT_ACCESSED = "ui_langchain_chat_accessed"
+UI_LANGGRAPH_CHAT_ACCESSED = "ui_langgraph_chat_accessed"
+
+# UI operations
+UI_INITIALIZING_SERVICES = "ui_initializing_services"
+UI_SERVICES_INITIALIZED = "ui_services_initialized"
+UI_QUERY_PROCESSING = "ui_query_processing"
+UI_QUERY_COMPLETED = "ui_query_completed"
+UI_QUERY_FAILED = "ui_query_failed"
+
+# UI file operations
+UI_FILE_UPLOAD_STARTED = "ui_file_upload_started"
+UI_FILE_UPLOAD_COMPLETED = "ui_file_upload_completed"
+UI_FILE_UPLOAD_FAILED = "ui_file_upload_failed"
+UI_CHAT_EXPORT_STARTED = "ui_chat_export_started"
+UI_CHAT_EXPORT_COMPLETED = "ui_chat_export_completed"

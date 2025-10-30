@@ -27,7 +27,7 @@ services:
     image: ragtrial:dev
     container_name: ragtrial-api
     ports:
-      - "8000:8000"
+      - "8000:8000"  # FastAPI + embedded Streamlit UI
     environment:
       - APP_ENV=docker
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -43,6 +43,12 @@ services:
     networks:
       - ragtrial-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
   
   db:
     image: mysql:8.0

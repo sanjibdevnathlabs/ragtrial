@@ -88,20 +88,21 @@ class TestVectorStoreFactory:
 
     def test_create_chroma_vectorstore(self, config_chroma, mock_embeddings):
         """Test creating Chroma vectorstore provider (MOCKED)."""
-        with patch("chromadb.Client"):
-            vectorstore = create_vectorstore(config_chroma, mock_embeddings)
+        with patch("chromadb.PersistentClient"):
+            with patch("pathlib.Path.mkdir"):
+                vectorstore = create_vectorstore(config_chroma, mock_embeddings)
 
-            assert vectorstore is not None
-            # Protocol duck typing - check for required methods
-            assert hasattr(vectorstore, "initialize")
-            assert hasattr(vectorstore, "add_documents")
-            assert hasattr(vectorstore, "query")
-            assert hasattr(vectorstore, "delete")
-            assert hasattr(vectorstore, "get_stats")
-            assert hasattr(vectorstore, "clear")
-            assert callable(vectorstore.initialize)
-            assert callable(vectorstore.add_documents)
-            assert callable(vectorstore.query)
+                assert vectorstore is not None
+                # Protocol duck typing - check for required methods
+                assert hasattr(vectorstore, "initialize")
+                assert hasattr(vectorstore, "add_documents")
+                assert hasattr(vectorstore, "query")
+                assert hasattr(vectorstore, "delete")
+                assert hasattr(vectorstore, "get_stats")
+                assert hasattr(vectorstore, "clear")
+                assert callable(vectorstore.initialize)
+                assert callable(vectorstore.add_documents)
+                assert callable(vectorstore.query)
 
     def test_create_pinecone_vectorstore(self, config_pinecone, mock_embeddings):
         """Test creating Pinecone vectorstore provider (MOCKED)."""
@@ -181,16 +182,18 @@ class TestConfiguration:
 
     def test_factory_uses_config_provider(self, config_chroma, mock_embeddings):
         """Test factory uses provider from config."""
-        with patch("chromadb.Client"):
-            vectorstore = create_vectorstore(config_chroma, mock_embeddings)
-            assert vectorstore is not None
+        with patch("chromadb.PersistentClient"):
+            with patch("pathlib.Path.mkdir"):
+                vectorstore = create_vectorstore(config_chroma, mock_embeddings)
+                assert vectorstore is not None
 
     def test_factory_respects_provider_switching(self, config_chroma, mock_embeddings):
         """Test factory respects provider changes."""
         # First provider
-        with patch("chromadb.Client"):
-            vectorstore1 = create_vectorstore(config_chroma, mock_embeddings)
-            assert vectorstore1 is not None
+        with patch("chromadb.PersistentClient"):
+            with patch("pathlib.Path.mkdir"):
+                vectorstore1 = create_vectorstore(config_chroma, mock_embeddings)
+                assert vectorstore1 is not None
 
         # Switch provider
         config_chroma.vectorstore.provider = "pinecone"
@@ -219,9 +222,10 @@ class TestProviderTypes:
 
     def test_chroma_provider_type(self, config_chroma, mock_embeddings):
         """Test Chroma provider returns correct type."""
-        with patch("chromadb.Client"):
-            vectorstore = create_vectorstore(config_chroma, mock_embeddings)
-            assert type(vectorstore).__name__ == "ChromaVectorStore"
+        with patch("chromadb.PersistentClient"):
+            with patch("pathlib.Path.mkdir"):
+                vectorstore = create_vectorstore(config_chroma, mock_embeddings)
+                assert type(vectorstore).__name__ == "ChromaVectorStore"
 
     def test_pinecone_provider_type(self, config_pinecone, mock_embeddings):
         """Test Pinecone provider returns correct type."""
@@ -299,11 +303,17 @@ class TestFactoryIntegration:
         embeddings.embed_query.return_value = [0.2] * 768
         embeddings.get_dimension.return_value = 768
 
-        with patch("chromadb.Client"):
-            vectorstore = create_vectorstore(config_chroma, embeddings)
+        # Mock both PersistentClient (used by ChromaDB) and Path.mkdir (filesystem)
+        mock_client = MagicMock()
+        mock_collection = MagicMock()
+        mock_client.get_or_create_collection.return_value = mock_collection
+        
+        with patch("chromadb.PersistentClient", return_value=mock_client):
+            with patch("pathlib.Path.mkdir"):
+                vectorstore = create_vectorstore(config_chroma, embeddings)
 
-            assert vectorstore is not None
-            assert hasattr(vectorstore, "embeddings")
-            # Embeddings should work
-            query_embedding = embeddings.embed_query("test")
-            assert len(query_embedding) == 768
+                assert vectorstore is not None
+                assert hasattr(vectorstore, "embeddings")
+                # Embeddings should work
+                query_embedding = embeddings.embed_query("test")
+                assert len(query_embedding) == 768

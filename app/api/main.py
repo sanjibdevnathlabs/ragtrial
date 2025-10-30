@@ -2,20 +2,32 @@
 FastAPI application for RAG document upload.
 
 Main application entry point with middleware and router configuration.
+Embeds Streamlit UI for unified application architecture.
 """
 
+import atexit
+import os
+import signal
+import subprocess
+import sys
+from typing import Optional
+
+import constants
 import trace.codes as codes
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from app.routers import files, health, query, upload
 from config import Config
 from logger import get_logger
 
 logger = get_logger(__name__)
+
+# Global process handle for Streamlit
+streamlit_process: Optional[subprocess.Popen] = None
 
 
 def get_config() -> Config:
@@ -88,12 +100,140 @@ def log_registered_routes(app: FastAPI):
     print("=" * 80 + "\n")
 
 
+def start_streamlit_ui() -> None:
+    """
+    Start Streamlit UI server as a subprocess.
+
+    Raises:
+        RuntimeError: If Streamlit fails to start
+    """
+    global streamlit_process
+
+    config = get_config()
+
+    if not config.ui.enabled:
+        logger.info(codes.UI_STREAMLIT_NOT_INSTALLED, message="UI disabled in configuration")
+        return
+
+    logger.info(codes.UI_STREAMLIT_STARTING)
+
+    try:
+        # Check if streamlit is installed using the same Python interpreter
+        result = subprocess.run(
+            [sys.executable, "-m", "streamlit", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+
+        if result.returncode != 0:
+            logger.warning(
+                codes.UI_STREAMLIT_NOT_INSTALLED,
+                message=constants.UI_STREAMLIT_NOT_INSTALLED,
+                hint=constants.UI_STREAMLIT_INSTALL_HINT,
+            )
+            return
+
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        logger.warning(
+            codes.UI_STREAMLIT_NOT_INSTALLED,
+            message=constants.UI_STREAMLIT_NOT_INSTALLED,
+            hint=constants.UI_STREAMLIT_INSTALL_HINT,
+        )
+        return
+
+    try:
+        # Start Streamlit as subprocess using the same Python interpreter
+        streamlit_process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "streamlit",
+                "run",
+                "app/ui/main.py",
+                "--server.port",
+                str(config.ui.port),
+                "--server.headless",
+                str(config.ui.headless).lower(),
+                "--server.enableCORS",
+                str(config.ui.enable_cors).lower(),
+                "--server.enableXsrfProtection",
+                str(config.ui.enable_xsrf_protection).lower(),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        logger.info(
+            codes.UI_STREAMLIT_STARTED,
+            port=config.ui.port,
+            host=config.ui.host,
+        )
+
+    except Exception as e:
+        logger.error(
+            codes.UI_STREAMLIT_FAILED,
+            error=str(e),
+            message=constants.UI_STREAMLIT_STARTUP_FAILED,
+            exc_info=True,
+        )
+        raise RuntimeError(constants.UI_STREAMLIT_STARTUP_FAILED) from e
+
+
+def stop_streamlit_ui() -> None:
+    """Stop Streamlit UI server gracefully."""
+    global streamlit_process
+
+    if streamlit_process is None:
+        return
+
+    config = get_config()
+    logger.info(codes.UI_STREAMLIT_STOPPING)
+
+    try:
+        # Try graceful shutdown first
+        streamlit_process.terminate()
+        streamlit_process.wait(timeout=config.ui.shutdown_timeout)
+        logger.info(codes.UI_STREAMLIT_STOPPED)
+
+    except subprocess.TimeoutExpired:
+        # Force kill if graceful shutdown fails
+        logger.warning(
+            codes.UI_STREAMLIT_FAILED,
+            message="Graceful shutdown timeout, forcing termination",
+        )
+        streamlit_process.kill()
+        streamlit_process.wait()
+        logger.info(codes.UI_STREAMLIT_STOPPED, message="Forced termination")
+
+    except Exception as e:
+        logger.error(
+            codes.UI_STREAMLIT_FAILED,
+            error=str(e),
+            message=constants.UI_STREAMLIT_SHUTDOWN_FAILED,
+            exc_info=True,
+        )
+
+    finally:
+        streamlit_process = None
+
+
+def cleanup_streamlit() -> None:
+    """Cleanup function for atexit - ensures Streamlit is stopped."""
+    if streamlit_process is not None:
+        stop_streamlit_ui()
+
+
+# Register cleanup handler
+atexit.register(cleanup_streamlit)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Application lifespan context manager.
 
-    Handles startup and shutdown events.
+    Handles startup and shutdown events including Streamlit UI.
     """
     # Startup
     config = get_config()
@@ -102,7 +242,11 @@ async def lifespan(app: FastAPI):
         host=config.api.host,
         port=config.api.port,
         storage_backend=config.storage.backend,
+        ui_enabled=config.ui.enabled,
     )
+
+    # Start Streamlit UI
+    start_streamlit_ui()
 
     # Log all registered routes
     log_registered_routes(app)
@@ -113,6 +257,9 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info(codes.API_SERVER_SHUTDOWN, message=codes.MSG_API_SERVER_SHUTDOWN)
+
+    # Stop Streamlit UI
+    stop_streamlit_ui()
 
 
 # Create FastAPI application
@@ -173,26 +320,97 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get("/")
+@app.get(constants.UI_ROUTE_ROOT, response_class=RedirectResponse)
 async def root():
     """
-    Root endpoint with API information.
+    Root endpoint - redirects to API documentation.
 
     Returns:
-        dict: API welcome message and version
+        RedirectResponse: Redirects to /docs
     """
-    return {
-        "name": "RAG Application API",
-        "version": "1.0.0",
-        "status": "running",
-        "docs": "/docs",
-        "endpoints": {
-            "health": "/health",
-            "upload": "/api/v1/upload",
-            "files": "/api/v1/files",
-            "query": "/api/v1/query",
-        },
-    }
+    return RedirectResponse(url=constants.UI_ROUTE_DOCS)
+
+
+@app.get(constants.UI_ROUTE_LANGCHAIN_CHAT, response_class=HTMLResponse)
+async def langchain_chat():
+    """
+    LangChain RAG chat UI endpoint.
+
+    Serves the Streamlit UI in an iframe for unified application architecture.
+
+    Returns:
+        HTMLResponse: HTML page with embedded Streamlit iframe
+    """
+    config = get_config()
+
+    logger.info(codes.UI_LANGCHAIN_CHAT_ACCESSED)
+
+    if not config.ui.enabled or streamlit_process is None:
+        return HTMLResponse(
+            content=f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>{constants.UI_IFRAME_TITLE_LANGCHAIN}</title>
+                <style>
+                    body {{
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100vh;
+                        margin: 0;
+                        background: #f5f5f5;
+                    }}
+                    .message {{
+                        text-align: center;
+                        padding: 2rem;
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="message">
+                    <h2>⚠️ UI Not Available</h2>
+                    <p>{constants.UI_STREAMLIT_NOT_INSTALLED}</p>
+                    <p><code>{constants.UI_STREAMLIT_INSTALL_HINT}</code></p>
+                </div>
+            </body>
+            </html>
+            """,
+            status_code=503,
+        )
+
+    streamlit_url = f"http://{config.ui.host}:{config.ui.port}"
+
+    return HTMLResponse(
+        content=f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>{constants.UI_IFRAME_TITLE_LANGCHAIN}</title>
+            <style>
+                body, html {{
+                    margin: 0;
+                    padding: 0;
+                    height: 100%;
+                    overflow: hidden;
+                }}
+                iframe {{
+                    width: 100%;
+                    height: 100vh;
+                    border: none;
+                }}
+            </style>
+        </head>
+        <body>
+            <iframe src="{streamlit_url}" allowfullscreen></iframe>
+        </body>
+        </html>
+        """
+    )
 
 
 @app.get("/favicon.ico")

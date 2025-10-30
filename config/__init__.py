@@ -24,6 +24,7 @@ from pathlib import Path
 from trace import codes
 
 from config.api import APIConfig
+from config.ui import UIConfig
 
 # Import configuration classes needed internally by Config class
 from config.app import AppConfig
@@ -92,6 +93,9 @@ class Config(metaclass=SingletonMeta):
     # API configuration
     api: APIConfig
 
+    # UI configuration
+    ui: UIConfig
+
     # Vector store configuration
     vectorstore: VectorStoreConfig
 
@@ -136,6 +140,7 @@ class Config(metaclass=SingletonMeta):
         self.storage.s3 = S3StorageConfig()
 
         self.api = APIConfig()
+        self.ui = UIConfig()
 
         self.vectorstore = VectorStoreConfig()
         self.vectorstore.chroma = ChromaConfig()

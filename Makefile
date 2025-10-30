@@ -1,4 +1,4 @@
-.PHONY: help install install-cpu test test-verbose test-coverage clean setup-db populate-db cleanup-db lint format run-examples run-api run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
+.PHONY: help install install-cpu test test-verbose test-coverage test-integration test-ui-api test-all test-clean clean setup-db populate-db cleanup-db lint format run-examples run run-api run-dev-api run-dev-ui run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
 
 SHELL := /bin/bash
 
@@ -19,6 +19,8 @@ help:
 	@echo "  make test-html        Run unit tests with HTML coverage report"
 	@echo "  make test-ci          Run unit tests for CI (xml + term + html)"
 	@echo "  make test-integration Run integration tests (parallel, ~1s)"
+	@echo "  make test-ui-api      Run UI API integration tests (~2s)"
+	@echo "  make test-all         Run ALL tests (unit + integration + UI API)"
 	@echo "  make test-clean       Clean up test storage artifacts"
 	@echo "  make setup-test-chromadb  Set up ChromaDB test collection"
 	@echo ""
@@ -41,7 +43,10 @@ help:
 	@echo "  make lint-all         Run all linting checks (format + lint)"
 	@echo ""
 	@echo "Development:"
-	@echo "  make run-api          Start FastAPI server (with auto-reload)"
+	@echo "  make run              🚀 Start unified app (API + UI on port 8000)"
+	@echo "  make run-api          Start FastAPI server only (with auto-reload)"
+	@echo "  make run-dev-api      🔧 Start API dev mode (no UI embedded)"
+	@echo "  make run-dev-ui       🎨 Start Streamlit UI standalone (port 8501)"
 	@echo "  make run-rag-cli      Interactive RAG terminal interface"
 	@echo "  make run-rag-demo     Run RAG query demonstration"
 	@echo "  make run-examples     Run demo examples"
@@ -98,7 +103,7 @@ install-dev:
 test:
 	@echo "Running unit tests with coverage (parallel execution)..."
 	@APP_ENV=test $(PYTHON) -m pytest \
-		-m "not integration" \
+		-m "not integration and not ui" \
 		-n auto \
 		--ff \
 		--cov=. \
@@ -116,7 +121,7 @@ test:
 test-html:
 	@echo "Running unit tests with HTML coverage report (parallel execution)..."
 	@APP_ENV=test $(PYTHON) -m pytest \
-		-m "not integration" \
+		-m "not integration and not ui" \
 		-n auto \
 		--ff \
 		--cov=. \
@@ -133,7 +138,7 @@ test-html:
 test-ci:
 	@echo "Running unit tests for CI (with xml + term + html coverage)..."
 	@$(PYTHON) -m pytest \
-		-m "not integration" \
+		-m "not integration and not ui" \
 		-n auto \
 		--cov=. \
 		--cov-report=xml \
@@ -172,6 +177,21 @@ test-integration:
 		--ignore=htmlcov \
 		--ignore=migration/versions \
 		--ignore=migration/templates
+
+# Run UI API integration tests (fast, no browser)
+test-ui-api:
+	@echo "🎨 Running UI API integration tests (~2s)..."
+	@$(PYTHON) -m pytest \
+		-m "ui" \
+		-vv
+
+# Run all tests (unit + integration + UI API)
+test-all:
+	@echo "🧪 Running ALL tests..."
+	@make test
+	@make test-integration
+	@make test-ui-api
+	@echo "✅ All tests passed!"
 
 # Clean up test artifacts (storage directories only)
 # Note: Database test data is automatically cleaned after each test
@@ -240,6 +260,8 @@ PYTHON := $(shell if [ -f ./venv/bin/python ]; then echo "./venv/bin/python"; el
 BLACK := $(shell if [ -f ./venv/bin/black ]; then echo "./venv/bin/black"; else echo "black"; fi)
 ISORT := $(shell if [ -f ./venv/bin/isort ]; then echo "./venv/bin/isort"; else echo "isort"; fi)
 FLAKE8 := $(shell if [ -f ./venv/bin/flake8 ]; then echo "./venv/bin/flake8"; else echo "flake8"; fi)
+UVICORN := $(shell if [ -f ./venv/bin/uvicorn ]; then echo "./venv/bin/uvicorn"; else echo "uvicorn"; fi)
+STREAMLIT := $(shell if [ -f ./venv/bin/streamlit ]; then echo "./venv/bin/streamlit"; else echo "streamlit"; fi)
 
 .PHONY: format lint-check lint lint-all black-check isort-check flake8-check
 
@@ -288,6 +310,34 @@ run-rag-cli:
 	@echo "Starting Interactive RAG CLI..."
 	@echo ""
 	@$(PYTHON) -m app.cli.main
+
+run:
+	@echo "🚀 Starting Unified RAG Application..."
+	@echo ""
+	@echo "Services:"
+	@echo "  - FastAPI server: http://localhost:8000"
+	@echo "  - API docs: http://localhost:8000/docs"
+	@echo "  - LangChain Chat UI: http://localhost:8000/langchain/chat"
+	@echo ""
+	@echo "Note: Streamlit UI embedded automatically"
+	@echo ""
+	@$(UVICORN) app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+run-dev-api:
+	@echo "🔧 Starting FastAPI (dev mode, no UI)..."
+	@echo "Open browser: http://localhost:8000/docs"
+	@echo ""
+	@echo "Note: Set UI_ENABLED=false in config to disable Streamlit"
+	@echo ""
+	@$(UVICORN) app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+run-dev-ui:
+	@echo "🎨 Starting Streamlit UI (standalone dev mode)..."
+	@echo "Open browser: http://localhost:8501"
+	@echo ""
+	@echo "Note: For testing UI independently of FastAPI"
+	@echo ""
+	@$(STREAMLIT) run app/ui/main.py
 
 run-rag-demo:
 	@echo "Running RAG query demonstration..."
