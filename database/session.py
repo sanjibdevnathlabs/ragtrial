@@ -264,6 +264,37 @@ class SessionFactory(metaclass=SingletonMeta):
         self._ensure_engines_initialized()
         return self._write_engine
 
+    def check_health(self) -> bool:
+        """
+        Fast health check using connection pool ping.
+
+        Uses pool_pre_ping mechanism for minimal overhead.
+        Executes simple SELECT 1 query that works for all database types.
+
+        Returns:
+            True if database is responsive, False otherwise
+        """
+        logger.debug(codes.HEALTH_CHECK_DATABASE_CHECKING)
+
+        try:
+            self._ensure_engines_initialized()
+
+            # Use raw connection for fast ping
+            # SELECT 1 works for SQLite, MySQL, and PostgreSQL
+            from sqlalchemy import text
+
+            with self._read_engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+
+            logger.debug(codes.HEALTH_CHECK_DATABASE_HEALTHY)
+            return True
+
+        except Exception as e:
+            logger.error(
+                codes.HEALTH_CHECK_DATABASE_UNHEALTHY, error=str(e), exc_info=True
+            )
+            return False
+
     def dispose_all(self) -> None:
         """
         Dispose all database connections.

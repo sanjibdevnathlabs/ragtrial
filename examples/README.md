@@ -129,6 +129,17 @@ python -m app.cli.main
 
 ## 📁 Demo Scripts (examples/)
 
+This directory contains **6 Python example scripts**:
+
+| Script | Purpose |
+|--------|---------|
+| `demo_rag_query.py` | Simple single RAG query demonstration |
+| `demo_vectorstore.py` | Vector store operations (add, query, delete) |
+| `demo_provider_switching.py` | Switching between embedding providers |
+| `demo_guardrails.py` | Security guardrails and attack prevention |
+| `interactive_rag_cli.py` | Terminal-based interactive RAG interface |
+| `test_storage_upload.py` | File upload functionality testing |
+
 ---
 
 ### `demo_rag_query.py`
@@ -174,6 +185,51 @@ Tests file upload functionality to storage backends.
 ```bash
 python examples/test_storage_upload.py
 ```
+
+---
+
+### `demo_guardrails.py`
+Demonstrates RAG security guardrails protecting against malicious inputs.
+
+**What it shows:**
+- Prompt injection attack prevention
+- Jailbreak attempt detection
+- System prompt exposure protection
+- Malicious input pattern filtering
+
+**Usage:**
+```bash
+python examples/demo_guardrails.py
+```
+
+**Features:**
+- Tests multiple attack scenarios
+- Shows both blocked and allowed queries
+- Displays security validation results
+- Demonstrates guardrail effectiveness
+
+---
+
+### `interactive_rag_cli.py`
+Terminal-based interactive interface for RAG queries (examples version).
+
+**Usage:**
+```bash
+python examples/interactive_rag_cli.py
+```
+
+Or with environment variables:
+```bash
+APP_ENV=dev GEMINI_API_KEY=your_key python examples/interactive_rag_cli.py
+```
+
+**Features:**
+- Interactive question-answer loop
+- Source document display
+- Command help system
+- Graceful exit (`quit` or `exit`)
+
+**Note:** For production use, prefer `app/cli/main.py` (accessible via `make run-rag-cli`), which follows full project coding standards.
 
 ---
 

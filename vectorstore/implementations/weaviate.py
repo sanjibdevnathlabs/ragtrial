@@ -496,6 +496,32 @@ class WeaviateVectorStore:
             )
             raise
 
+    def check_health(self) -> bool:
+        """
+        Fast health check using Weaviate API.
+
+        Returns:
+            True if Weaviate is responsive, False otherwise
+        """
+        logger.debug(codes.HEALTH_CHECK_VECTORSTORE_CHECKING, provider="weaviate")
+
+        try:
+            # Check if client is ready
+            if not self.client or not self.client.is_ready():
+                return False
+
+            logger.debug(codes.HEALTH_CHECK_VECTORSTORE_HEALTHY, provider="weaviate")
+            return True
+
+        except Exception as e:
+            logger.error(
+                codes.HEALTH_CHECK_VECTORSTORE_UNHEALTHY,
+                provider="weaviate",
+                error=str(e),
+                exc_info=True,
+            )
+            return False
+
     def close(self):
         """Explicitly close the Weaviate client connection."""
         if hasattr(self, "client") and self.client:

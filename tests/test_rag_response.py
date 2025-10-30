@@ -91,14 +91,14 @@ class TestResponseFormatterExtractSources:
         assert sources[0]["metadata"]["page"] == 1
 
     def test_extract_sources_truncates_long_content(self):
-        """Test that long content is truncated to 200 chars."""
-        long_content = "A" * 500
+        """Test that long content is truncated to 500 chars."""
+        long_content = "A" * 1000
         docs = [Document(page_content=long_content, metadata={"source": "test.txt"})]
 
         sources = ResponseFormatter._extract_sources(docs)
 
-        assert len(sources[0]["content"]) == 200
-        assert sources[0]["content"] == "A" * 200
+        assert len(sources[0]["content"]) == 500
+        assert sources[0]["content"] == "A" * 500
 
     def test_extract_sources_multiple_documents(self):
         """Test extracting sources from multiple documents."""

@@ -1059,3 +1059,24 @@ UI_VIEW_N_SOURCES_LABEL = "📚 View {} Sources"
 UI_CHAT_INPUT_PLACEHOLDER = "Ask a question about your documents..."
 UI_CHAT_ROLE_USER = "user"
 UI_CHAT_ROLE_ASSISTANT = "assistant"
+
+# ============================================================================
+# HEALTH CHECK CONSTANTS
+# ============================================================================
+
+# Health check status
+HEALTH_STATUS_HEALTHY = "healthy"
+HEALTH_STATUS_UNHEALTHY = "unhealthy"
+
+# Component names
+COMPONENT_DATABASE = "database"
+COMPONENT_VECTORSTORE = "vectorstore"
+COMPONENT_LLM = "llm"
+COMPONENT_EMBEDDINGS = "embeddings"
+
+# Component categories
+COMPONENT_CATEGORY_CRITICAL = "critical"
+COMPONENT_CATEGORY_DEPENDENCY = "dependency"
+
+# Health check cache duration (for external APIs only)
+HEALTH_CHECK_CACHE_DURATION = 60  # seconds

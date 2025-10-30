@@ -1,4 +1,4 @@
-.PHONY: help install install-cpu test test-verbose test-coverage test-integration test-ui-api test-all test-clean clean setup-db populate-db cleanup-db lint format run-examples run run-api run-dev-api run-dev-ui run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database
+.PHONY: help install install-cpu test test-verbose test-coverage test-integration test-ui-api test-all test-clean clean setup-db populate-db cleanup-db lint format run-examples run run-api run-dev-api run-dev-ui run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database frontend-install frontend-dev frontend-build frontend-clean
 
 SHELL := /bin/bash
 
@@ -52,6 +52,12 @@ help:
 	@echo "  make run-examples     Run demo examples"
 	@echo "  make check-env        Check environment variables"
 	@echo "  make check-python     Check Python version and packages"
+	@echo ""
+	@echo "Frontend Development:"
+	@echo "  make frontend-install 📦 Install Node.js dependencies"
+	@echo "  make frontend-dev     🎨 Start frontend dev server (port 5173)"
+	@echo "  make frontend-build   🏗️  Build frontend for production"
+	@echo "  make frontend-clean   🧹 Clean frontend build artifacts"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            Clean temporary files"
@@ -263,6 +269,10 @@ FLAKE8 := $(shell if [ -f ./venv/bin/flake8 ]; then echo "./venv/bin/flake8"; el
 UVICORN := $(shell if [ -f ./venv/bin/uvicorn ]; then echo "./venv/bin/uvicorn"; else echo "uvicorn"; fi)
 STREAMLIT := $(shell if [ -f ./venv/bin/streamlit ]; then echo "./venv/bin/streamlit"; else echo "streamlit"; fi)
 
+# Frontend commands
+NPM := $(shell which npm)
+FRONTEND_DIR := frontend
+
 .PHONY: format lint-check lint lint-all black-check isort-check flake8-check
 
 # Format code with black and isort (production code only)
@@ -306,15 +316,22 @@ run-api:
 	@echo ""
 	@./venv/bin/uvicorn app.api.main:app --reload --workers 4 --host 0.0.0.0 --port 8000
 
+run-api-prod:
+	@echo "🚀 Starting FastAPI server (production mode)..."
+	@echo "Server will be available at http://0.0.0.0:8000"
+	@echo ""
+	@$(UVICORN) app.api.main:app --host 0.0.0.0 --port 8000 --workers 1
+
 run-rag-cli:
 	@echo "Starting Interactive RAG CLI..."
 	@echo ""
 	@$(PYTHON) -m app.cli.main
 
-run:
+run: frontend-build
 	@echo "🚀 Starting Unified RAG Application..."
 	@echo ""
 	@echo "Services:"
+	@echo "  - Landing Page: http://localhost:8000"
 	@echo "  - FastAPI server: http://localhost:8000"
 	@echo "  - API docs: http://localhost:8000/docs"
 	@echo "  - LangChain Chat UI: http://localhost:8000/langchain/chat"
@@ -338,6 +355,43 @@ run-dev-ui:
 	@echo "Note: For testing UI independently of FastAPI"
 	@echo ""
 	@$(STREAMLIT) run app/ui/main.py
+
+# Frontend Development Commands
+.PHONY: frontend-install frontend-dev frontend-build frontend-clean
+
+frontend-install:
+	@echo "📦 Installing frontend dependencies..."
+	@cd $(FRONTEND_DIR) && $(NPM) install
+	@echo "✅ Frontend dependencies installed"
+
+frontend-install-ci:
+	@echo "📦 Installing frontend dependencies (CI mode)..."
+	@cd $(FRONTEND_DIR) && $(NPM) ci --prefer-offline --no-audit
+	@echo "✅ Frontend dependencies installed (CI)"
+
+frontend-dev:
+	@echo "🎨 Starting frontend dev server..."
+	@echo "Open browser: http://localhost:5173"
+	@echo ""
+	@echo "Note: API proxy configured to http://localhost:8000"
+	@echo ""
+	@cd $(FRONTEND_DIR) && $(NPM) run dev
+
+frontend-build:
+	@echo "🏗️  Building frontend for production..."
+	@cd $(FRONTEND_DIR) && $(NPM) run build
+	@echo "✅ Frontend built to app/static/dist/"
+
+frontend-verify:
+	@echo "🔍 Verifying frontend build output..."
+	@test -f app/static/dist/index.html || \
+		(echo "❌ Frontend build failed - index.html not found!" && exit 1)
+	@echo "✅ Frontend build verified"
+
+frontend-clean:
+	@echo "🧹 Cleaning frontend build artifacts..."
+	@rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/dist app/static/dist
+	@echo "✅ Frontend cleaned"
 
 run-rag-demo:
 	@echo "Running RAG query demonstration..."

@@ -18,9 +18,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
-from app.routers import files, health, query, upload
+from app.routers import devdocs, files, health, query, upload
 from config import Config
 from logger import get_logger
 
@@ -268,6 +269,8 @@ app = FastAPI(
     description="API for document management and RAG query operations",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None,  # Disable default docs (using React-rendered Swagger UI)
+    redoc_url=None,  # Disable redoc
 )
 
 
@@ -286,6 +289,11 @@ app.include_router(health.router)
 app.include_router(upload.router)
 app.include_router(files.router)
 app.include_router(query.router)
+app.include_router(devdocs.router)
+
+# Mount static files for React frontend
+# This serves the built React app (CSS, JS, assets)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.exception_handler(Exception)
@@ -320,97 +328,19 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get(constants.UI_ROUTE_ROOT, response_class=RedirectResponse)
+@app.get(constants.UI_ROUTE_ROOT, response_class=FileResponse)
 async def root():
     """
-    Root endpoint - redirects to API documentation.
+    Root endpoint - serves React landing page.
 
     Returns:
-        RedirectResponse: Redirects to /docs
+        FileResponse: The React app's index.html
     """
-    return RedirectResponse(url=constants.UI_ROUTE_DOCS)
+    return FileResponse("app/static/dist/index.html")
 
 
-@app.get(constants.UI_ROUTE_LANGCHAIN_CHAT, response_class=HTMLResponse)
-async def langchain_chat():
-    """
-    LangChain RAG chat UI endpoint.
-
-    Serves the Streamlit UI in an iframe for unified application architecture.
-
-    Returns:
-        HTMLResponse: HTML page with embedded Streamlit iframe
-    """
-    config = get_config()
-
-    logger.info(codes.UI_LANGCHAIN_CHAT_ACCESSED)
-
-    if not config.ui.enabled or streamlit_process is None:
-        return HTMLResponse(
-            content=f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>{constants.UI_IFRAME_TITLE_LANGCHAIN}</title>
-                <style>
-                    body {{
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        height: 100vh;
-                        margin: 0;
-                        background: #f5f5f5;
-                    }}
-                    .message {{
-                        text-align: center;
-                        padding: 2rem;
-                        background: white;
-                        border-radius: 8px;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="message">
-                    <h2>⚠️ UI Not Available</h2>
-                    <p>{constants.UI_STREAMLIT_NOT_INSTALLED}</p>
-                    <p><code>{constants.UI_STREAMLIT_INSTALL_HINT}</code></p>
-                </div>
-            </body>
-            </html>
-            """,
-            status_code=503,
-        )
-
-    streamlit_url = f"http://{config.ui.host}:{config.ui.port}"
-
-    return HTMLResponse(
-        content=f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>{constants.UI_IFRAME_TITLE_LANGCHAIN}</title>
-            <style>
-                body, html {{
-                    margin: 0;
-                    padding: 0;
-                    height: 100%;
-                    overflow: hidden;
-                }}
-                iframe {{
-                    width: 100%;
-                    height: 100vh;
-                    border: none;
-                }}
-            </style>
-        </head>
-        <body>
-            <iframe src="{streamlit_url}" allowfullscreen></iframe>
-        </body>
-        </html>
-        """
-    )
+# Removed: /docs and /langchain/chat now handled by React Router
+# See serve_react_routes() below
 
 
 @app.get("/favicon.ico")
@@ -425,3 +355,28 @@ async def favicon():
         Response: Empty 204 No Content response
     """
     return Response(status_code=204)
+
+
+# Catch-all for React Router - serve index.html for frontend routes
+# Use specific paths instead of greedy {full_path:path} to avoid catching API routes
+@app.get("/about", response_class=FileResponse)
+@app.get("/dev-docs", response_class=FileResponse)
+@app.get("/docs", response_class=FileResponse)
+@app.get("/langchain/chat", response_class=FileResponse)
+async def serve_react_routes():
+    """
+    Serve React app for client-side routes.
+    
+    All these routes are handled by React Router on the client side:
+    - /about: About page
+    - /dev-docs: Developer documentation
+    - /docs: API documentation (Swagger UI in iframe)
+    - /langchain/chat: Chat UI (Streamlit in iframe)
+    
+    We serve index.html which loads the React app, and React Router
+    handles the navigation. This ensures consistent navbar across all pages.
+    
+    Returns:
+        FileResponse: The React app's index.html
+    """
+    return FileResponse("app/static/dist/index.html")

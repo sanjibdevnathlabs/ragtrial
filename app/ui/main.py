@@ -33,6 +33,115 @@ st.set_page_config(
     initial_sidebar_state=constants.UI_SIDEBAR_STATE,
 )
 
+# Custom CSS to fix chat input at bottom like WhatsApp/Slack
+st.markdown("""
+<style>
+    /* Fixed chat input at bottom of viewport */
+    .stChatInput {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 21rem !important;  /* Account for sidebar width (336px) */
+        right: 0 !important;
+        z-index: 999 !important;
+        background: var(--background-color) !important;
+        padding: 1rem !important;
+        border-top: 1px solid var(--secondary-background-color) !important;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+        height: 80px !important; /* Fixed height for input area */
+    }
+    
+    /* When sidebar is collapsed */
+    [data-testid="collapsedControl"] ~ div .stChatInput {
+        left: 0 !important;
+    }
+    
+    /* Main container adjustments */
+    .main .block-container {
+        padding-bottom: 100px !important; /* Space for fixed input */
+        max-height: calc(100vh - 80px) !important; /* Full viewport minus input */
+        overflow-y: hidden !important;
+    }
+    
+    /* Chat messages container - bounded above fixed input */
+    section[data-testid="stVerticalBlock"]:has(.stChatMessage) {
+        max-height: calc(100vh - 350px) !important; /* Account for header, tabs, and input */
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        padding-bottom: 120px !important; /* Extra padding to prevent overlap */
+        margin-bottom: 100px !important; /* Margin to keep away from input */
+    }
+    
+    /* Alternative: Target the tab content directly */
+    .stTabs [data-baseweb="tab-panel"] {
+        max-height: calc(100vh - 350px) !important;
+        overflow-y: auto !important;
+        padding-bottom: 120px !important;
+    }
+    
+    /* Ensure chat messages don't overflow */
+    .stChatMessage {
+        margin-bottom: 1rem !important;
+        max-width: 100% !important;
+    }
+    
+    /* Hide duplicate tabs during loading */
+    .stSpinner ~ div .stTabs {
+        display: none !important;
+    }
+</style>
+
+<script>
+    // Auto-scroll to bottom when new messages arrive
+    function scrollToBottom() {
+        // Try tab panel first, then vertical block
+        const tabPanel = document.querySelector('.stTabs [data-baseweb="tab-panel"]');
+        const verticalBlock = document.querySelector('[data-testid="stVerticalBlock"]');
+        
+        const chatContainer = tabPanel || verticalBlock;
+        
+        if (chatContainer) {
+            // Smooth scroll to bottom
+            chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }
+    
+    // Debounced scroll function
+    let scrollTimeout;
+    function debouncedScroll() {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(scrollToBottom, 100);
+    }
+    
+    // Run on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', scrollToBottom);
+    } else {
+        setTimeout(scrollToBottom, 300); // Delay to ensure content is rendered
+    }
+    
+    // Watch for new messages in both possible containers
+    const observer = new MutationObserver(debouncedScroll);
+    
+    // Observe tab panel
+    const tabPanel = document.querySelector('.stTabs [data-baseweb="tab-panel"]');
+    if (tabPanel) {
+        observer.observe(tabPanel, { childList: true, subtree: true });
+    }
+    
+    // Also observe vertical block as fallback
+    const verticalBlock = document.querySelector('[data-testid="stVerticalBlock"]');
+    if (verticalBlock) {
+        observer.observe(verticalBlock, { childList: true, subtree: true });
+    }
+    
+    // Force scroll on any rerun
+    window.addEventListener('load', () => setTimeout(scrollToBottom, 500));
+</script>
+""", unsafe_allow_html=True)
+
 
 @st.cache_resource
 def get_rag_chain() -> RAGChain:
@@ -130,10 +239,19 @@ def display_sidebar() -> None:
         # RAG configuration
         st.subheader(constants.UI_TITLE_CONFIGURATION)
         config = Config()
+        
+        # Get model name from active provider
+        provider = config.rag.provider
+        model = "N/A"
+        if hasattr(config.rag, provider):
+            provider_config = getattr(config.rag, provider)
+            if hasattr(provider_config, 'model'):
+                model = provider_config.model
+        
         st.code(
             f"""
 LLM: {config.rag.provider}
-Model: {config.rag.get_provider_config().model}
+Model: {model}
 Embeddings: {config.embeddings.provider}
 Vector Store: {config.vectorstore.provider}
         """,
@@ -215,27 +333,31 @@ def display_chat_message(role: str, content: str, sources: list = None) -> None:
 
         if sources:
             source_count = len(sources)
-            label = constants.UI_VIEW_N_SOURCES_LABEL.format(source_count)
-
-            with st.expander(label):
+            
+            # Wrap entire sources section in a collapsed expander
+            with st.expander(f"📚 View {source_count} Sources", expanded=False):
                 for idx, source in enumerate(sources, 1):
-                    col1, col2 = st.columns([1, 3])
-
-                    with col1:
-                        st.markdown(f"**{constants.UI_SOURCE_LABEL_PREFIX} {idx}**")
-                        filename = source.get("filename", constants.UI_SOURCE_FILENAME_UNKNOWN)
-                        st.caption(filename)
-
-                    with col2:
-                        content_preview = source.get("content", "")[:300] + "..."
-                        st.text_area(
-                            label=f"{constants.UI_SOURCE_CONTENT_LABEL} {idx}",
-                            value=content_preview,
-                            height=100,
-                            disabled=True,
-                            label_visibility="collapsed",
-                        )
-
+                    filename = source.get("filename", constants.UI_SOURCE_FILENAME_UNKNOWN)
+                    content_preview = source.get("content", "")
+                    
+                    # Display each source
+                    st.markdown(f"**{idx}. 📄 {filename}**")
+                    
+                    # Show metadata if available
+                    metadata = source.get("metadata", {})
+                    if metadata:
+                        page = metadata.get("page", metadata.get("chunk_id", "N/A"))
+                        st.caption(f"Page/Chunk: {page}")
+                    
+                    # Show content preview
+                    if content_preview:
+                        # Limit to ~400 chars for better readability
+                        preview = content_preview[:400]
+                        if len(content_preview) > 400:
+                            preview += "..."
+                        st.text(preview)
+                    
+                    # Add divider between sources
                     if idx < len(sources):
                         st.divider()
 
@@ -279,15 +401,19 @@ def process_user_query(question: str) -> Dict[str, Any]:
 
 def render_chat_tab() -> None:
     """Render the chat interface tab."""
-    # Display chat history
-    for message in st.session_state.messages:
-        display_chat_message(
-            role=message["role"],
-            content=message["content"],
-            sources=message.get("sources"),
-        )
-
-    # Chat input
+    # Create a container for chat history
+    chat_container = st.container()
+    
+    # Display all chat history in the container
+    with chat_container:
+        for message in st.session_state.messages:
+            display_chat_message(
+                role=message["role"],
+                content=message["content"],
+                sources=message.get("sources"),
+            )
+    
+    # Chat input is always at the bottom (Streamlit automatically positions it)
     if question := st.chat_input(constants.UI_CHAT_INPUT_PLACEHOLDER):
         # Add user message to chat
         st.session_state.messages.append(
@@ -296,9 +422,6 @@ def render_chat_tab() -> None:
                 "content": question,
             }
         )
-
-        # Display user message
-        display_chat_message(constants.UI_CHAT_ROLE_USER, question)
 
         # Process query with progress indicator
         with st.spinner(constants.UI_MSG_THINKING):
@@ -311,13 +434,9 @@ def render_chat_tab() -> None:
             "sources": response.get("sources", []),
         }
         st.session_state.messages.append(assistant_message)
-
-        # Display assistant response
-        display_chat_message(
-            role=constants.UI_CHAT_ROLE_ASSISTANT,
-            content=assistant_message["content"],
-            sources=assistant_message["sources"],
-        )
+        
+        # Rerun to display new messages (this keeps input at bottom)
+        st.rerun()
 
 
 def render_analytics_tab() -> None:

@@ -160,12 +160,12 @@ class TestUIRoutes:
 
             return TestClient(app)
 
-    def test_root_redirects_to_docs(self, client):
-        """Test root route redirects to /docs."""
+    def test_root_serves_react_app(self, client):
+        """Test root route serves React frontend."""
         response = client.get(constants.UI_ROUTE_ROOT, follow_redirects=False)
 
-        assert response.status_code == 307  # Temporary redirect
-        assert response.headers["location"] == constants.UI_ROUTE_DOCS
+        assert response.status_code == 200  # Serves React app
+        assert "text/html" in response.headers.get("content-type", "")
 
     def test_langchain_chat_ui_not_available(self, client):
         """Test /langchain/chat when Streamlit not available."""

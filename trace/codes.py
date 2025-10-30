@@ -147,6 +147,14 @@ MSG_EMBEDDINGS_GENERATED = "Embeddings generated successfully"
 MSG_EMBEDDINGS_PROVIDER_UNKNOWN = "Unknown embeddings provider"
 
 # ============================================================================
+# LLM TRACE CODES & MESSAGES
+# ============================================================================
+LLM_FACTORY_CREATING = "llm_factory_creating"
+LLM_PROVIDER_UNKNOWN = "llm_provider_unknown"
+
+MSG_LLM_PROVIDER_UNKNOWN = "Unknown LLM provider"
+
+# ============================================================================
 # DOCUMENT LOADING TRACE CODES & MESSAGES
 # ============================================================================
 
@@ -239,6 +247,8 @@ API_SERVER_SHUTDOWN = "api_server_shutdown"
 API_REQUEST_RECEIVED = "api_request_received"
 API_REQUEST_COMPLETED = "api_request_completed"
 API_HEALTH_CHECK_REQUESTED = "api_health_check_requested"
+API_HEALTH_CHECK_STARTED = "api_health_check_started"
+API_HEALTH_CHECK_COMPLETED = "api_health_check_completed"
 API_UPLOAD_STARTED = "api_upload_started"
 API_UPLOAD_COMPLETED = "api_upload_completed"
 API_UPLOAD_FAILED = "api_upload_failed"
@@ -270,6 +280,20 @@ MSG_API_ERROR = "An error occurred processing the request"
 STORAGE_DEPENDENCY_INJECTING = "storage_dependency_injecting"
 STORAGE_DEPENDENCY_RELEASED = "storage_dependency_released"
 STORAGE_FACTORY_CREATING = "storage_factory_creating"
+
+# Health check trace codes
+HEALTH_CHECK_DATABASE_CHECKING = "health_check_database_checking"
+HEALTH_CHECK_DATABASE_HEALTHY = "health_check_database_healthy"
+HEALTH_CHECK_DATABASE_UNHEALTHY = "health_check_database_unhealthy"
+HEALTH_CHECK_VECTORSTORE_CHECKING = "health_check_vectorstore_checking"
+HEALTH_CHECK_VECTORSTORE_HEALTHY = "health_check_vectorstore_healthy"
+HEALTH_CHECK_VECTORSTORE_UNHEALTHY = "health_check_vectorstore_unhealthy"
+HEALTH_CHECK_LLM_CHECKING = "health_check_llm_checking"
+HEALTH_CHECK_LLM_HEALTHY = "health_check_llm_healthy"
+HEALTH_CHECK_LLM_UNHEALTHY = "health_check_llm_unhealthy"
+HEALTH_CHECK_EMBEDDINGS_CHECKING = "health_check_embeddings_checking"
+HEALTH_CHECK_EMBEDDINGS_HEALTHY = "health_check_embeddings_healthy"
+HEALTH_CHECK_EMBEDDINGS_UNHEALTHY = "health_check_embeddings_unhealthy"
 
 # ============================================================================
 # RAG (RETRIEVAL-AUGMENTED GENERATION) TRACE CODES & MESSAGES

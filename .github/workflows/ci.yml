@@ -214,6 +214,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Cache pytest
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: pytest-cache-${{ runner.os }}-${{ hashFiles('tests/**/*.py') }}
+          restore-keys: |
+            pytest-cache-${{ runner.os }}-
+      
       - name: Identify PR Details
         uses: jwalton/gh-find-current-pr@v1
         id: findPr
@@ -292,6 +300,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Cache pytest
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: pytest-cache-integration-${{ runner.os }}-${{ hashFiles('tests/**/*.py') }}
+          restore-keys: |
+            pytest-cache-integration-${{ runner.os }}-
+      
       - name: Run database migrations
         env:
           APP_ENV: ci
@@ -302,13 +318,37 @@ jobs:
           APP_ENV: ci
         run: make test-integration
 
+  ui-tests:
+    name: UI Tests
+    runs-on: ubuntu-latest
+    needs: build-base-image
+    container: sanjibdevnath/ragtrial-base:${{ needs.build-base-image.outputs.image_tag }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Cache pytest
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: pytest-cache-ui-${{ runner.os }}-${{ hashFiles('tests/**/*.py') }}
+          restore-keys: |
+            pytest-cache-ui-${{ runner.os }}-
+      
+      - name: Run UI API integration tests
+        env:
+          APP_ENV: ci
+        run: make test-ui-api
+
   # =============================================================================
   # STAGE 4: Docker Build (Depends on tests)
+  # Frontend is built inside Docker multi-stage build
   # =============================================================================
   docker-build:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: [build-base-image, unit-tests, integration-tests]
+    needs: [build-base-image, unit-tests, integration-tests, ui-tests]
     if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request'
     
     steps:

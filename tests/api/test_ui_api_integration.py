@@ -31,6 +31,54 @@ import constants
 import trace.codes as codes
 
 
+@pytest.fixture(scope="module", autouse=True)
+def mock_health_dependencies():
+    """
+    Mock ALL health check dependencies at module level to prevent real API calls.
+    
+    This fixture uses autouse=True to ensure it's ALWAYS applied for ALL UI tests.
+    
+    CRITICAL: UI tests should NEVER connect to real services:
+    - No real database connections (SQLite/MySQL) - file/network I/O
+    - No real LLM API calls (Google Gemini) - costs money + quota limits
+    - No real Embeddings API calls (Google) - costs money + quota limits  
+    - No real Vectorstore connections (ChromaDB) - disk I/O
+    """
+    # Reset HealthService singleton to ensure clean state
+    from app.modules.health.service import HealthService
+    from database.session import SessionFactory
+    
+    if hasattr(HealthService, '_instances'):
+        HealthService._instances.clear()
+    if hasattr(SessionFactory, '_instances'):
+        SessionFactory._instances.clear()
+    
+    # Patch internal health check methods directly
+    with patch.object(HealthService, '_test_llm_api', return_value=True), \
+         patch.object(HealthService, '_test_embeddings_api', return_value=True), \
+         patch.object(SessionFactory, 'check_health', return_value=True), \
+         patch("app.modules.health.service.create_embeddings") as mock_embeddings, \
+         patch("app.modules.health.service.create_vectorstore") as mock_vectorstore:
+        
+        # Mock Embeddings to return success
+        mock_embeddings_instance = Mock()
+        mock_embeddings_instance.embed_query.return_value = [0.1] * 768
+        mock_embeddings.return_value = mock_embeddings_instance
+        
+        # Mock Vectorstore to return success
+        mock_vs_instance = Mock()
+        mock_vs_instance.check_health.return_value = True
+        mock_vectorstore.return_value = mock_vs_instance
+        
+        yield
+        
+        # Clean up singletons after module
+        if hasattr(HealthService, '_instances'):
+            HealthService._instances.clear()
+        if hasattr(SessionFactory, '_instances'):
+            SessionFactory._instances.clear()
+
+
 @pytest.fixture
 def mock_streamlit_process():
     """Mock Streamlit process for tests."""
@@ -44,15 +92,16 @@ class TestUIRouteAccessibility:
 
     @patch("app.api.main.start_streamlit_ui")
     def test_root_redirects_to_docs(self, mock_start):
-        """Test / redirects to /docs."""
+        """Test / serves React frontend."""
         from fastapi.testclient import TestClient
         from app.api.main import app
 
         client = TestClient(app)
         response = client.get(constants.UI_ROUTE_ROOT, follow_redirects=False)
 
-        assert response.status_code == 307  # Temporary redirect
-        assert response.headers["location"] == constants.UI_ROUTE_DOCS
+        assert response.status_code == 200  # Serves React index.html
+        # Check that it's serving HTML (React app)
+        assert "text/html" in response.headers.get("content-type", "")
 
     @patch("app.api.main.start_streamlit_ui")
     def test_langchain_chat_returns_html(self, mock_start):
@@ -257,18 +306,22 @@ class TestAPIAndUIIntegration:
         assert ui_response.status_code in [200, 503]  # 503 if UI disabled
 
     @patch("app.api.main.start_streamlit_ui")
-    def test_root_to_docs_redirection_works(self, mock_start):
-        """Test root redirect to docs works correctly."""
+    def test_root_serves_react_and_docs_accessible(self, mock_start):
+        """Test root serves React and /docs is accessible."""
         from fastapi.testclient import TestClient
         from app.api.main import app
 
         client = TestClient(app)
 
-        # Follow redirect
-        response = client.get("/", follow_redirects=True)
+        # Root serves React
+        root_response = client.get("/", follow_redirects=False)
+        assert root_response.status_code == 200
+        assert "text/html" in root_response.headers.get("content-type", "")
 
-        assert response.status_code == 200
-        assert "FastAPI" in response.text or "Swagger" in response.text
+        # Docs endpoint is accessible
+        docs_response = client.get("/docs")
+        assert docs_response.status_code == 200
+        assert "swagger" in docs_response.text.lower() or "api" in docs_response.text.lower()
 
 
 class TestErrorHandling:

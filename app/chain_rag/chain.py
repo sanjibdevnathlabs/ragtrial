@@ -7,10 +7,6 @@ Orchestrates document retrieval, prompt formatting, and LLM generation.
 from trace import codes
 from typing import Any, Dict
 
-from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_openai import ChatOpenAI
-
 import constants
 from app.chain_rag.prompts import create_rag_prompt, format_context
 from app.chain_rag.response import ResponseFormatter
@@ -46,7 +42,11 @@ class RAGChain:
             self.config = config
             self.retriever = DocumentRetriever(config)
             self.prompt = create_rag_prompt()
-            self._init_llm()
+
+            # Use LLM factory for clean provider-agnostic initialization
+            from llm.factory import create_llm
+
+            self.llm = create_llm(config)
 
             # Initialize security guardrails
             self.guardrails = GuardrailsManager(
@@ -65,67 +65,6 @@ class RAGChain:
         except Exception as e:
             logger.error(codes.RAG_CHAIN_INITIALIZING, error=str(e), exc_info=True)
             raise RuntimeError(constants.ERROR_RAG_CHAIN_INIT_FAILED) from e
-
-    def _init_llm(self) -> None:
-        """
-        Initialize LLM based on configuration provider.
-
-        Supports: Google (Gemini), OpenAI (GPT), Anthropic (Claude)
-        """
-        provider = self.config.rag.provider.lower()
-
-        if provider == constants.LLM_PROVIDER_GOOGLE:
-            self._init_google_llm()
-            return
-
-        if provider == constants.LLM_PROVIDER_OPENAI:
-            self._init_openai_llm()
-            return
-
-        if provider == constants.LLM_PROVIDER_ANTHROPIC:
-            self._init_anthropic_llm()
-            return
-
-        raise ValueError(f"Unsupported LLM provider: {provider}")
-
-    def _init_google_llm(self) -> None:
-        """Initialize Google Gemini LLM."""
-        config = self.config.rag.google
-        # Only pass API key if explicitly set, otherwise LangChain picks from env
-        kwargs = {
-            "model": config.model,
-            "temperature": config.temperature,
-            "max_output_tokens": config.max_tokens,  # Gemini uses max_output_tokens
-        }
-        if config.api_key:
-            kwargs["google_api_key"] = config.api_key
-        self.llm = ChatGoogleGenerativeAI(**kwargs)
-
-    def _init_openai_llm(self) -> None:
-        """Initialize OpenAI GPT LLM."""
-        config = self.config.rag.openai
-        # Only pass API key if explicitly set, otherwise LangChain picks from env
-        kwargs = {
-            "model": config.model,
-            "temperature": config.temperature,
-            "max_tokens": config.max_tokens,
-        }
-        if config.api_key:
-            kwargs["api_key"] = config.api_key
-        self.llm = ChatOpenAI(**kwargs)
-
-    def _init_anthropic_llm(self) -> None:
-        """Initialize Anthropic Claude LLM."""
-        config = self.config.rag.anthropic
-        # Only pass API key if explicitly set, otherwise LangChain picks from env
-        kwargs = {
-            "model": config.model,
-            "temperature": config.temperature,
-            "max_tokens": config.max_tokens,
-        }
-        if config.api_key:
-            kwargs["api_key"] = config.api_key
-        self.llm = ChatAnthropic(**kwargs)
 
     def query(self, question: str) -> Dict[str, Any]:
         """

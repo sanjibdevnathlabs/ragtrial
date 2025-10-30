@@ -60,3 +60,11 @@ htmlcov/
 
 # Memory Bank (workspace-specific)
 memory_bank/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+app/static/dist/
+*.tsbuildinfo
+.playwright-mcp/

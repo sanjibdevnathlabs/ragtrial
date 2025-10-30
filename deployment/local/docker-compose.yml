@@ -18,16 +18,16 @@ services:
       - ragtrial-network
     restart: "no"
   
-  api:
+  app:
     build:
       context: ../..
       dockerfile: docker/Dockerfile
       args:
         BASE_IMAGE_TAG: local
     image: ragtrial:dev
-    container_name: ragtrial-api
+    container_name: ragtrial-app
     ports:
-      - "8000:8000"  # FastAPI + embedded Streamlit UI
+      - "8000:8000"  # FastAPI + React UI (all-in-one)
     environment:
       - APP_ENV=docker
       - GEMINI_API_KEY=${GEMINI_API_KEY}

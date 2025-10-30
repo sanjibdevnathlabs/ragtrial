@@ -9,19 +9,19 @@ LABEL description="RAG Trial - Database Migration Runner"
 
 WORKDIR /app
 
-# Copy necessary files for migrations
-COPY config/ ./config/
-COPY constants/ ./constants/
-COPY database/ ./database/
-COPY environment/ ./environment/
-COPY logger/ ./logger/
-COPY migration/ ./migration/
-COPY trace/ ./trace/
-COPY utils/ ./utils/
+# Copy necessary files for migrations (minimal for faster builds)
+COPY --chown=appuser:appuser config/ ./config/
+COPY --chown=appuser:appuser constants/ ./constants/
+COPY --chown=appuser:appuser database/ ./database/
+COPY --chown=appuser:appuser environment/ ./environment/
+COPY --chown=appuser:appuser logger/ ./logger/
+COPY --chown=appuser:appuser migration/ ./migration/
+COPY --chown=appuser:appuser trace/ ./trace/
+COPY --chown=appuser:appuser utils/ ./utils/
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+# Base image already sets PYTHONUNBUFFERED and PYTHONDONTWRITEBYTECODE
+# Makefile is already copied in base image
 
-# Run migrations and exit
-CMD ["python", "-m", "migration", "up"]
+# Run migrations using make command for consistency with local development
+CMD ["make", "migrate-up"]
 

@@ -365,3 +365,28 @@ class QdrantVectorStore:
                 exc_info=True,
             )
             raise
+
+    def check_health(self) -> bool:
+        """
+        Fast health check using Qdrant API.
+
+        Returns:
+            True if Qdrant is responsive, False otherwise
+        """
+        logger.debug(codes.HEALTH_CHECK_VECTORSTORE_CHECKING, provider="qdrant")
+
+        try:
+            # Try to get collection info as a lightweight health check
+            self.client.get_collection(self.collection_name)
+
+            logger.debug(codes.HEALTH_CHECK_VECTORSTORE_HEALTHY, provider="qdrant")
+            return True
+
+        except Exception as e:
+            logger.error(
+                codes.HEALTH_CHECK_VECTORSTORE_UNHEALTHY,
+                provider="qdrant",
+                error=str(e),
+                exc_info=True,
+            )
+            return False
