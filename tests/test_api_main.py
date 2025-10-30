@@ -10,8 +10,8 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.main import app, get_config, log_registered_routes
 import constants
+from app.api.main import app, get_config, log_registered_routes
 
 
 @pytest.fixture(scope="module", autouse=True)

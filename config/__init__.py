@@ -24,7 +24,6 @@ from pathlib import Path
 from trace import codes
 
 from config.api import APIConfig
-from config.ui import UIConfig
 
 # Import configuration classes needed internally by Config class
 from config.app import AppConfig
@@ -51,6 +50,7 @@ from config.llm import AnthropicLLMConfig, GoogleLLMConfig, OpenAILLMConfig
 from config.logging import LoggingConfig
 from config.rag import GoogleConfig, RAGConfig
 from config.storage import LocalStorageConfig, S3StorageConfig, StorageConfig
+from config.ui import UIConfig
 from config.vectorstore import (
     ChromaConfig,
     PineconeConfig,

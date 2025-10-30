@@ -5,13 +5,13 @@ Tests Streamlit subprocess management and UI route accessibility.
 """
 
 import subprocess
+import trace.codes as codes
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 import constants
-import trace.codes as codes
 
 
 @pytest.fixture

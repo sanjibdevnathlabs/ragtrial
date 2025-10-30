@@ -4,10 +4,10 @@ Health check router.
 Route definitions for health check endpoints.
 """
 
-import constants
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
+import constants
 from app.api.dependencies import get_health_service
 from app.modules.health import HealthService
 from app.modules.health.response import HealthResponse

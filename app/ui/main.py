@@ -11,13 +11,13 @@ Features:
 """
 
 import time
+import trace.codes as codes
 from pathlib import Path
 from typing import Any, Dict
 
 import streamlit as st
 
 import constants
-import trace.codes as codes
 from app.chain_rag.chain import RAGChain
 from config import Config
 from logger import get_logger

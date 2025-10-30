@@ -10,17 +10,16 @@ import os
 import signal
 import subprocess
 import sys
-from typing import Optional
-
-import constants
 import trace.codes as codes
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+import constants
 from app.routers import devdocs, files, health, query, upload
 from config import Config
 from logger import get_logger

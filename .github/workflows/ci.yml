@@ -224,6 +224,9 @@ jobs:
           restore-keys: |
             pytest-cache-${{ runner.os }}-
       
+      - name: Create static directory for tests
+        run: mkdir -p app/static/dist && touch app/static/dist/index.html
+      
       - name: Identify PR Details
         uses: jwalton/gh-find-current-pr@v1
         id: findPr
@@ -312,6 +315,9 @@ jobs:
           restore-keys: |
             pytest-cache-integration-${{ runner.os }}-
       
+      - name: Create static directory for tests
+        run: mkdir -p app/static/dist && touch app/static/dist/index.html
+      
       - name: Run database migrations
         env:
           APP_ENV: ci
@@ -341,6 +347,9 @@ jobs:
           key: pytest-cache-ui-${{ runner.os }}-${{ hashFiles('tests/**/*.py') }}
           restore-keys: |
             pytest-cache-ui-${{ runner.os }}-
+      
+      - name: Create static directory for tests
+        run: mkdir -p app/static/dist && touch app/static/dist/index.html
       
       - name: Run UI API integration tests
         env:

@@ -25,10 +25,10 @@ import pytest
 # Mark all tests in this module as UI integration tests
 pytestmark = pytest.mark.ui
 
+import trace.codes as codes
 from unittest.mock import Mock, patch
 
 import constants
-import trace.codes as codes
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -96,6 +96,7 @@ class TestUIRouteAccessibility:
     def test_root_redirects_to_docs(self, mock_start):
         """Test / serves React frontend."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -109,6 +110,7 @@ class TestUIRouteAccessibility:
     def test_langchain_chat_returns_html(self, mock_start):
         """Test /langchain/chat returns HTML page."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -125,6 +127,7 @@ class TestUIRouteAccessibility:
         mock_process.return_value = mock_streamlit_process
 
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         with patch("app.api.main.streamlit_process", mock_streamlit_process):
@@ -140,6 +143,7 @@ class TestUIRouteAccessibility:
     def test_ui_unavailable_returns_warning(self, mock_start):
         """Test /langchain/chat returns 503 when UI is unavailable."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -153,6 +157,7 @@ class TestUIRouteAccessibility:
     def test_ui_iframe_title(self, mock_start, mock_streamlit_process):
         """Test iframe page has correct title."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         with patch("app.api.main.streamlit_process", mock_streamlit_process):
@@ -165,6 +170,7 @@ class TestUIRouteAccessibility:
     def test_favicon_returns_204(self, mock_start):
         """Test /favicon.ico returns 204 No Content."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -283,6 +289,7 @@ class TestAPIAndUIIntegration:
     def test_api_routes_still_accessible_with_ui(self, mock_start):
         """Test API routes remain accessible when UI is enabled."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -298,6 +305,7 @@ class TestAPIAndUIIntegration:
     def test_ui_and_api_use_same_port(self, mock_start):
         """Test UI and API are served from same port."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -313,6 +321,7 @@ class TestAPIAndUIIntegration:
     def test_root_serves_react_and_docs_accessible(self, mock_start):
         """Test root serves React and /docs is accessible."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -339,6 +348,7 @@ class TestErrorHandling:
     def test_ui_disabled_error_message(self, mock_start):
         """Test error message when UI is disabled."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)
@@ -352,6 +362,7 @@ class TestErrorHandling:
     def test_404_for_unknown_routes(self, mock_start):
         """Test 404 returned for unknown routes."""
         from fastapi.testclient import TestClient
+
         from app.api.main import app
 
         client = TestClient(app)

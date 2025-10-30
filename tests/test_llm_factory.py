@@ -5,8 +5,9 @@ Tests the factory pattern for creating LLM instances across different providers.
 All external dependencies (LangChain) are mocked.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 import constants
 from config import Config

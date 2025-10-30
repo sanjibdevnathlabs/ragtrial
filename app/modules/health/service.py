@@ -5,10 +5,10 @@ Provides system health status information with component-level checks.
 """
 
 import time
+import trace.codes as codes
 from typing import Dict, Optional, Tuple
 
 import constants
-import trace.codes as codes
 from app.modules.health.response import ComponentHealth, HealthResponse
 from config import Config
 from database.session import SessionFactory
