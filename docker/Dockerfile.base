@@ -32,6 +32,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     # SSL certificates (fix certificate verification issues)
     ca-certificates \
+    # GPG (required for codecov-action v5)
+    gpg \
     # Clean up apt cache to reduce image size
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
@@ -54,6 +56,12 @@ RUN pip install --no-cache-dir \
 # This avoids recreating the user in every derived image
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
+
+# Create static directory for tests (required by UI route tests)
+# This is created in the base image so all test jobs can use it
+RUN mkdir -p app/static/dist && \
+    echo '<!doctype html><html><head><meta charset="UTF-8" /><title>RAG Trial - Intelligent Document Search</title></head><body><div id="root"></div><script type="module" src="/static/dist/assets/index.js"></script></body></html>' > app/static/dist/index.html && \
+    chown -R appuser:appuser app/static
 
 # Verify installation
 RUN python -c "import pytest; import fastapi; import sqlalchemy; print('✅ All dependencies installed')"
