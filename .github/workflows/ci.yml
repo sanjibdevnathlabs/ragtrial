@@ -270,15 +270,6 @@ jobs:
           COVERAGE=$(python -m coverage report --format=total)
           echo "COVERAGE=${COVERAGE}%" >> $GITHUB_ENV
       
-      - name: Upload coverage to Codecov
-        id: codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: unittests
-          name: codecov-unit-tests
-      
       - name: Post Coverage as Comment
         if: steps.findPr.outputs.pr != ''
         uses: marocchino/sticky-pull-request-comment@v2
@@ -297,7 +288,6 @@ jobs:
             
             ### 📈 Coverage Reports
             
-            - 🔍 **[View on Codecov](${{ steps.codecov.outputs.url || format('https://app.codecov.io/github/{0}/commit/{1}', github.repository, github.event.pull_request.head.sha || github.sha) }})**
             - 📄 **[Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
             
             ---

@@ -32,8 +32,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     # SSL certificates (fix certificate verification issues)
     ca-certificates \
-    # GPG (required for codecov-action v5)
-    gpg \
     # Clean up apt cache to reduce image size
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
