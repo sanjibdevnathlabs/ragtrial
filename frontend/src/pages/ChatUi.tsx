@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { PaperAirplaneIcon, DocumentArrowUpIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
+import SourcesAccordion from '../components/SourcesAccordion';
 
 interface Message {
   id: string;
@@ -281,23 +282,12 @@ export default function ChatUi() {
                     >
                       <p className="whitespace-pre-wrap">{message.content}</p>
                       
-                      {/* Sources */}
+                      {/* Sources - Collapsible Accordion */}
                       {message.sources && message.sources.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-slate-600">
-                          <p className="text-sm font-semibold mb-2">📚 Sources:</p>
-                          <div className="space-y-2">
-                            {message.sources.map((source, idx) => (
-                              <div key={idx} className="bg-slate-800/50 rounded-lg p-3 text-sm">
-                                <p className="font-medium text-purple-400 mb-1">
-                                  {source.filename} (Chunk {source.chunk_index})
-                                </p>
-                                <p className="text-slate-300 text-xs line-clamp-2">
-                                  {source.content}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        <SourcesAccordion 
+                          sources={message.sources} 
+                          defaultExpanded={false}
+                        />
                       )}
 
                       <p className="text-xs opacity-60 mt-2">
@@ -328,7 +318,7 @@ export default function ChatUi() {
                   <textarea
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     placeholder="Ask a question about your documents..."
                     className="flex-1 bg-slate-700/50 text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                     rows={2}

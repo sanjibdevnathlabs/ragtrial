@@ -61,19 +61,22 @@ Stage 1: Build Base Image
        │    ├─> lint (Black, Flake8, isort)
        │    └─> security (Bandit, Safety, pip-audit)
        │
-       └──> Stage 3: Tests (depends on base image)
-            ├─> unit-tests (uses base image container)
-            └─> integration-tests (uses base image container)
+       └──> Stage 3: Tests (backend depends on base, frontend independent)
+            ├─> unit-tests (uses base image container, ~10s)
+            ├─> integration-tests (uses base image container, ~1s)
+            ├─> ui-tests (uses base image container, ~2s)
+            └─> frontend-tests (Node.js, 434 tests, ~3s) ✨ NEW
             │
-            └──> Stage 4: Docker Build (depends on tests)
+            └──> Stage 4: Docker Build (depends on ALL tests)
                  └─> docker-build (builds & pushes app image)
                      │
                      └──> Stage 5: Security Scan (depends on docker)
                           └─> docker-security-scan (Trivy scan)
 
 ✅ Lint & Security run in parallel (instant feedback!)
-✅ Tests wait for base image (uses pre-built deps)
-✅ Docker build waits for tests (ensures quality)
+✅ Tests wait for base image (backend) or run independently (frontend)
+✅ Frontend tests: 434 tests, 100% coverage, ~3s execution
+✅ Docker build waits for ALL tests (backend + frontend)
 ✅ Works on PRs from feature branches (no workflow_run issues!)
 ✅ Total time: ~8-12 minutes (with parallelization)
 ```
@@ -230,26 +233,35 @@ sanjibdevnath/ragtrial:xyz789abc123def456abc789def123abc456def  # Full SHA only
          ┌────────────────┴──────────────┐
          ▼                               ▼
 ┌─────────────────────┐   ┌──────────────────────────────┐
-│ Stage 2: Quality    │   │ Stage 3: Tests (needs base)  │
+│ Stage 2: Quality    │   │ Stage 3: Tests               │
 │ (Parallel - no deps)│   │ (Parallel within stage)      │
 ├─────────────────────┤   ├──────────────────────────────┤
 │ Job: lint (~30s)    │   │ Job: unit-tests (~10s)       │
 │  ├─ Black           │   │  ├─ Container: base:<sha>    │
-│  ├─ isort           │   │  ├─ 632 tests                │
-│  └─ Flake8          │   │  ├─ Coverage to Codecov      │
+│  ├─ isort           │   │  ├─ 752 tests                │
+│  └─ Flake8          │   │  ├─ Coverage report          │
 │                     │   │  └─ PR comment               │
 │ Job: security (~45s)│   │                              │
-│  ├─ Bandit          │   │ Job: integration-tests (~5s) │
+│  ├─ Bandit          │   │ Job: integration-tests (~1s) │
 │  ├─ Safety          │   │  ├─ Container: base:<sha>    │
 │  └─ pip-audit       │   │  ├─ MySQL service            │
 └─────────────────────┘   │  └─ 21 tests                 │
+                          │                              │
+                          │ Job: ui-tests (~2s)          │
+                          │  ├─ Container: base:<sha>    │
+                          │  └─ 22 tests                 │
+                          │                              │
+                          │ Job: frontend-tests (~3s) ✨ │
+                          │  ├─ Node.js 20               │
+                          │  ├─ 434 tests                │
+                          │  ├─ 100% coverage            │
+                          │  └─ PR comment               │
                           └──────────────────────────────┘
                                         │
                                         ▼
                           ┌──────────────────────────────┐
                           │ Stage 4: Docker Build        │
-                          │ (needs: [unit-tests,         │
-                          │          integration-tests]) │
+                          │ (needs: [all tests])         │
                           ├──────────────────────────────┤
                           │ Job: docker-build (~5-8 min) │
                           │  ├─ Multi-platform (master)  │

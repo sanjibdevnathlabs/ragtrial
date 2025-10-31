@@ -1,4 +1,4 @@
-.PHONY: help install install-cpu test test-verbose test-coverage test-integration test-ui-api test-all test-clean clean setup-db populate-db cleanup-db lint format run-examples run run-api run-dev-api run-dev-ui run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database frontend-install frontend-dev frontend-build frontend-clean
+.PHONY: help install install-cpu test test-verbose test-coverage test-integration test-ui-api test-all test-clean clean setup-db populate-db cleanup-db lint format run-examples run run-api run-dev-api run-dev-ui run-rag-demo run-rag-cli check-env migrate-generate migrate-up migrate-down migrate-status migrate-reset setup-database frontend-install frontend-dev frontend-build frontend-clean frontend-test frontend-test-run frontend-test-coverage frontend-test-ci
 
 SHELL := /bin/bash
 
@@ -59,13 +59,19 @@ help:
 	@echo "  make frontend-build   🏗️  Build frontend for production"
 	@echo "  make frontend-clean   🧹 Clean frontend build artifacts"
 	@echo ""
+	@echo "Frontend Testing:"
+	@echo "  make frontend-test    🧪 Run frontend tests (watch mode)"
+	@echo "  make frontend-test-run      Run frontend tests once (CI mode)"
+	@echo "  make frontend-test-coverage Run frontend tests with coverage"
+	@echo "  make frontend-test-ci       Run frontend tests for CI (with reports)"
+	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean            Clean temporary files"
 	@echo "  make clean-all        Clean everything (including storage)"
 	@echo ""
 	@echo "Docker (Recommended for Development):"
 	@echo "  make docker-setup        🔧 First-time setup (build all images)"
-	@echo "  make docker-up           🚀 Start all services (auto-builds if needed)"
+	@echo "  make docker-up           🚀 Start all services + run frontend tests"
 	@echo "  make docker-down         🛑 Stop all services"
 	@echo "  make docker-status       📊 Check service health status"
 	@echo ""
@@ -76,6 +82,9 @@ help:
 	@echo "  make docker-ingest       📥 Run ingestion for uploaded files"
 	@echo "  make docker-shell        Enter API container shell"
 	@echo "  make docker-db-shell     Enter MySQL shell"
+	@echo ""
+	@echo "Docker - Testing:"
+	@echo "  make docker-frontend-test 🧪 Run frontend tests separately (also runs in docker-up)"
 	@echo ""
 	@echo "Docker - Build & Maintenance:"
 	@echo "  make docker-build-base   Build base image (with all dependencies)"
@@ -365,7 +374,7 @@ run-dev-ui:
 	@$(STREAMLIT) run app/ui/main.py
 
 # Frontend Development Commands
-.PHONY: frontend-install frontend-dev frontend-build frontend-clean
+.PHONY: frontend-install frontend-dev frontend-build frontend-clean frontend-test frontend-test-run frontend-test-coverage frontend-test-ci
 
 frontend-install:
 	@echo "📦 Installing frontend dependencies..."
@@ -400,6 +409,26 @@ frontend-clean:
 	@echo "🧹 Cleaning frontend build artifacts..."
 	@rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/dist app/static/dist
 	@echo "✅ Frontend cleaned"
+
+# Frontend Testing Commands
+frontend-test:
+	@echo "🧪 Running frontend tests (watch mode)..."
+	@cd $(FRONTEND_DIR) && $(NPM) test
+
+frontend-test-run:
+	@echo "🧪 Running frontend tests (single run)..."
+	@cd $(FRONTEND_DIR) && $(NPM) test -- --run
+	@echo "✅ Frontend tests completed"
+
+frontend-test-coverage:
+	@echo "🧪 Running frontend tests with coverage..."
+	@cd $(FRONTEND_DIR) && $(NPM) test -- --run --coverage
+	@echo "✅ Frontend coverage report generated"
+
+frontend-test-ci:
+	@echo "🧪 Running frontend tests for CI..."
+	@cd $(FRONTEND_DIR) && $(NPM) test -- --run --coverage --reporter=verbose
+	@echo "✅ Frontend tests completed (CI mode)"
 
 run-rag-demo:
 	@echo "Running RAG query demonstration..."
@@ -460,7 +489,7 @@ check-python:
 
 .PHONY: docker-build docker-build-base docker-setup docker-up docker-down docker-stop docker-restart \
         docker-logs docker-logs-all docker-logs-migration docker-ingest docker-test docker-push \
-        docker-clean docker-shell docker-db-shell docker-rebuild docker-status
+        docker-clean docker-shell docker-db-shell docker-rebuild docker-status docker-frontend-test
 
 docker-build:
 	@echo "🐳 Building Docker image..."
@@ -548,6 +577,8 @@ docker-up:
 	@echo "   ChromaDB: http://localhost:8001"
 	@echo "   MySQL:    localhost:3306 (user: ragtrial, password: ragtrial)"
 	@echo ""
+	@echo "🧪 Frontend tests ran automatically (see logs above)"
+	@echo ""
 	@echo "🛠️  Useful commands:"
 	@echo "   make docker-logs        # View API logs"
 	@echo "   make docker-logs-all    # View all logs"
@@ -605,6 +636,13 @@ docker-ingest:
 	@docker-compose -f deployment/local/docker-compose.yml exec api python -m ingestion.ingest
 	@echo ""
 	@echo "✅ Ingestion complete!"
+
+docker-frontend-test:
+	@echo "🧪 Running frontend tests in Docker..."
+	@echo ""
+	@docker-compose -f deployment/local/docker-compose.yml run --rm frontend-test
+	@echo ""
+	@echo "✅ Frontend tests completed!"
 
 docker-logs-migration:
 	@echo "📋 Migration logs:"

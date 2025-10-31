@@ -8,38 +8,48 @@ This directory contains optimized Docker configuration files for the RAG Trial a
 
 ```
 docker/
-├── Dockerfile           # Main application image (multi-stage: frontend + backend)
-├── Dockerfile.base      # Base image with Python dependencies and system tools
-├── Dockerfile.migration # Database migration runner (uses make commands)
-└── README.md           # This file
+├── Dockerfile              # Main application image (multi-stage: frontend + backend)
+├── Dockerfile.base         # Base image with Python dependencies and system tools
+├── Dockerfile.migration    # Database migration runner (uses make commands)
+├── Dockerfile.frontend-test # Frontend test runner (uses make commands)
+└── README.md              # This file
 ```
 
 ## Architecture
 
-### Three-Layer Image Strategy
+### Multi-Image Strategy
 
 ```
-┌─────────────────────────────────────────────────┐
-│ Dockerfile.base                                 │
-│ - Python 3.13-slim                             │
-│ - System dependencies (gcc, mysql, curl, etc) │
-│ - Python packages (PyTorch CPU, FastAPI, etc) │
-│ - Non-root user (appuser)                     │
-│ - Makefile for consistent commands             │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ Dockerfile.base                                  │
+│ - Python 3.13-slim                              │
+│ - System dependencies (gcc, mysql, curl, etc)  │
+│ - Python packages (PyTorch CPU, FastAPI, etc)  │
+│ - Non-root user (appuser)                      │
+│ - Makefile for consistent commands              │
+└──────────────────────────────────────────────────┘
                     ▲
                     │ FROM base
-        ┌───────────┴───────────┐
-        │                       │
-┌───────────────────┐   ┌──────────────────┐
-│ Dockerfile        │   │ Dockerfile       │
-│                   │   │ .migration       │
-│ Multi-stage:      │   │                  │
-│ 1. Frontend build │   │ Runs migrations  │
-│ 2. App image      │   │ using:           │
-│    - Backend code │   │ make migrate-up  │
-│    - Built assets │   │                  │
-└───────────────────┘   └──────────────────┘
+        ┌───────────┴───────────────┐
+        │                           │
+┌───────────────────┐   ┌───────────────────────┐
+│ Dockerfile        │   │ Dockerfile.migration  │
+│                   │   │                       │
+│ Multi-stage:      │   │ Runs DB migrations:   │
+│ 1. Frontend build │   │ make migrate-up       │
+│ 2. App image      │   │                       │
+│    - Backend code │   └───────────────────────┘
+│    - Built assets │
+└───────────────────┘
+
+┌──────────────────────────────────────────────────┐
+│ Dockerfile.frontend-test (Standalone)            │
+│ - Node.js 22-alpine                             │
+│ - npm dependencies + make/bash                  │
+│ - Frontend source code                          │
+│ - Runs tests: make frontend-test-ci             │
+│ - Exits after test completion                   │
+└──────────────────────────────────────────────────┘
 ```
 
 ## Dockerfile Details
@@ -119,6 +129,31 @@ make docker-build
 
 **Build**:
 Built automatically by `docker-compose` when starting services.
+
+### 4. Dockerfile.frontend-test
+
+**Purpose**: Runs frontend tests in an isolated container and exits.
+
+**Key Features**:
+- Uses Node.js 22-alpine (lightweight)
+- Installs make/bash for Makefile support
+- Installs npm dependencies with `npm ci` (clean install)
+- Copies frontend source code
+- Runs `make frontend-test-ci` for consistency with local dev
+- Generates coverage reports
+- Exits after completion (restart: "no" in docker-compose)
+
+**Build**:
+```bash
+docker build -f docker/Dockerfile.frontend-test -t ragtrial-frontend-test:dev .
+```
+
+Built automatically by `docker-compose` when starting services.
+
+**Test Results**:
+- 434 tests across 10 test files
+- 100% coverage on components
+- ~9s execution time
 
 ## Make Commands Integration
 
@@ -268,6 +303,35 @@ docker-compose -f deployment/local/docker-compose.yml build app
 # Rebuild everything (base + app)
 make docker-rebuild
 ```
+
+### Testing
+
+#### Frontend Tests in Docker
+
+```bash
+# Run frontend tests in isolated Docker container
+make docker-frontend-test
+```
+
+This will:
+1. Spin up a Node.js 22 Alpine container
+2. Install make (Alpine package)
+3. Run `make frontend-test-ci` (installs deps + runs tests with coverage)
+4. Display results and exit
+
+**Why use make command?**
+- ✅ **Consistency** - Same command structure as backend tests
+- ✅ **Single source of truth** - Test configuration in Makefile
+- ✅ **Easier maintenance** - Change command in one place (Makefile)
+
+**Benefits**:
+- ✅ Isolated environment (no local Node.js/npm needed)
+- ✅ Consistent results across machines
+- ✅ Uses Docker volume for node_modules caching
+- ✅ Automatically cleans up after completion
+- ✅ Uses Makefile commands like other Docker services
+
+**Note**: Backend tests are handled via GitHub Actions CI pipeline, not Docker Compose.
 
 ### Building Base Image for CI/CD
 
