@@ -27,7 +27,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Generate image tag
         id: tag
@@ -55,10 +55,38 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
+      - name: Check if Dockerfile.base changed
+        id: dockerfile-check
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, check if Dockerfile.base or requirements.txt changed
+            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -qE "(docker/Dockerfile.base|requirements.txt)"; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "🔧 Dockerfile.base or requirements.txt modified - forcing rebuild"
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "📦 No Dockerfile/requirements changes"
+            fi
+          else
+            # For direct pushes to master, check last commit
+            if git diff --name-only HEAD~1 HEAD | grep -qE "(docker/Dockerfile.base|requirements.txt)"; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+              echo "🔧 Dockerfile.base or requirements.txt modified - forcing rebuild"
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+              echo "📦 No Dockerfile/requirements changes"
+            fi
+          fi
+      
       - name: Check if base image exists
         id: check
         run: |
-          if docker manifest inspect ${{ env.BASE_IMAGE }}:${{ env.IMAGE_TAG }} > /dev/null 2>&1; then
+          # Force rebuild if Dockerfile.base or requirements.txt changed
+          if [ "${{ steps.dockerfile-check.outputs.changed }}" = "true" ]; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "🔨 Dockerfile/requirements changed - forcing rebuild"
+          # Otherwise check if image exists
+          elif docker manifest inspect ${{ env.BASE_IMAGE }}:${{ env.IMAGE_TAG }} > /dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "✅ Base image already exists: ${{ env.IMAGE_TAG }}"
           else
@@ -112,10 +140,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       
@@ -148,10 +176,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       
@@ -214,7 +242,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Cache pytest
         uses: actions/cache@v4
@@ -242,15 +270,6 @@ jobs:
           COVERAGE=$(python -m coverage report --format=total)
           echo "COVERAGE=${COVERAGE}%" >> $GITHUB_ENV
       
-      - name: Upload coverage to Codecov
-        id: codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-unit-tests
-      
       - name: Post Coverage as Comment
         if: steps.findPr.outputs.pr != ''
         uses: marocchino/sticky-pull-request-comment@v2
@@ -269,7 +288,6 @@ jobs:
             
             ### 📈 Coverage Reports
             
-            - 🔍 **[View on Codecov](${{ steps.codecov.outputs.url || format('https://app.codecov.io/github/{0}/commit/{1}', github.repository, github.event.pull_request.head.sha || github.sha) }})**
             - 📄 **[Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})**
             
             ---
@@ -307,7 +325,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Cache pytest
         uses: actions/cache@v4
@@ -342,7 +360,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Cache pytest
         uses: actions/cache@v4
@@ -374,7 +392,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -413,7 +431,7 @@ jobs:
       
       - name: Update Docker Hub description
         if: github.ref == 'refs/heads/master'
-        uses: peter-evans/dockerhub-description@v4
+        uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -438,7 +456,7 @@ jobs:
           output: 'trivy-results.sarif'
       
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
@@ -454,7 +472,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq

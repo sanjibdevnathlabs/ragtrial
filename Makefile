@@ -193,7 +193,6 @@ test-integration:
 		--ignore=migration/versions \
 		--ignore=migration/templates
 
-# Run UI API integration tests (fast, no browser)
 test-ui-api:
 	@echo "🎨 Running UI API integration tests (~2s)..."
 	@$(PYTHON) -m pytest \
