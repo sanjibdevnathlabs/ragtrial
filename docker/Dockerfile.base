@@ -57,12 +57,6 @@ RUN pip install --no-cache-dir \
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
-# Create static directory for tests (required by UI route tests)
-# This is created in the base image so all test jobs can use it
-RUN mkdir -p app/static/dist && \
-    echo '<!doctype html><html><head><meta charset="UTF-8" /><title>RAG Trial - Intelligent Document Search</title></head><body><div id="root"></div><script type="module" src="/static/dist/assets/index.js"></script></body></html>' > app/static/dist/index.html && \
-    chown -R appuser:appuser app/static
-
 # Verify installation
 RUN python -c "import pytest; import fastapi; import sqlalchemy; print('✅ All dependencies installed')"
 
