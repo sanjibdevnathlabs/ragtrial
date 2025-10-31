@@ -68,8 +68,12 @@ class TestFormatContext:
 
         result = format_context(docs)
 
-        assert "[Document 1 - Source: test.txt]" in result
+        # Document references should NOT be present (enhancement)
+        assert "[Document" not in result
+        assert "Source:" not in result
+        # Content should be present
         assert "This is test content" in result
+        assert result == "This is test content"
 
     def test_format_context_multiple_documents(self):
         """Test formatting with multiple documents."""
@@ -81,12 +85,16 @@ class TestFormatContext:
 
         result = format_context(docs)
 
-        assert "[Document 1 - Source: doc1.txt]" in result
-        assert "[Document 2 - Source: doc2.txt]" in result
-        assert "[Document 3 - Source: doc3.txt]" in result
+        # Document references should NOT be present (enhancement)
+        assert "[Document" not in result
+        assert "Source:" not in result
+        # Content should be present
         assert "Content 1" in result
         assert "Content 2" in result
         assert "Content 3" in result
+        # Documents separated by separator
+        assert "\n\n---\n\n" in result
+        assert result == "Content 1\n\n---\n\nContent 2\n\n---\n\nContent 3"
 
     def test_format_context_document_without_source(self):
         """Test formatting document with missing source metadata."""
@@ -94,8 +102,12 @@ class TestFormatContext:
 
         result = format_context(docs)
 
-        assert "[Document 1 - Source: Unknown]" in result
+        # Document references should NOT be present (enhancement)
+        assert "[Document" not in result
+        assert "Source:" not in result
+        # Content should be present
         assert "Content" in result
+        assert result == "Content"
 
     def test_format_context_strips_whitespace(self):
         """Test that content whitespace is stripped."""
@@ -135,8 +147,8 @@ class TestFormatContext:
 
         assert "Line 1\nLine 2\nLine 3" in result
 
-    def test_format_context_preserves_source_path(self):
-        """Test that full source path is preserved."""
+    def test_format_context_hides_source_path(self):
+        """Test that source paths are NOT exposed in context (enhancement)."""
         docs = [
             Document(
                 page_content="Content", metadata={"source": "/path/to/document.pdf"}
@@ -145,7 +157,12 @@ class TestFormatContext:
 
         result = format_context(docs)
 
-        assert "[Document 1 - Source: /path/to/document.pdf]" in result
+        # Document references should NOT be present (enhancement)
+        assert "[Document" not in result
+        assert "Source:" not in result
+        assert "/path/to/document.pdf" not in result
+        # Only content should be present
+        assert result == "Content"
 
 
 class TestPromptConstants:

@@ -84,6 +84,16 @@ services:
       - IS_PERSISTENT=TRUE
       - ANONYMIZED_TELEMETRY=FALSE
     restart: unless-stopped
+  
+  frontend-test:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile.frontend-test
+    image: ragtrial-frontend-test:dev
+    container_name: ragtrial-frontend-test
+    networks:
+      - ragtrial-network
+    restart: "no"
 
 networks:
   ragtrial-network:
