@@ -27,63 +27,69 @@ describe('ChatUi', () => {
   });
 
   describe('Initial Rendering', () => {
-    it('should render the page title', () => {
+    it('should render the page title', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ files: [] }),
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
       expect(screen.getByText('RAG Document Chat')).toBeInTheDocument();
     });
 
-    it('should render upload button', () => {
+    it('should render upload button', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ files: [] }),
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
       expect(screen.getByText('Upload File')).toBeInTheDocument();
     });
 
-    it('should render clear chat button', () => {
+    it('should render clear chat button', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ files: [] }),
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
       expect(screen.getByText('Clear Chat')).toBeInTheDocument();
     });
 
-    it('should show welcome message when no messages', () => {
+    it('should show welcome message when no messages', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ files: [] }),
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
       expect(screen.getByText(/Welcome to RAG Chat!/i)).toBeInTheDocument();
     });
 
-    it('should render input textarea', () => {
+    it('should render input textarea', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ files: [] }),
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
       expect(screen.getByPlaceholderText(/Ask a question about your documents/i)).toBeInTheDocument();
     });
 
-    it('should render send button', () => {
+    it('should render send button', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ files: [] }),
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
       const sendButton = screen.getByRole('button', { name: '' }); // Button with icon only
       expect(sendButton).toBeInTheDocument();
     });
@@ -112,6 +118,7 @@ describe('ChatUi', () => {
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText('test1.pdf')).toBeInTheDocument();
@@ -128,6 +135,7 @@ describe('ChatUi', () => {
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText('No documents indexed yet')).toBeInTheDocument();
@@ -156,6 +164,7 @@ describe('ChatUi', () => {
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText('indexed.pdf')).toBeInTheDocument();
@@ -181,6 +190,7 @@ describe('ChatUi', () => {
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText('5.0 KB')).toBeInTheDocument();
@@ -193,6 +203,7 @@ describe('ChatUi', () => {
       mockFetch.mockRejectedValue(new Error('Network error'));
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to load files:', expect.any(Error));
@@ -229,6 +240,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
@@ -259,6 +271,7 @@ describe('ChatUi', () => {
         .mockImplementation(() => new Promise(() => {})); // Never resolves
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
@@ -282,6 +295,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       const file = new File(['test'], 'test.txt', { type: 'text/plain' });
@@ -304,6 +318,7 @@ describe('ChatUi', () => {
         .mockRejectedValueOnce(new Error('Network error'));
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
@@ -324,6 +339,7 @@ describe('ChatUi', () => {
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       fireEvent.change(fileInput, { target: { files: null } });
@@ -358,6 +374,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -365,6 +382,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'What is Kafka?' } });
       fireEvent.click(sendButton);
+
+      await waitFor(() => {});
 
       // User message should appear
       await waitFor(() => {
@@ -391,6 +410,7 @@ describe('ChatUi', () => {
         .mockImplementation(() => new Promise(() => {})); // Never resolves
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -398,6 +418,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test question' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText('Test question')).toBeInTheDocument();
@@ -420,6 +442,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i) as HTMLTextAreaElement;
       const sendButtons = screen.getAllByRole('button');
@@ -427,6 +450,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test question' } });
       fireEvent.click(sendButton);
+
+      await waitFor(() => {});
 
       // Input should be cleared immediately
       expect(input.value).toBe('');
@@ -439,6 +464,7 @@ describe('ChatUi', () => {
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -446,6 +472,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: '   ' } }); // Whitespace only
       fireEvent.click(sendButton);
+
+      await waitFor(() => {});
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -462,6 +490,7 @@ describe('ChatUi', () => {
         .mockImplementation(() => new Promise(() => {}));
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -469,6 +498,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         expect(sendButton).toBeDisabled();
@@ -487,6 +518,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -494,6 +526,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText(/Error: Invalid query format/i)).toBeInTheDocument();
@@ -511,6 +545,7 @@ describe('ChatUi', () => {
         .mockRejectedValueOnce(new Error('Network error'));
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -518,6 +553,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText(/Error: Failed to connect to the server/i)).toBeInTheDocument();
@@ -538,6 +575,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
 
@@ -564,6 +602,7 @@ describe('ChatUi', () => {
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i) as HTMLTextAreaElement;
 
@@ -593,6 +632,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       // Send a message first
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
@@ -601,6 +641,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText('Test')).toBeInTheDocument();
@@ -632,6 +674,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       // Send a message first
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
@@ -640,6 +683,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         expect(screen.getByText('Test')).toBeInTheDocument();
@@ -667,6 +712,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -674,6 +720,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         const messageElement = screen.getByText('Test').closest('div');
@@ -693,6 +741,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -700,6 +749,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         const messageElement = screen.getByText('Response').closest('div');
@@ -719,6 +770,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -726,6 +778,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         // Check for timestamp format (will include time)
@@ -746,6 +800,7 @@ describe('ChatUi', () => {
         });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -753,6 +808,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         const messageElement = screen.getByText(/Line 1/).closest('p');
@@ -762,13 +819,14 @@ describe('ChatUi', () => {
   });
 
   describe('Accessibility', () => {
-    it('should have proper ARIA labels', () => {
+    it('should have proper ARIA labels', async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ files: [] }),
       });
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const textarea = screen.getByPlaceholderText(/Ask a question about your documents/i);
       expect(textarea).toBeEnabled();
@@ -783,6 +841,7 @@ describe('ChatUi', () => {
         .mockImplementation(() => new Promise(() => {}));
 
       render(<ChatUi />);
+      await waitFor(() => {});
 
       const input = screen.getByPlaceholderText(/Ask a question about your documents/i);
       const sendButtons = screen.getAllByRole('button');
@@ -790,6 +849,8 @@ describe('ChatUi', () => {
 
       fireEvent.change(input, { target: { value: 'Test' } });
       fireEvent.click(sendButton);
+
+     await waitFor(() => {});
 
       await waitFor(() => {
         expect(input).toBeDisabled();
