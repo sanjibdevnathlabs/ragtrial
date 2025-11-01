@@ -167,19 +167,19 @@ export default function ChatUi() {
   return (
     <div className="min-h-screen bg-slate-900 pt-16">
       {/* Hero Section */}
-      <div className="glass border-b border-white/10">
-        <div className="container mx-auto px-6 py-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 gradient-text">
-            RAG Document Chat
+      <div className="container mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">
+            <span className="gradient-text">RAG Document Chat</span>
           </h1>
-          <p className="text-xl text-slate-300 max-w-3xl">
+          <p className="text-slate-400 text-lg">
             Upload documents, ask questions, and get AI-powered answers with source attribution
           </p>
         </div>
       </div>
 
       {/* Main Chat Interface */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">

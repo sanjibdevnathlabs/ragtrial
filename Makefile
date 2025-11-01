@@ -214,7 +214,7 @@ test-all:
 	@make test
 	@make test-integration
 	@make test-ui-api
-	@make frontend-test
+	@make frontend-test-run
 	@echo "✅ All tests passed!"
 
 # Clean up test artifacts (storage directories only)

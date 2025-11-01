@@ -11,19 +11,19 @@ export default function ApiDocs() {
   return (
     <div className="min-h-screen bg-slate-900 pt-16">
       {/* Hero Section */}
-      <div className="glass border-b border-white/10">
-        <div className="container mx-auto px-6 py-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 gradient-text">
-            API Documentation
+      <div className="container mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">
+            <span className="gradient-text">API Documentation</span>
           </h1>
-          <p className="text-xl text-slate-300 max-w-3xl">
+          <p className="text-slate-400 text-lg">
             Complete REST API reference for document management and RAG query operations
           </p>
         </div>
       </div>
 
       {/* Native Swagger UI - No iframe! */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-6">
         <div className="swagger-container">
           <SwaggerUI
             url={`${window.location.origin}/openapi.json`}
@@ -33,6 +33,8 @@ export default function ApiDocs() {
             showExtensions={true}
             showCommonExtensions={true}
             tryItOutEnabled={true}
+            docExpansion="list"
+            defaultModelsExpandDepth={-1}
           />
         </div>
       </div>
