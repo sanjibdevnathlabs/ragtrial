@@ -61,21 +61,19 @@ html {
   display: none; /* Hide default topbar */
 }
 
+/* Hide Swagger UI's built-in info section to avoid duplication with our custom header */
+.swagger-container .swagger-ui .information-container,
+.swagger-container .swagger-ui .info,
+.swagger-container .swagger-ui div[class*="info"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
 .swagger-ui {
   @apply text-slate-100;
   color: #f1f5f9 !important; /* Force high contrast */
-}
-
-.swagger-ui .info .title {
-  @apply text-white;
-  color: #ffffff !important;
-  font-size: 2rem !important;
-}
-
-.swagger-ui .info .description,
-.swagger-ui .info p {
-  @apply text-slate-200;
-  color: #e2e8f0 !important;
 }
 
 .swagger-ui .scheme-container {
