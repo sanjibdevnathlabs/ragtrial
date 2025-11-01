@@ -214,6 +214,7 @@ test-all:
 	@make test
 	@make test-integration
 	@make test-ui-api
+	@make frontend-test
 	@echo "✅ All tests passed!"
 
 # Clean up test artifacts (storage directories only)
@@ -274,9 +275,9 @@ setup-database: migrate-up
 # ==============================================================================
 
 # Variables for code quality tools
-LINT_EXCLUDE := --exclude='/(venv|htmlcov|tests|scripts|examples)/'
-FLAKE8_EXCLUDE := --exclude=venv,htmlcov,tests,scripts,examples
-ISORT_SKIP := --skip-gitignore --skip tests --skip scripts --skip examples --skip venv --skip htmlcov
+LINT_EXCLUDE := --exclude='/(venv|htmlcov|tests|scripts|examples|frontend|node_modules)/'
+FLAKE8_EXCLUDE := --exclude=venv,htmlcov,tests,scripts,examples,frontend,node_modules
+ISORT_SKIP := --skip-gitignore --skip tests --skip scripts --skip examples --skip venv --skip htmlcov --skip frontend --skip node_modules
 
 # Python command (use venv if available, otherwise use system python)
 PYTHON := $(shell if [ -f ./venv/bin/python ]; then echo "./venv/bin/python"; else echo "python"; fi)

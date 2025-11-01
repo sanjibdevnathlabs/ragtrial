@@ -68,3 +68,4 @@ frontend/.vite/
 app/static/dist/
 *.tsbuildinfo
 .playwright-mcp/
+.pytest_cache/

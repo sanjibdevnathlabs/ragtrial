@@ -20,7 +20,9 @@ A production-ready Retrieval-Augmented Generation (RAG) system with **ORM-like a
 - ✅ Security guardrails (prompt injection, input validation)
 - ✅ Multi-provider LLM support (Google Gemini, OpenAI GPT, Anthropic Claude)
 - ✅ Enterprise database architecture (SQLAlchemy + migrations)
-- ✅ 795 tests passing (752 unit + 21 integration + 22 UI) - 100% pass rate
+- ✅ **React web UI** with chat interface, file upload, API docs
+- ✅ 795 backend tests passing (752 unit + 21 integration + 22 UI API) - 100% pass rate
+- ✅ 434 frontend tests passing (React + TypeScript + Vitest)
 - ✅ 85% code coverage (96% for app directory)
 
 **🚧 IN PROGRESS:** Agent-Based RAG with LangGraph (next phase)
@@ -81,7 +83,7 @@ Build a "Chat with your Documents" application with **three interaction methods*
 - ✅ Zero string literals (trace codes for all events)
 - ✅ Comprehensive error handling
 - ✅ Batch processing for efficiency
-- ✅ **Complete test suite with pytest (795 tests, 100% pass rate, 85% coverage!)**
+- ✅ **Complete test suite: 795 backend (pytest) + 434 frontend (Vitest), 100% pass rate, 85% coverage**
 - ✅ **Enterprise database with migrations (SQLAlchemy ORM)**
 
 ### ⚡ FastAPI REST API
@@ -417,11 +419,13 @@ Production-ready API for document management and RAG queries with **thread-safe 
 **Unified Application (Recommended):**
 ```bash
 make run
-# Starts FastAPI + embedded Streamlit UI on port 8000
+# Starts FastAPI + React frontend on port 8000
 ```
 
 **Access Points:**
-- **Web UI:** http://localhost:8000/langchain/chat
+- **Landing Page:** http://localhost:8000
+- **Chat UI:** http://localhost:8000/langchain/chat
+- **Dev Docs:** http://localhost:8000/dev-docs
 - **API Docs:** http://localhost:8000/docs
 - **API:** http://localhost:8000/api/v1/*
 
@@ -540,41 +544,56 @@ curl http://localhost:8000/api/v1/query/health
 
 ## 🏗️ Application Architecture
 
-### Unified Application Design
+### Modern Web Architecture
 
-The application uses a **unified architecture** where FastAPI and Streamlit UI run as a single application on port 8000:
+The application uses a **modern web architecture** with FastAPI backend serving a React frontend as static files:
 
 ```
-┌─────────────────────────────────────────┐
-│     FastAPI (Port 8000)                 │
-│  ┌─────────────────────────────────┐    │
-│  │  HTTP Routes:                   │    │
-│  │  • / → Redirect to /docs        │    │
-│  │  • /docs → API Documentation    │    │
-│  │  • /langchain/chat → UI (iframe)│    │
-│  │  • /api/v1/* → REST API         │    │
-│  └─────────────────────────────────┘    │
-│                                          │
-│  ┌─────────────────────────────────┐    │
-│  │  Streamlit (Subprocess)         │    │
-│  │  Internal Port: 8501            │    │
-│  │  Embedded via iframe            │    │
-│  └─────────────────────────────────┘    │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│          FastAPI Backend (Port 8000)             │
+│  ┌──────────────────────────────────────────┐    │
+│  │  HTTP Routes:                            │    │
+│  │  • / → React Landing Page                │    │
+│  │  • /about → React About Page             │    │
+│  │  • /dev-docs → React Dev Docs            │    │
+│  │  • /docs → React Swagger UI              │    │
+│  │  • /langchain/chat → React Chat UI       │    │
+│  │  • /api/v1/* → REST API Endpoints        │    │
+│  └──────────────────────────────────────────┘    │
+│                                                   │
+│  ┌──────────────────────────────────────────┐    │
+│  │  Static Files (/static)                  │    │
+│  │  • React Production Build (dist/)        │    │
+│  │  • index.html                            │    │
+│  │  • JavaScript bundles (assets/*.js)      │    │
+│  │  • CSS stylesheets (assets/*.css)        │    │
+│  └──────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────┘
 ```
+
+**Technology Stack:**
+- **Backend:** FastAPI + Python 3.13
+- **Frontend:** React 18 + TypeScript + Vite
+- **Styling:** Tailwind CSS + Headless UI
+- **UI Components:** Heroicons + Framer Motion
+- **API Documentation:** swagger-ui-react (native component)
 
 **Benefits:**
 - **Single Command:** `make run` starts everything
-- **Single Port:** Access API and UI from port 8000
-- **Graceful Lifecycle:** Automatic Streamlit startup/shutdown
-- **Configuration-Driven:** Enable/disable UI via TOML
-- **Production-Ready:** Works in Docker containers
+- **Single Port:** Access frontend and API from port 8000
+- **Client-Side Routing:** React Router for smooth navigation
+- **Consistent UI:** Unified navbar across all pages
+- **Production-Ready:** Optimized Vite build for Docker deployment
+- **Type-Safe:** Full TypeScript coverage in frontend
 
 **Development Modes:**
 ```bash
-make run          # Unified: API + UI on 8000
-make run-dev-api  # API only (no UI embedded)
-make run-dev-ui   # UI only on 8501 (standalone)
+# Backend development
+make run          # Production: API + built React frontend on 8000
+make run-dev-api  # Development: API only on 8000
+
+# Frontend development (separate terminal)
+cd frontend && npm run dev  # Vite dev server on 5173 with HMR
 ```
 
 ---
@@ -885,20 +904,23 @@ make migrate-generate     # Generate new migration (requires DESCRIPTION="...")
 
 ### Application
 ```bash
-make run                 # 🚀 Start unified app (API + UI on port 8000)
+make run                 # 🚀 Start unified app (API + React frontend on port 8000)
 make run-dev-api         # Start FastAPI only (dev mode)
-make run-dev-ui          # Start Streamlit UI only (dev mode)
 make run-rag-cli         # Interactive CLI for RAG queries
 ```
 
 ### Testing
 ```bash
-make test                # Run unit tests (~10s, 642 tests)
+# Backend tests (Python + pytest)
+make test                # Run unit tests (~10s, 752 tests)
 make test-integration    # Run integration tests (~2s, 21 tests)
 make test-ui-api         # Run UI API tests (~2s, 22 tests)
-make test-all            # Run ALL tests (~15s, 685 tests)
+make test-all            # Run ALL backend tests (~15s, 795 tests)
 make test-coverage       # Run with coverage report
 make test-html           # Generate HTML coverage report
+
+# Frontend tests (React + Vitest)
+cd frontend && npm test  # Run all frontend tests (434 tests)
 ```
 
 ### Development
@@ -914,8 +936,8 @@ make format              # Format code with black
 ## 🧪 Testing
 
 ```bash
-# Run all tests (685 tests!)
-make test
+# Run all backend tests (795 tests!)
+make test-all
 
 # Run with verbose output
 make test-verbose
@@ -931,11 +953,12 @@ pytest tests/test_embeddings_*.py # Embeddings tests
 pytest tests/test_vectorstore_*.py # Vectorstore tests
 ```
 
-**Test Coverage:**
-- ✅ **685 total tests** (642 unit + 21 integration + 22 UI API)
+**Backend Test Coverage (pytest):**
+- ✅ **795 total tests** (752 unit + 21 integration + 22 UI API)
 - ✅ **100% pass rate** (~15 seconds total)
+- ✅ **85% code coverage** (96% for app directory)
 - ✅ **Marker-based segregation** (`@pytest.mark.integration`, `@pytest.mark.ui`)
-- ✅ API endpoints (upload, files, query)
+- ✅ API endpoints (upload, files, query, health checks)
 - ✅ RAG chain (retrieval, generation, response formatting)
 - ✅ Security guardrails (input validation, prompt injection, output filtering)
 - ✅ Embeddings (all 4 providers)
@@ -943,8 +966,15 @@ pytest tests/test_vectorstore_*.py # Vectorstore tests
 - ✅ Configuration loading
 - ✅ Storage backends (local, S3)
 - ✅ Database operations (SQLAlchemy with migrations)
-- ✅ UI integration (Streamlit lifecycle, route accessibility, configuration)
-- ✅ Unified architecture (API + UI on single port)
+
+**Frontend Test Coverage (Vitest + React Testing Library):**
+- ✅ **434 total tests** covering all React components
+- ✅ **100% pass rate** (~5 seconds total)
+- ✅ Component rendering (Landing, About, DevDocs, ApiDocs, ChatUi)
+- ✅ User interactions (file upload, message sending, navigation)
+- ✅ API integration (mocked fetch calls)
+- ✅ Router behavior (React Router navigation)
+- ✅ UI state management (loading, errors, success states)
 
 ---
 
@@ -1033,11 +1063,15 @@ results = vectorstore.query("What is RAG?", n_results=5)
   - [ ] Tool integration
   - [ ] Memory management
 
-### 📋 Phase 5: User Interface (UPCOMING)
-- [ ] Streamlit/Gradio web UI
-- [ ] Chat history persistence
-- [ ] Multi-document management UI
-- [ ] Real-time streaming responses
+### 📋 Phase 5: User Interface (✅ COMPLETE)
+- [x] **React web UI** with TypeScript + Vite + Tailwind CSS
+- [x] **Chat interface** with file upload and query capabilities
+- [x] **Multi-document management** (upload, list, delete)
+- [x] **API documentation** viewer (native swagger-ui-react)
+- [x] **Responsive design** with consistent navbar
+- [x] **434 frontend tests** with 100% pass rate
+- [ ] Chat history persistence (UPCOMING)
+- [ ] Real-time streaming responses (UPCOMING)
 
 ### 📋 Phase 6: Production Enhancements (FUTURE)
 - [ ] Docker containerization
