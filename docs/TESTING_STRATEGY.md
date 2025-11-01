@@ -2,13 +2,21 @@
 
 ## 📊 Current Test Coverage
 
-**Existing Tests (685 total):**
-- ✅ **642 Unit Tests** - API, RAG chain, security, embeddings, vectorstores
+**Backend Tests (795 total):**
+- ✅ **752 Unit Tests** - API, RAG chain, security, embeddings, vectorstores, file operations
 - ✅ **21 Integration Tests** - Database operations, API endpoints (marked `@pytest.mark.integration`)
-- ✅ **22 UI API Tests** - Streamlit lifecycle, route accessibility, iframe embedding (marked `@pytest.mark.ui`)
-- ✅ **100% Pass Rate** - All tests passing
+- ✅ **22 UI API Tests** - Router endpoints, health checks (marked `@pytest.mark.ui`)
+- ✅ **100% Pass Rate** - All backend tests passing
 - ✅ **Fast Execution** - ~15 seconds total
+- ✅ **85% Code Coverage** - 96% for app directory
 - ✅ **Marker-Based Segregation** - Clean separation using pytest markers
+
+**Frontend Tests (434 total):**
+- ✅ **434 Component Tests** - React components, routing, user interactions
+- ✅ **100% Pass Rate** - All frontend tests passing
+- ✅ **Fast Execution** - ~5 seconds total
+- ✅ **Technology:** Vitest + React Testing Library + TypeScript
+- ✅ **Coverage:** All React components (Landing, About, DevDocs, ApiDocs, ChatUi)
 
 ---
 
@@ -22,7 +30,7 @@ Tests are organized using **pytest markers** for clean separation and selective 
 # pytest.ini
 markers =
     integration: marks tests as integration tests (require external services)
-    ui: marks tests as UI integration tests (test UI endpoints, Streamlit)
+    ui: marks tests as UI integration tests (test UI API endpoints, React routes)
     slow: marks tests as slow running (deselect with '-m "not slow"')
 ```
 
@@ -76,12 +84,20 @@ make test-all            # Runs all three above sequentially
 
 ### Test Count Breakdown
 
+**Backend Tests (pytest):**
+
 | Test Category | Marker | Count | Execution Time |
 |---------------|--------|-------|----------------|
-| **Unit Tests** | `not integration and not ui` | 642 | ~10s |
+| **Unit Tests** | `not integration and not ui` | 752 | ~10s |
 | **Integration** | `integration` | 21 | ~2s |
 | **UI API** | `ui` | 22 | ~2s |
-| **Total** | All | **685** | **~15s** |
+| **Backend Total** | All | **795** | **~15s** |
+
+**Frontend Tests (Vitest):**
+
+| Test Category | Command | Count | Execution Time |
+|---------------|---------|-------|----------------|
+| **Component Tests** | `npm test` (in frontend/) | 434 | ~5s |
 
 ### Benefits of Marker-Based Approach
 
@@ -138,7 +154,7 @@ make test-all            # Runs all three above sequentially
 - API endpoints with real database
 - File upload/download flow
 - Query execution flow
-- Streamlit subprocess lifecycle
+- React route serving and static file mounting
 
 **Strengths:**
 - ✅ Tests real interactions
@@ -151,33 +167,34 @@ make test-all            # Runs all three above sequentially
 
 ### Option A: API-Level UI Testing (Recommended ⭐)
 
-**Best for:** Your unified architecture where UI is served via iframe
+**Best for:** Testing backend routes that serve the React frontend
 
-**Approach:** Test the API endpoints that serve the UI
+**Approach:** Test the API endpoints that serve static React files
 
 ```python
-# tests/test_ui_api_integration.py
+# tests/test_router_*.py
 """
 API-level UI integration tests.
-Tests the UI-serving endpoints without browser automation.
+Tests the UI-serving endpoints and React routes.
 """
 
 import pytest
 from fastapi.testclient import TestClient
 
 def test_langchain_chat_route_accessible(client):
-    """Test /langchain/chat endpoint returns HTML"""
+    """Test /langchain/chat endpoint returns React HTML"""
     response = client.get("/langchain/chat")
     
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "<iframe" in response.text
+    assert "index.html" in response.text or "<!DOCTYPE html>" in response.text
 
-def test_ui_iframe_points_to_streamlit(client):
-    """Verify iframe points to correct Streamlit URL"""
-    response = client.get("/langchain/chat")
+def test_root_route_returns_react_app(client):
+    """Verify root route serves React landing page"""
+    response = client.get("/")
     
-    assert "http://localhost:8501" in response.text
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
 
 def test_ui_disabled_shows_warning(client, monkeypatch):
     """Test UI disabled state"""
@@ -261,55 +278,79 @@ def test_query_response_matches_contract(client):
 
 ---
 
-### Option C: Streamlit Component Testing (Optional)
+### Option C: React Component Testing (✅ IMPLEMENTED)
 
-**Best for:** Testing Streamlit UI components in isolation
+**Best for:** Testing React UI components in isolation
 
-**Approach:** Use Streamlit's testing framework
+**Approach:** Use Vitest + React Testing Library
 
-```python
-# tests/test_streamlit_components.py
-"""
-Streamlit component unit tests.
-Tests UI functions without running full app.
-"""
+```typescript
+// frontend/src/__tests__/ChatUi.test.tsx
+/**
+ * React component unit tests.
+ * Tests UI components with mocked API calls.
+ */
 
-from unittest.mock import Mock
-import streamlit as st
-from streamlit.testing.v1 import AppTest
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { BrowserRouter } from 'react-router-dom'
+import { vi } from 'vitest'
+import ChatUi from '../pages/ChatUi'
 
-def test_initialize_session_state():
-    """Test session state initialization"""
-    from app.ui.main import initialize_session_state
+describe('ChatUi Component', () => {
+  beforeEach(() => {
+    global.fetch = vi.fn()
+  })
+
+  test('renders chat interface with upload button', () => {
+    render(
+      <BrowserRouter>
+        <ChatUi />
+      </BrowserRouter>
+    )
     
-    # Mock st.session_state
-    st.session_state.clear()
-    
-    initialize_session_state()
-    
-    assert "messages" in st.session_state
-    assert isinstance(st.session_state.messages, list)
+    expect(screen.getByPlaceholderText(/Type your message/i)).toBeInTheDocument()
+    expect(screen.getByText(/Upload Document/i)).toBeInTheDocument()
+  })
 
-def test_export_chat_history_format():
-    """Test chat export format"""
-    from app.ui.main import export_chat_history
+  test('sends message and displays response', async () => {
+    const mockResponse = {
+      answer: 'Test answer',
+      sources: [{ filename: 'test.pdf', page: 1 }]
+    }
     
-    st.session_state.messages = [
-        {"role": "user", "content": "Hello"},
-        {"role": "assistant", "content": "Hi!"}
-    ]
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockResponse
+    })
     
-    # Test export function
-    # (Would need to capture download button output)
+    render(<BrowserRouter><ChatUi /></BrowserRouter>)
+    
+    const input = screen.getByPlaceholderText(/Type your message/i)
+    fireEvent.change(input, { target: { value: 'Test question' } })
+    fireEvent.click(screen.getByRole('button', { name: /send/i }))
+    
+    await waitFor(() => {
+      expect(screen.getByText('Test answer')).toBeInTheDocument()
+    })
+  })
+})
 ```
 
-**Why This is Optional:**
-- ⚠️ Requires Streamlit testing framework
-- ⚠️ Complex setup
-- ⚠️ Limited value (UI logic is simple)
-- ✅ Good for complex UI logic
+**Why This is Valuable:**
+- ✅ **434 tests** covering all React components
+- ✅ Fast execution (~5 seconds)
+- ✅ Tests user interactions (clicks, form submission)
+- ✅ Validates component rendering
+- ✅ Mocked API calls for isolation
+- ✅ TypeScript type safety
 
-**Cost:** Medium (setup complexity)
+**Technology Stack:**
+- **Vitest:** Fast test runner with Vite integration
+- **React Testing Library:** DOM-based component testing
+- **@testing-library/user-event:** Realistic user interactions
+- **jsdom:** Simulated browser environment
+
+**Cost:** None (modern React best practice)
 
 ---
 
@@ -341,31 +382,28 @@ def test_complete_document_query_flow(page: Page):
     5. View sources
     """
     
-    # Navigate to UI
+    # Navigate to React UI
     page.goto("http://localhost:8000/langchain/chat")
     
-    # Wait for Streamlit to load
-    page.wait_for_selector("iframe")
-    
-    # Switch to iframe
-    iframe = page.frame_locator("iframe")
+    # Wait for React app to load
+    page.wait_for_selector("input[type='file']")
     
     # Upload document
-    iframe.locator("input[type='file']").set_input_files("test_data/sample.pdf")
-    iframe.locator("text=Upload & Index").click()
+    page.locator("input[type='file']").set_input_files("test_data/sample.pdf")
+    page.locator("button:has-text('Upload Document')").click()
     
-    # Wait for success
-    expect(iframe.locator("text=✅ Uploaded")).to_be_visible()
+    # Wait for success notification
+    expect(page.locator("text=Upload successful")).to_be_visible()
     
     # Ask question
-    iframe.locator("input[placeholder*='Ask a question']").fill("What is this document about?")
-    iframe.locator("input[placeholder*='Ask a question']").press("Enter")
+    page.locator("input[placeholder*='Type your message']").fill("What is this document about?")
+    page.locator("button[aria-label='Send message']").click()
     
     # Wait for answer
-    expect(iframe.locator("text=Assistant")).to_be_visible()
+    expect(page.locator("text=AI:")).to_be_visible()
     
     # Verify sources shown
-    expect(iframe.locator("text=View Sources")).to_be_visible()
+    expect(page.locator("text=Sources")).to_be_visible()
 
 @pytest.mark.e2e
 @pytest.mark.slow
@@ -470,10 +508,10 @@ test-e2e-headed:
 
 ### **Tier 3: Optional (Skip for Now)** ⏸️
 
-6. **Streamlit Component Tests** (Option C)
-   - Only if UI logic becomes complex
-   - **Effort:** 3-4 hours
-   - **Value:** Low (simple UI)
+6. **React Component Tests** (Option C) - ✅ IMPLEMENTED
+   - **434 tests** covering all React components
+   - **Effort:** Already complete
+   - **Value:** High (type-safe UI, good UX)
 
 7. **E2E Tests** (Option D)
    - Only for critical production paths
@@ -552,33 +590,33 @@ class TestUIEndpoints:
         assert response.headers["location"] == "/docs"
     
     def test_langchain_chat_returns_html(self, client):
-        """Test /langchain/chat returns HTML page"""
-        with patch("app.api.main.streamlit_process"):
-            response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
+        """Test /langchain/chat returns React HTML page"""
+        response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
+        
+        assert response.status_code == 200
+        assert "text/html" in response.headers["content-type"]
+    
+    def test_react_routes_serve_index(self, client):
+        """Test React routes all serve index.html for client-side routing"""
+        routes = ["/", "/about", "/dev-docs", "/docs", "/langchain/chat"]
+        
+        for route in routes:
+            response = client.get(route)
             
-            assert response.status_code in [200, 503]
+            assert response.status_code == 200
             assert "text/html" in response.headers["content-type"]
     
-    def test_ui_iframe_configuration(self, client):
-        """Test iframe points to correct Streamlit URL"""
-        with patch("app.api.main.streamlit_process") as mock_process:
-            mock_process.return_value = True
-            response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
-            
-            if response.status_code == 200:
-                assert "<iframe" in response.text
-                assert "8501" in response.text
-    
-    def test_ui_disabled_shows_warning(self, client):
-        """Test UI disabled state returns 503"""
-        with patch("app.api.main.streamlit_process", None):
-            with patch("app.api.main.get_config") as mock_config:
-                mock_config.return_value.ui.enabled = False
-                
-                response = client.get(constants.UI_ROUTE_LANGCHAIN_CHAT)
-                
-                assert response.status_code == 503
-                assert "Not Available" in response.text
+    def test_static_files_mounted(self, client):
+        """Test static files are accessible"""
+        # Test that /static path exists (actual file availability depends on build)
+        from app.api.main import app
+        
+        # Verify static file mount exists
+        assert any(
+            route.path == "/static" 
+            for route in app.routes 
+            if hasattr(route, 'path')
+        )
 
 
 class TestUIConfiguration:
@@ -598,7 +636,7 @@ class TestUIConfiguration:
     def test_ui_constants_defined(self):
         """Test all UI constants are defined"""
         assert hasattr(constants, "UI_ROUTE_LANGCHAIN_CHAT")
-        assert hasattr(constants, "UI_STREAMLIT_PORT")
+        assert hasattr(constants, "UI_ROUTE_ROOT")
         assert hasattr(constants, "UI_PAGE_TITLE")
 ```
 
@@ -632,7 +670,7 @@ test-all:
 | **UI Subprocess Tests** | ✅ Done | Low | Fast (2s) | High | ⭐⭐⭐⭐ | ✅ Yes |
 | **API-Level UI Tests** | 30 min | Low | Fast (1s) | High | ⭐⭐⭐⭐⭐ | ✅ **YES** |
 | **Contract Tests** | 2 hours | Low | Fast (2s) | High | ⭐⭐⭐⭐ | ✅ If needed |
-| **Streamlit Tests** | 4 hours | Medium | Medium (5s) | Medium | ⭐⭐ | ⏸️ Skip |
+| **React Component Tests** | ✅ Done | Low | Fast (5s) | High | ⭐⭐⭐⭐⭐ | ✅ **COMPLETE (434 tests)** |
 | **E2E Playwright** | 10 hours | High | Slow (30s+) | Medium | ⭐⭐⭐ | ⏸️ Optional |
 | **Visual Regression** | 8 hours | Medium | Slow (20s) | Medium | ⭐⭐ | ⏸️ Skip |
 
@@ -662,9 +700,9 @@ With:
 **Total: ~600 tests covering all critical paths**
 
 ### 🎯 **Skip for Now:**
-- ⏸️ Streamlit component tests (overkill for simple UI)
 - ⏸️ E2E browser tests (too slow, flaky, expensive)
-- ⏸️ Visual regression (not needed for text-based UI)
+- ⏸️ Visual regression (not critical for current UI)
+- ⏸️ Performance testing (defer until production traffic)
 
 ### 🔮 **Future Considerations:**
 - When you have external API consumers → Add contract tests
