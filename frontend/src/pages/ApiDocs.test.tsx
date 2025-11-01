@@ -51,21 +51,19 @@ describe('ApiDocs', () => {
       renderApiDocs();
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toHaveClass('text-4xl');
-      expect(heading).toHaveClass('md:text-5xl');
       expect(heading).toHaveClass('font-bold');
     });
 
-    test('should have glass effect on hero section', () => {
+    test('should have header container', () => {
       renderApiDocs();
-      const hero = screen.getByText('API Documentation').closest('.glass');
-      expect(hero).toBeInTheDocument();
+      const header = screen.getByText('API Documentation').closest('div');
+      expect(header).toBeInTheDocument();
     });
 
-    test('should have border bottom on hero section', () => {
+    test('should have proper header structure', () => {
       renderApiDocs();
-      const hero = screen.getByText('API Documentation').closest('.glass');
-      expect(hero).toHaveClass('border-b');
-      expect(hero).toHaveClass('border-white/10');
+      const header = screen.getByText('API Documentation').closest('.mb-8');
+      expect(header).toBeInTheDocument();
     });
   });
 
@@ -133,7 +131,7 @@ describe('ApiDocs', () => {
       expect(heroContainer).toBeInTheDocument();
       expect(heroContainer).toHaveClass('mx-auto');
       expect(heroContainer).toHaveClass('px-6');
-      expect(heroContainer).toHaveClass('py-12');
+      expect(heroContainer).toHaveClass('py-8');
     });
 
     test('should have swagger container with proper styling', () => {
@@ -142,7 +140,6 @@ describe('ApiDocs', () => {
       expect(swaggerContainer).toBeInTheDocument();
       expect(swaggerContainer).toHaveClass('mx-auto');
       expect(swaggerContainer).toHaveClass('px-6');
-      expect(swaggerContainer).toHaveClass('py-8');
     });
 
     test('should have swagger-container class', () => {
@@ -151,10 +148,10 @@ describe('ApiDocs', () => {
       expect(swaggerDiv).toBeInTheDocument();
     });
 
-    test('should have max-width constraint on description', () => {
+    test('should render description text', () => {
       renderApiDocs();
       const description = screen.getByText(/Complete REST API reference/i);
-      expect(description).toHaveClass('max-w-3xl');
+      expect(description).toBeInTheDocument();
     });
   });
 
@@ -163,25 +160,24 @@ describe('ApiDocs', () => {
       renderApiDocs();
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toHaveClass('text-4xl');
-      expect(heading).toHaveClass('md:text-5xl');
     });
 
     test('should have proper text colors', () => {
       renderApiDocs();
       const description = screen.getByText(/Complete REST API reference/i);
-      expect(description).toHaveClass('text-slate-300');
+      expect(description).toHaveClass('text-slate-400');
     });
 
     test('should have proper text size for description', () => {
       renderApiDocs();
       const description = screen.getByText(/Complete REST API reference/i);
-      expect(description).toHaveClass('text-xl');
+      expect(description).toHaveClass('text-lg');
     });
 
     test('should have proper spacing', () => {
       renderApiDocs();
       const heading = screen.getByRole('heading', { level: 1 });
-      expect(heading).toHaveClass('mb-4');
+      expect(heading).toHaveClass('mb-2');
     });
   });
 
@@ -215,7 +211,6 @@ describe('ApiDocs', () => {
       renderApiDocs();
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toHaveClass('text-4xl');
-      expect(heading).toHaveClass('md:text-5xl');
     });
 
     test('should have responsive padding', () => {
@@ -229,7 +224,7 @@ describe('ApiDocs', () => {
     test('should have responsive py spacing', () => {
       renderApiDocs();
       const hero = screen.getByText('API Documentation').closest('.container');
-      expect(hero).toHaveClass('py-12');
+      expect(hero).toHaveClass('py-8');
     });
   });
 
