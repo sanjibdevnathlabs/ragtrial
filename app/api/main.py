@@ -13,7 +13,15 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import constants
-from app.routers import devdocs, files, health, query, upload
+from app.middleware import RateLimitMiddleware
+from app.routers import auth, devdocs, files, health, query, rate_limits, upload
+from app.routers.admin import (
+    permissions,
+    roles,
+    user_permissions,
+    user_roles,
+    users,
+)
 from config import Config
 from logger import get_logger
 
@@ -137,9 +145,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure Rate Limiting middleware (applies BEFORE authentication)
+app.add_middleware(RateLimitMiddleware)
+
 
 # Include routers
 app.include_router(health.router)
+app.include_router(auth.router)
+
+# Admin routers (protected by RBAC)
+app.include_router(roles.router)
+app.include_router(permissions.router)
+app.include_router(users.router)
+app.include_router(user_roles.router)
+app.include_router(user_permissions.router)
+
+# Other routers
+app.include_router(rate_limits.router)
 app.include_router(upload.router)
 app.include_router(files.router)
 app.include_router(query.router)
@@ -214,9 +236,13 @@ async def favicon():
 # Catch-all for React Router - serve index.html for frontend routes
 # Use specific paths instead of greedy {full_path:path} to avoid catching API routes
 @app.get("/about", response_class=FileResponse)
+@app.get("/login", response_class=FileResponse)
+@app.get("/dashboard", response_class=FileResponse)
 @app.get("/dev-docs", response_class=FileResponse)
 @app.get("/docs", response_class=FileResponse)
 @app.get("/langchain/chat", response_class=FileResponse)
+@app.get("/admin/login", response_class=FileResponse)
+@app.get("/admin/{full_path:path}", response_class=FileResponse)
 async def serve_react_routes():
     """
     Serve React app for client-side routes.

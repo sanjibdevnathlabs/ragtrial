@@ -132,3 +132,37 @@ charset = "utf8mb4"
 pool_size = 10
 max_overflow = 20
 debug = true
+
+# ============================================================================
+# AUTHENTICATION & JWT CONFIGURATION (TEST ENVIRONMENT)
+# ============================================================================
+
+[auth]
+jwt_secret = "test-jwt-secret-key-for-testing-only-do-not-use-in-prod"  # Dummy secret for tests
+jwt_algorithm = "HS256"
+access_token_expire_minutes = 5                   # Short for testing token expiry
+refresh_token_expire_days = 1                     # Short for testing token expiry
+password_reset_expire_minutes = 5                 # Short for testing token expiry
+
+# OAuth Google (Test - All mocked)
+[auth.oauth.google]
+client_id = "test-google-client-id-dummy"
+client_secret = "test-google-client-secret-dummy"
+redirect_uri = "http://localhost:8001/api/v1/auth/oauth/google/callback"
+
+# OAuth GitHub (Test - All mocked)
+[auth.oauth.github]
+client_id = "test-github-client-id-dummy"
+client_secret = "test-github-client-secret-dummy"
+redirect_uri = "http://localhost:8001/api/v1/auth/oauth/github/callback"
+
+# Email Verification (Test - All mocked)
+[auth.email]
+enabled = false                                   # Disabled for tests
+verification_required = false                     # Disabled for tests
+smtp_host = "localhost"
+smtp_port = 1025                                  # Dummy port
+smtp_username = "test@test.local"
+smtp_password = "test"
+from_email = "test@ragtrial.test"
+from_name = "RAG Trial (Test)"

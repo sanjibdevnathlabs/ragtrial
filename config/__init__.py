@@ -27,6 +27,14 @@ from config.api import APIConfig
 
 # Import configuration classes needed internally by Config class
 from config.app import AppConfig
+from config.auth import (
+    AuthConfig,
+    EmailConfig,
+    OAuthConfig,
+    OAuthGitHubConfig,
+    OAuthGoogleConfig,
+)
+from config.ratelimit import RateLimitConfig
 from config.database import (
     DatabaseConfig,
     MySQLConfig,
@@ -108,6 +116,12 @@ class Config(metaclass=SingletonMeta):
     # Database configuration
     database: DatabaseConfig
 
+    # Authentication configuration
+    auth: AuthConfig
+
+    # Rate limiting configuration
+    ratelimit: RateLimitConfig
+
     # This will hold the name of the loaded environment, e.g., "prod"
     AppEnv: str = None
 
@@ -169,6 +183,14 @@ class Config(metaclass=SingletonMeta):
         self.database.postgresql = PostgreSQLConfig()
         self.database.postgresql.write = PostgreSQLWriteConfig()
         self.database.postgresql.read = PostgreSQLReadConfig()
+
+        self.auth = AuthConfig()
+        self.auth.oauth = OAuthConfig()
+        self.auth.oauth.google = OAuthGoogleConfig()
+        self.auth.oauth.github = OAuthGitHubConfig()
+        self.auth.email = EmailConfig()
+
+        self.ratelimit = RateLimitConfig({})
 
     def _load_config_files(self) -> dict:
         """Load and merge TOML configuration files."""
@@ -283,6 +305,22 @@ class Config(metaclass=SingletonMeta):
         self._populate_config_section(
             postgresql_settings, "read", self.database.postgresql.read
         )
+
+        # Populate authentication configuration
+        self._populate_config_section(settings, "auth", self.auth)
+        
+        auth_settings = settings.get("auth", {})
+        # Populate OAuth configuration
+        oauth_settings = auth_settings.get("oauth", {})
+        self._populate_config_section(oauth_settings, "google", self.auth.oauth.google)
+        self._populate_config_section(oauth_settings, "github", self.auth.oauth.github)
+        # Populate email configuration
+        self._populate_config_section(auth_settings, "email", self.auth.email)
+
+        # Populate rate limit configuration
+        # RateLimitConfig parses the dict in __init__, so re-initialize it here
+        ratelimit_settings = settings.get("ratelimit", {})
+        self.ratelimit = RateLimitConfig(ratelimit_settings)
 
         logger.info(codes.CONFIG_LOADED, message=codes.MSG_CONFIG_LOADED)
 

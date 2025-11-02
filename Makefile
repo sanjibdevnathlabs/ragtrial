@@ -267,6 +267,11 @@ migrate-reset:
 	@echo "Resetting database migrations..."
 	@$(PYTHON) -m migration reset --yes
 
+seed:
+	@echo "🌱 Seeding database with initial data..."
+	@echo ""
+	@$(PYTHON) -m migration.seed
+
 setup-database: migrate-up
 	@echo "✅ Database setup complete!"
 
@@ -357,6 +362,9 @@ run: frontend-build
 	@echo "Note: Streamlit UI embedded automatically"
 	@echo ""
 	@$(UVICORN) app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+# Alias for 'run' command
+serve: run
 
 run-dev-api:
 	@echo "🔧 Starting FastAPI (dev mode, no UI)..."

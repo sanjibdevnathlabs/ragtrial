@@ -13,6 +13,23 @@ const DevDocs = lazy(() => import('./pages/DevDocs'))
 const ApiDocs = lazy(() => import('./pages/ApiDocs'))
 const ChatUi = lazy(() => import('./pages/ChatUi'))
 
+// Auth components
+const Login = lazy(() => import('./pages/Login'))
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'))
+import ProtectedRoute from './components/ProtectedRoute'
+
+// User dashboard
+const UserDashboard = lazy(() => import('./pages/Dashboard'))
+
+// Admin components
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'))
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
+const RateLimits = lazy(() => import('./pages/admin/RateLimits'))
+const Users = lazy(() => import('./pages/admin/Users'))
+const Roles = lazy(() => import('./pages/admin/Roles'))
+const Permissions = lazy(() => import('./pages/admin/Permissions'))
+const AdminFiles = lazy(() => import('./pages/admin/Files'))
+
 // Loading fallback component
 const LoadingFallback = () => (
   <div className="pt-16 min-h-screen flex items-center justify-center">
@@ -81,6 +98,47 @@ function AnimatedRoutes() {
           }
         />
         <Route
+          path="/login"
+          element={
+            <motion.div
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <Login />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/admin/login"
+          element={
+            <motion.div
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <AdminLogin />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <motion.div
+              variants={pageVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            </motion.div>
+          }
+        />
+        <Route
           path="/dev-docs"
           element={
             <motion.div
@@ -115,10 +173,27 @@ function AnimatedRoutes() {
               animate="animate"
               exit="exit"
             >
-              <ChatUi />
+              <ProtectedRoute>
+                <ChatUi />
+              </ProtectedRoute>
             </motion.div>
           }
         />
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="rate-limits" element={<RateLimits />} />
+          <Route path="users" element={<Users />} />
+          <Route path="roles" element={<Roles />} />
+          <Route path="permissions" element={<Permissions />} />
+          <Route path="files" element={<AdminFiles />} />
+        </Route>
       </Routes>
     </AnimatePresence>
   )

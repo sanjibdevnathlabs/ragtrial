@@ -1,0 +1,255 @@
+/* Swagger UI Dark Mode Fixes - Maximum Contrast */
+
+/* ===== ENDPOINT PATHS & DESCRIPTIONS (COLLAPSED) ===== */
+/* Bright white for maximum contrast on dark endpoint buttons */
+.swagger-ui .opblock-summary-path,
+.swagger-ui .opblock-summary-description {
+  color: #ffffff !important;
+}
+
+.swagger-ui .opblock-summary-path *,
+.swagger-ui .opblock-summary-description * {
+  color: #ffffff !important;
+}
+
+/* ===== EXPANDED ENDPOINT CONTENT ===== */
+/* White text for dark backgrounds in expanded sections */
+.swagger-ui .opblock-body,
+.swagger-ui .opblock-description-wrapper,
+.swagger-ui .opblock-section,
+.swagger-ui .parameters,
+.swagger-ui .responses-wrapper,
+.swagger-ui .opblock-body .opblock-description-wrapper p,
+.swagger-ui .opblock-body .renderedMarkdown p,
+.swagger-ui .model-box,
+.swagger-ui .model {
+  color: #ffffff !important;
+}
+
+/* ALL text elements in expanded content */
+.swagger-ui .opblock-body *,
+.swagger-ui .responses-inner *,
+.swagger-ui .response-control-media-type__accept-message {
+  color: #ffffff !important;
+}
+
+/* Tables in responses */
+.swagger-ui table thead tr td,
+.swagger-ui table thead tr th,
+.swagger-ui .response-col_status,
+.swagger-ui .response-col_description,
+.swagger-ui table tbody tr td {
+  color: #ffffff !important;
+}
+
+/* Parameter names and descriptions */
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui .parameter__in,
+.swagger-ui .renderedMarkdown p,
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .parameter__extension,
+.swagger-ui .parameter__deprecated {
+  color: #ffffff !important;
+}
+
+/* ===== SECTION HEADERS (Parameters, Request body, etc.) ===== */
+.swagger-ui .opblock-section-header,
+.swagger-ui .opblock-section-header h4,
+.swagger-ui .opblock-section-header label,
+.swagger-ui .opblock-title,
+.swagger-ui .tab li {
+  color: #ffffff !important;
+}
+
+/* Parameters section */
+.swagger-ui .parameters-col_description,
+.swagger-ui .parameters-col_name {
+  color: #ffffff !important;
+}
+
+/* "No parameters" text */
+.swagger-ui .opblock-description-wrapper,
+.swagger-ui .opblock-description {
+  color: #ffffff !important;
+}
+
+/* ===== TABS (Edit Value / Schema) ===== */
+.swagger-ui .tab li button {
+  color: #ffffff !important;
+}
+
+.swagger-ui .tab li.active button {
+  color: #1f2937 !important; /* Dark text for active tab */
+}
+
+/* ===== TEXT AREAS & CODE EDITORS ===== */
+/* JSON editor / text areas */
+.swagger-ui textarea,
+.swagger-ui .body-param__text,
+.swagger-ui .parameters-col_description input,
+.swagger-ui .parameters-col_description textarea {
+  color: #1f2937 !important; /* Dark text for light input backgrounds */
+  background-color: #f3f4f6 !important; /* Light gray background */
+}
+
+/* Code/pre blocks */
+.swagger-ui pre,
+.swagger-ui code {
+  color: #1f2937 !important;
+  background-color: #f3f4f6 !important;
+}
+
+/* ===== DROPDOWNS (Content-Type, Accept) ===== */
+.swagger-ui select,
+.swagger-ui .opblock-body select {
+  color: #1f2937 !important; /* Dark text */
+  background-color: #ffffff !important; /* White background */
+}
+
+/* Dropdown labels */
+.swagger-ui .opblock-body .opblock-section-header > label,
+.swagger-ui .content-type-wrapper label {
+  color: #ffffff !important;
+}
+
+/* ===== BUTTONS IN EXPANDED SECTIONS ===== */
+/* Cancel button */
+.swagger-ui .btn-clear,
+.swagger-ui .btn.cancel {
+  color: #ffffff !important;
+  background-color: #6b7280 !important; /* Gray background */
+}
+
+/* Close button (in modals and sections) */
+.swagger-ui .btn.btn-clear,
+.swagger-ui button.btn-clear {
+  color: #ffffff !important;
+  background-color: #6b7280 !important;
+}
+
+/* ===== AUTHORIZATION MODAL ===== */
+.swagger-ui .dialog-ux .modal-ux-content h4,
+.swagger-ui .dialog-ux .modal-ux-content p,
+.swagger-ui .dialog-ux .modal-ux-content label,
+.swagger-ui .auth-container .wrapper,
+.swagger-ui .auth-container h4,
+.swagger-ui .auth-container label,
+.swagger-ui .auth-container p {
+  color: #1f2937 !important; /* Dark for light modal background */
+}
+
+/* Input fields in modal */
+.swagger-ui .auth-container input,
+.swagger-ui .dialog-ux input {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+/* ===== MODAL BUTTONS (Authorize & Close) ===== */
+/* Authorize button in modal - emerald green */
+.swagger-ui .auth-btn-wrapper .btn.modal-btn.auth.authorize,
+.swagger-ui .auth-container .btn.authorize {
+  color: #ffffff !important;
+  background-color: #059669 !important; /* Emerald green */
+  border-color: #059669 !important;
+}
+
+/* Close button in modal - visible with gray background */
+.swagger-ui .auth-btn-wrapper .btn.modal-btn.auth.btn-done,
+.swagger-ui .auth-container .btn-done,
+.swagger-ui .dialog-ux .modal-ux-header .close-modal {
+  color: #1f2937 !important; /* Dark text */
+  background-color: #e5e7eb !important; /* Light gray background */
+  border: 1px solid #d1d5db !important;
+}
+
+/* ===== AUTHORIZE BUTTON (TOP RIGHT) ===== */
+/* Dark green text on light background for visibility */
+.swagger-ui .btn.authorize,
+.swagger-ui .btn.authorize span {
+  color: #059669 !important; /* Emerald green for visibility */
+  font-weight: 600 !important;
+}
+
+/* Scheme name in auth modal */
+.swagger-ui .auth-container .scheme-container,
+.swagger-ui .auth-container code {
+  color: #1f2937 !important;
+}
+
+/* ===== LOCK ICONS ===== */
+/* Bright gold/yellow for lock icons to stand out */
+.swagger-ui .authorization__btn svg,
+.swagger-ui .unlocked svg,
+.swagger-ui .locked svg {
+  fill: #fbbf24 !important; /* Amber/gold color */
+}
+
+/* Lock icon in authorize button */
+.swagger-ui .btn.authorize svg {
+  fill: #059669 !important; /* Match button text color */
+}
+
+/* ===== TRY IT OUT BUTTON & EXECUTE BUTTON ===== */
+.swagger-ui .btn.try-out__btn,
+.swagger-ui .btn.execute {
+  color: #ffffff !important;
+  background-color: #3b82f6 !important; /* Blue background */
+}
+
+/* ===== RESPONSE SECTION ===== */
+.swagger-ui .responses-header td {
+  color: #ffffff !important;
+}
+
+.swagger-ui .response .response-col_status {
+  color: #10b981 !important; /* Green for status codes */
+}
+
+/* ===== VERSION BADGES - HIDE THEM ===== */
+/* They're not essential and cause styling issues */
+.swagger-ui .info .version-stamp {
+  display: none !important;
+}
+
+/* ===== REDUCE WASTED SPACE ===== */
+/* Make the info section more compact */
+.swagger-ui .info {
+  margin: 10px 0 !important;
+  padding: 0 !important;
+}
+
+/* Reduce title size and spacing */
+.swagger-ui .info .title {
+  font-size: 24px !important;
+  margin: 0 0 5px 0 !important;
+}
+
+/* Reduce description spacing */
+.swagger-ui .info .description,
+.swagger-ui .info p {
+  margin: 0 0 10px 0 !important;
+  font-size: 14px !important;
+}
+
+/* Move scheme container (authorize button) to top-right corner */
+.swagger-ui .scheme-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  position: fixed !important;
+  top: 80px !important; /* Below the nav bar */
+  right: 20px !important;
+  z-index: 1000 !important;
+}
+
+/* Reduce spacing around authorize button */
+.swagger-ui .btn.authorize {
+  margin: 0 !important;
+  padding: 8px 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+

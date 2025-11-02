@@ -236,3 +236,52 @@ class FileRepository(BaseRepository[File]):
         return self.find_by_fields(
             session, filters={"file_type": file_type}, include_deleted=include_deleted
         )
+
+    def find_by_user_id(
+        self, session: Session, user_id: str, include_deleted: bool = False
+    ) -> List[File]:
+        """
+        Find all files owned by a user.
+
+        Args:
+            session: Database session
+            user_id: User ID
+            include_deleted: Include soft-deleted files
+
+        Returns:
+            List of files owned by the user
+        """
+        return self.find_by_fields(
+            session, filters={"user_id": user_id}, include_deleted=include_deleted
+        )
+
+    def count_by_user(self, session: Session, user_id: str) -> int:
+        """
+        Count files owned by a user.
+
+        Args:
+            session: Database session
+            user_id: User ID
+
+        Returns:
+            Count of files
+        """
+        try:
+            query = session.query(File).filter(
+                File.user_id == user_id, File.deleted_at.is_(None)
+            )
+            return query.count()
+
+        except Exception as e:
+            logger.error(
+                codes.DB_QUERY_FAILED,
+                operation="count_by_user",
+                error=str(e),
+                exc_info=True,
+            )
+            raise DatabaseQueryError(
+                message=constants.ERROR_DB_QUERY_FAILED,
+                query="count_by_user",
+                details={"user_id": user_id},
+                original_error=e,
+            ) from e

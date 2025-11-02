@@ -901,11 +901,25 @@ MSG_REPOSITORY_ENTITIES_FOUND = "Entities found"
 MSG_SQL_INJECTION_PREVENTED = "SQL injection attempt prevented"
 MSG_PARAMETERIZED_QUERY_USED = "Parameterized query used"
 
-# Database metadata
+# Database metadata - Table names
 DB_TABLE_MIGRATIONS = "migrations"
 DB_TABLE_FILES = "files"
+DB_TABLE_USERS = "users"
+DB_TABLE_OAUTH_PROVIDERS = "oauth_providers"
+DB_TABLE_REFRESH_TOKENS = "refresh_tokens"
+DB_TABLE_PASSWORD_RESET_TOKENS = "password_reset_tokens"
+DB_TABLE_ENTITY_CONFIG = "entity_config"
+DB_TABLE_RATE_LIMIT_CONFIGS = "rate_limit_configs"
 
-# Database column names (common)
+# RBAC tables
+DB_TABLE_ROLES = "roles"
+DB_TABLE_PERMISSIONS = "permissions"
+DB_TABLE_USER_ROLES = "user_roles"
+DB_TABLE_ROLE_PERMISSIONS = "role_permissions"
+DB_TABLE_USER_PERMISSIONS = "user_permissions"
+DB_TABLE_ROUTE_PERMISSIONS = "route_permissions"
+
+# Database column names (common - BaseModel)
 DB_COLUMN_ID = "id"
 DB_COLUMN_CREATED_AT = "created_at"
 DB_COLUMN_UPDATED_AT = "updated_at"
@@ -920,6 +934,35 @@ DB_COLUMN_CHECKSUM = "checksum"
 DB_COLUMN_STORAGE_BACKEND = "storage_backend"
 DB_COLUMN_INDEXED = "indexed"
 DB_COLUMN_INDEXED_AT = "indexed_at"
+DB_COLUMN_USER_ID = "user_id"
+
+# User table column names
+DB_COLUMN_EMAIL = "email"
+DB_COLUMN_PASSWORD_HASH = "password_hash"
+DB_COLUMN_FULL_NAME = "full_name"
+DB_COLUMN_AVATAR_URL = "avatar_url"
+DB_COLUMN_IS_VERIFIED = "is_verified"
+DB_COLUMN_EMAIL_VERIFIED_AT = "email_verified_at"
+DB_COLUMN_STATUS = "status"
+
+# OAuth provider table column names
+DB_COLUMN_PROVIDER = "provider"
+DB_COLUMN_PROVIDER_USER_ID = "provider_user_id"
+DB_COLUMN_RAW_DATA = "raw_data"
+
+# Token table column names (refresh & password reset)
+DB_COLUMN_TOKEN_HASH = "token_hash"
+DB_COLUMN_METADATA = "metadata"
+DB_COLUMN_EXPIRES_AT = "expires_at"
+DB_COLUMN_REVOKED_AT = "revoked_at"
+DB_COLUMN_USED_AT = "used_at"
+
+# Entity config table column names
+DB_COLUMN_MODULE_NAME = "module_name"
+DB_COLUMN_ENTITY_TYPE = "entity_type"
+DB_COLUMN_ENTITY_ID = "entity_id"
+DB_COLUMN_CONFIG_KEY = "config_key"
+DB_COLUMN_CONFIG_VALUE = "config_value"
 
 # Migration table column names
 DB_COLUMN_VERSION = "version"
@@ -929,6 +972,19 @@ DB_COLUMN_APPLIED_AT = "applied_at"
 # Database constraints
 DB_CONSTRAINT_UNIQUE_FILENAME = "unique_filename"
 DB_CONSTRAINT_UNIQUE_CHECKSUM = "unique_checksum"
+DB_CONSTRAINT_UNIQUE_EMAIL = "unique_email"
+DB_CONSTRAINT_UNIQUE_TOKEN_HASH = "unique_token_hash"
+DB_CONSTRAINT_UNIQUE_RESET_TOKEN_HASH = "unique_reset_token_hash"
+DB_CONSTRAINT_UNIQUE_PROVIDER_ACCOUNT = "unique_provider_account"
+
+# User status values
+USER_STATUS_ACTIVE = "active"
+USER_STATUS_INACTIVE = "inactive"
+USER_STATUS_SUSPENDED = "suspended"
+
+# OAuth provider types
+OAUTH_PROVIDER_GOOGLE = "google"
+OAUTH_PROVIDER_GITHUB = "github"
 
 # Connection pool settings
 DB_POOL_SIZE_DEFAULT = 5
