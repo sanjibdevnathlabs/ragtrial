@@ -883,6 +883,13 @@ export PINECONE_API_KEY="your-pinecone-key"
   - Integration with RAG chain
   - Custom guardrails configuration
 
+- **[Authentication Setup](docs/AUTHENTICATION_SETUP.md)** - Complete authentication guide 🔐
+  - JWT secret generation (OpenSSL, Python, Node.js)
+  - OAuth 2.0 setup (Google, GitHub)
+  - SMTP configuration (Gmail, SendGrid, Mailtrap)
+  - Environment variables and testing
+  - Security best practices and troubleshooting
+
 - **[Examples Guide](examples/README.md)** - Usage examples and demos
   - Interactive CLI usage
   - REST API examples (curl, Python)

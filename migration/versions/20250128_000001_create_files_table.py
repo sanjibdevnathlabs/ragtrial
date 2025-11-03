@@ -7,6 +7,7 @@ This migration creates the 'files' table for file metadata storage.
 
 Schema:
 - id: VARCHAR(36) - UUID primary key
+- user_id: VARCHAR(36) - Owner user ID (references users.id)
 - filename: VARCHAR(255) - Original filename
 - file_path: VARCHAR(512) - Path to stored file
 - file_type: VARCHAR(50) - File extension without dot (pdf, txt, md, etc.)
@@ -20,6 +21,7 @@ Schema:
 - deleted_at: BIGINT - Soft delete timestamp (NULL = active)
 
 Indexes:
+- idx_files_user_id: Query files by owner
 - idx_files_checksum: Fast duplicate detection
 - idx_files_deleted_at: Filter active vs deleted files
 - idx_files_indexed: Query unindexed files
@@ -44,6 +46,7 @@ def up(connection):
             """
         CREATE TABLE files (
             id VARCHAR(36) PRIMARY KEY,
+            user_id VARCHAR(36) NOT NULL COMMENT 'Owner user ID (references users.id)',
             filename VARCHAR(255) NOT NULL,
             file_path VARCHAR(512) NOT NULL,
             file_type VARCHAR(50) NOT NULL,
@@ -63,6 +66,7 @@ def up(connection):
     connection.commit()
 
     # Create strategic indexes
+    connection.execute(text("CREATE INDEX idx_files_user_id ON files(user_id)"))
     connection.execute(text("CREATE INDEX idx_files_checksum ON files(checksum)"))
     connection.execute(text("CREATE INDEX idx_files_deleted_at ON files(deleted_at)"))
     connection.execute(text("CREATE INDEX idx_files_indexed ON files(indexed)"))

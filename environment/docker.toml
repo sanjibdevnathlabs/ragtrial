@@ -127,3 +127,37 @@ pool_size = 10
 max_overflow = 20
 debug = false
 
+# ============================================================================
+# AUTHENTICATION & JWT CONFIGURATION (DOCKER ENVIRONMENT)
+# ============================================================================
+
+[auth]
+jwt_secret = "${JWT_SECRET}"                      # Must be set via Docker env
+jwt_algorithm = "HS256"
+access_token_expire_minutes = 30                  # Production-like settings
+refresh_token_expire_days = 30
+password_reset_expire_minutes = 30
+
+# OAuth Google (Docker - Production-like)
+[auth.oauth.google]
+client_id = "${GOOGLE_CLIENT_ID}"                 # From Docker env
+client_secret = "${GOOGLE_CLIENT_SECRET}"         # From Docker env
+redirect_uri = "http://localhost:8000/api/v1/auth/oauth/google/callback"
+
+# OAuth GitHub (Docker - Production-like)
+[auth.oauth.github]
+client_id = "${GITHUB_CLIENT_ID}"                 # From Docker env
+client_secret = "${GITHUB_CLIENT_SECRET}"         # From Docker env
+redirect_uri = "http://localhost:8000/api/v1/auth/oauth/github/callback"
+
+# Email Verification (Docker)
+[auth.email]
+enabled = true
+verification_required = true                      # Enforce verification in Docker
+smtp_host = "${SMTP_HOST}"                        # From Docker env
+smtp_port = 587
+smtp_username = "${SMTP_USERNAME}"                # From Docker env
+smtp_password = "${SMTP_PASSWORD}"                # From Docker env
+from_email = "noreply@ragtrial.com"
+from_name = "RAG Trial (Docker)"
+

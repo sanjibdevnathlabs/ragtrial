@@ -1,9 +1,28 @@
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  
+  // Hide navbar on admin pages (admin has its own layout)
+  if (location.pathname.startsWith('/admin')) {
+    return null
+  }
+
+  // Check if user is logged in
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    setIsLoggedIn(!!token)
+  }, [location])
+
+  const handleLogout = () => {
+    localStorage.clear()
+    setIsLoggedIn(false)
+    navigate('/login')
+  }
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -34,7 +53,11 @@ const Navbar = () => {
                 <a
                   key={link.name}
                   href={link.path}
-                  className="px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 border-b-4 ${
+                    isActive(link.path)
+                      ? 'text-cyan-400 bg-cyan-500/20 border-cyan-400 font-semibold shadow-lg shadow-cyan-500/50'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
+                  }`}
                 >
                   {link.name}
                 </a>
@@ -42,16 +65,46 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 border-b-4 ${
                     isActive(link.path)
-                      ? 'text-white bg-white/10'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      ? 'text-cyan-400 bg-cyan-500/20 border-cyan-400 font-semibold shadow-lg shadow-cyan-500/50'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
                   }`}
                 >
                   {link.name}
                 </Link>
               )
             ))}
+            
+            {/* Auth buttons */}
+            {isLoggedIn ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className={`px-4 py-2 rounded-lg transition-all duration-200 border-b-4 ${
+                    isActive('/dashboard')
+                      ? 'text-cyan-400 bg-cyan-500/20 border-cyan-400 font-semibold shadow-lg shadow-cyan-500/50'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
+              >
+                Login
+              </Link>
+            )}
+            
             <a
               href="https://github.com/sanjibdevnathlabs/ragtrial"
               target="_blank"
@@ -90,7 +143,11 @@ const Navbar = () => {
                 <a
                   key={link.name}
                   href={link.path}
-                  className="block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  className={`block px-3 py-2 rounded-lg transition-all duration-200 border-l-4 ${
+                    isActive(link.path)
+                      ? 'text-cyan-400 bg-cyan-500/20 border-cyan-400 font-semibold'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
+                  }`}
                   onClick={() => setIsOpen(false)}
                 >
                   {link.name}
@@ -99,10 +156,10 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`block px-3 py-2 rounded-lg transition-all duration-200 ${
+                  className={`block px-3 py-2 rounded-lg transition-all duration-200 border-l-4 ${
                     isActive(link.path)
-                      ? 'text-white bg-white/10'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      ? 'text-cyan-400 bg-cyan-500/20 border-cyan-400 font-semibold'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
                   }`}
                   onClick={() => setIsOpen(false)}
                 >
@@ -110,6 +167,42 @@ const Navbar = () => {
                 </Link>
               )
             ))}
+            
+            {/* Mobile Auth buttons */}
+            <div className="border-t border-white/10 pt-2 mt-2">
+              {isLoggedIn ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className={`block px-3 py-2 rounded-lg transition-all duration-200 border-l-4 ${
+                      isActive('/dashboard')
+                        ? 'text-cyan-400 bg-cyan-500/20 border-cyan-400 font-semibold'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
+                    }`}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      setIsOpen(false)
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="block px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 text-center"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Login
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}

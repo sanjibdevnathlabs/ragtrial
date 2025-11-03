@@ -237,6 +237,29 @@ MSG_STORAGE_NO_CREDENTIALS = "No AWS credentials found"
 MSG_STORAGE_BUCKET_ACCESS_DENIED = "Access denied to S3 bucket"
 
 # ============================================================================
+# RATE LIMITING TRACE CODES & MESSAGES
+# ============================================================================
+
+# Rate limit trace codes
+RATE_LIMIT_CHECK = "rate_limit_check"
+RATE_LIMIT_EXCEEDED = "rate_limit_exceeded"
+RATE_LIMIT_PASSED = "rate_limit_passed"
+RATE_LIMIT_MIDDLEWARE_INITIALIZED = "rate_limit_middleware_initialized"
+RATE_LIMIT_INCREMENTED = "rate_limit_incremented"
+RATE_LIMIT_COUNT_RETRIEVED = "rate_limit_count_retrieved"
+RATE_LIMIT_RESET = "rate_limit_reset"
+RATE_LIMIT_CLEANUP_SKIPPED = "rate_limit_cleanup_skipped"
+RATE_LIMIT_REDIS_STORAGE_INITIALIZED = "rate_limit_redis_storage_initialized"
+RATE_LIMIT_LUA_SCRIPT_LOADED = "rate_limit_lua_script_loaded"
+RATE_LIMIT_REDIS_ERROR = "rate_limit_redis_error"
+RATE_LIMIT_STORAGE_SELECTED = "rate_limit_storage_selected"
+RATE_LIMIT_UNSUPPORTED_STORAGE = "rate_limit_unsupported_storage"
+
+# Rate limit messages
+MSG_RATE_LIMIT_EXCEEDED = "Rate limit exceeded"
+MSG_RATE_LIMIT_PASSED = "Rate limit check passed"
+
+# ============================================================================
 # API TRACE CODES & MESSAGES
 # ============================================================================
 
@@ -435,6 +458,7 @@ DB_MIGRATION_UP_COMPLETED = "db_migration_up_completed"
 DB_MIGRATION_DOWN_STARTED = "db_migration_down_started"
 DB_MIGRATION_DOWN_COMPLETED = "db_migration_down_completed"
 DB_MIGRATION_GENERATE = "db_migration_generate"
+DB_MIGRATION_GENERATED = "db_migration_generated"
 
 # Database initialization trace codes
 DB_INITIALIZING = "db_initializing"
@@ -478,3 +502,26 @@ UI_FILE_UPLOAD_COMPLETED = "ui_file_upload_completed"
 UI_FILE_UPLOAD_FAILED = "ui_file_upload_failed"
 UI_CHAT_EXPORT_STARTED = "ui_chat_export_started"
 UI_CHAT_EXPORT_COMPLETED = "ui_chat_export_completed"
+
+# ============================================================================
+# RBAC (Role-Based Access Control) TRACE CODES
+# ============================================================================
+
+# Permission checking
+RBAC_PERMISSION_CHECK = "rbac_permission_check"
+RBAC_PERMISSION_GRANTED = "rbac_permission_granted"
+RBAC_PERMISSION_GRANTED_DIRECT = "rbac_permission_granted_direct"
+RBAC_PERMISSION_GRANTED_VIA_ROLE = "rbac_permission_granted_via_role"
+RBAC_PERMISSION_DENIED = "rbac_permission_denied"
+RBAC_PERMISSION_NOT_FOUND = "rbac_permission_not_found"
+
+# Multiple permission checks
+RBAC_ANY_PERMISSION_GRANTED = "rbac_any_permission_granted"
+RBAC_ALL_PERMISSIONS_GRANTED = "rbac_all_permissions_granted"
+RBAC_BATCH_PERMISSION_CHECK = "rbac_batch_permission_check"
+
+# User permissions and roles
+RBAC_USER_PERMISSIONS_RETRIEVED = "rbac_user_permissions_retrieved"
+RBAC_USER_PERMISSIONS_INJECTED = "rbac_user_permissions_injected"
+RBAC_USER_ROLES_RETRIEVED = "rbac_user_roles_retrieved"
+RBAC_USER_ROLES_INJECTED = "rbac_user_roles_injected"

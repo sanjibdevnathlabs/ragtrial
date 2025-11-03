@@ -19,6 +19,7 @@ class File(BaseModel):
 
     Fields:
         id: UUID primary key
+        user_id: Foreign key to users table (application-level)
         filename: Original filename
         file_path: Path to stored file (uses UUID-based name)
         file_type: File extension without dot (pdf, txt, md)
@@ -30,6 +31,9 @@ class File(BaseModel):
         created_at: Creation timestamp (inherited)
         updated_at: Update timestamp (inherited)
         deleted_at: Soft delete timestamp (inherited)
+
+    Relationships:
+        - user: Many-to-one with User (via user_id)
     """
 
     __tablename__ = constants.DB_TABLE_FILES
@@ -38,6 +42,7 @@ class File(BaseModel):
     __table_args__ = {"extend_existing": True}
 
     # File-specific fields
+    user_id = Column(String(36), nullable=False, index=True)
     filename = Column(String(255), nullable=False)
     file_path = Column(String(512), nullable=False)
     file_type = Column(String(50), nullable=False)
